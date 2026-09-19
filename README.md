@@ -1,8 +1,8 @@
-# Desperrengue: Marketplace de Serviços Residenciais 🛠️
+# Desperrengue: Marketplace de Serviços Residenciais 
 
-Projeto acadêmico desenvolvido para as disciplinas de Engenharia de Software e Gestão de Startups. O **Desperrengue** é um aplicativo mobile focado em conectar clientes a prestadores de serviços de manutenção residencial com segurança, rapidez e um modelo de comissionamento justo (fim da cobrança por orçamentos).
+Projeto acadêmico desenvolvido para as disciplinas de Trabalho Acadêmico Integrado, Engenharia de Software e Gestão de Startups. O **Desperrengue** é um aplicativo mobile focado em conectar clientes a prestadores de serviços de manutenção residencial com segurança, rapidez e um modelo de comissionamento justo (fim da cobrança por orçamentos).
 
-## 📂 Documentação da Etapa 1
+##  Documentação da Etapa 1
 
 Toda a documentação acadêmica exigida encontra-se na pasta `docs/`. Você pode acessá-la diretamente pelos links abaixo:
 
@@ -11,6 +11,6 @@ Toda a documentação acadêmica exigida encontra-se na pasta `docs/`. Você pod
 
 ---
 
-## 🚀 Tecnologias Utilizadas (MVP)
+##  Tecnologias Utilizadas (MVP)
 * **Frontend Mobile:** React Native (Expo)
 * **Backend (BaaS):** Supabase (PostgreSQL, Auth, Storage)
