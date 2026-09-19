@@ -12,7 +12,6 @@ Um aplicativo de marketplace mobile, com foco em serviços residenciais, baseado
 ---
 
 ## Lean Canvas
-O Lean Canvas é uma ferramenta visual de gestão estratégica (criada por Ash Maurya) que resume o plano de negócios de uma startup em uma única página dividida em 9 blocos. Abaixo está a nossa estruturação em formato de tabela:
 
 | Bloco do Canvas | Descrição no Desperrengue |
 | :--- | :--- |
