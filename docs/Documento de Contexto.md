@@ -37,3 +37,6 @@ Nossa fundação estratégica garante que as operações e o desenvolvimento da 
     *   **Confiança:** Segurança em primeiro lugar através da verificação de todos os usuários.
     *   **Simplicidade:** Uma experiência de usuário (UX) clara, com o menor número de cliques possível até o fechamento.
 
+
+![Miss�o, Vis�o e Valores](mvv.png)
+*(Caso possua o PDF, insira na pasta pdf e acesse: [Link PDF](pdf/mvv.pdf))*
