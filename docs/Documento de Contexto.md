@@ -1,4 +1,4 @@
-# Documento de Contexto
+﻿# Documento de Contexto
 
 ## Introdução
 A prestação de serviços residenciais e de manutenção é um mercado com alta demanda constante, porém marcado por informalidade e fricção na conexão entre quem precisa de um serviço e quem o oferece. O aplicativo surge para intermediar essa relação de forma segura, digital e eficiente.
@@ -12,17 +12,19 @@ Um aplicativo de marketplace mobile, com foco em serviços residenciais, baseado
 ---
 
 ## Lean Canvas
-O modelo de negócios de nossa solução baseia-se na criação de um ambiente justo para as duas pontas do marketplace. Abaixo estão listados os principais pilares do nosso Canvas:
+O Lean Canvas é uma ferramenta visual de gestão estratégica (criada por Ash Maurya) que resume o plano de negócios de uma startup em uma única página dividida em 9 blocos. Abaixo está a nossa estruturação em formato de tabela:
 
-*   **Problema:** Prestadores pagando para fazer orçamento sem garantia de retorno; Clientes com receio de contratar desconhecidos.
-*   **Segmentos de Clientes:** Proprietários de residências ou inquilinos que necessitam de manutenção; Profissionais autônomos de serviços domésticos.
-*   **Proposta de Valor Única (UVP):** Contrate profissionais verificados com segurança. Para o profissional: Pague apenas quando efetivamente fechar o serviço.
-*   **Solução:** Match direcionado (até 3 orçamentos), verificação de documentos e retenção de comissão via split de pagamentos.
-*   **Canais:** Redes sociais, anúncios locais (geolocalizados) e parcerias com associações de moradores.
-*   **Fontes de Receita:** Comissão percentual sobre o valor total do serviço agendado pelo aplicativo.
-*   **Estrutura de Custos:** Desenvolvimento, manutenção da nuvem (Supabase), marketing local e gateways de pagamento.
-
-
+| Bloco do Canvas | Descrição no Desperrengue |
+| :--- | :--- |
+| **1. Problema** | Prestadores pagando para fazer orçamento sem garantia; Clientes com receio de contratar desconhecidos. |
+| **2. Segmentos de Clientes** | Proprietários de residências ou inquilinos que necessitam de manutenção; Profissionais autônomos. |
+| **3. Proposta de Valor (UVP)** | Contrate profissionais seguros. Para o prestador: Pague apenas quando efetivamente fechar o serviço. |
+| **4. Solução** | Match direcionado (até 3 orçamentos), verificação de documentos e retenção de comissão via app. |
+| **5. Canais** | Redes sociais, anúncios locais (Google Ads geolocalizado) e parcerias com síndicos/condomínios. |
+| **6. Fontes de Receita** | Comissão percentual sobre o valor total do serviço agendado e finalizado pelo aplicativo. |
+| **7. Estrutura de Custos** | Desenvolvimento, servidores em nuvem (Supabase), marketing hiperlocal e taxas de cartão/PIX. |
+| **8. Métricas-Chave** | Custo de Aquisição (CAC), Taxa de conversão de orçamentos e Quantidade de serviços fechados. |
+| **9. Vantagem Injusta** | Foco em nicho hiperlocal inicial e eliminação total do risco financeiro para o trabalhador autônomo. |
 
 ---
 
@@ -36,4 +38,3 @@ Nossa fundação estratégica garante que as operações e o desenvolvimento da 
     *   **Justiça:** O profissional não deve pagar para tentar trabalhar.
     *   **Confiança:** Segurança em primeiro lugar através da verificação de todos os usuários.
     *   **Simplicidade:** Uma experiência de usuário (UX) clara, com o menor número de cliques possível até o fechamento.
-
