@@ -22,8 +22,7 @@ O modelo de negócios de nossa solução baseia-se na criação de um ambiente j
 *   **Fontes de Receita:** Comissão percentual sobre o valor total do serviço agendado pelo aplicativo.
 *   **Estrutura de Custos:** Desenvolvimento, manutenção da nuvem (Supabase), marketing local e gateways de pagamento.
 
-![Lean Canvas](lean_canvas.png)
-*(Se desejar anexar a versão em PDF, você pode inseri-la na pasta correspondente e acessá-la aqui: [Visualizar Lean Canvas PDF](pdf/lean_canvas.pdf))*
+
 
 ---
 
@@ -38,5 +37,3 @@ Nossa fundação estratégica garante que as operações e o desenvolvimento da 
     *   **Confiança:** Segurança em primeiro lugar através da verificação de todos os usuários.
     *   **Simplicidade:** Uma experiência de usuário (UX) clara, com o menor número de cliques possível até o fechamento.
 
-![Missão, Visão e Valores](mvv.png)
-*(Se desejar anexar a versão em PDF, você pode inseri-la na pasta correspondente e acessá-la aqui: [Visualizar Missão, Visão e Valores PDF](pdf/mvv.pdf))*
