@@ -2,19 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'core/constants/env.dart';
+// Importe a sua nova tela
+import 'features/auth/presentation/login_screen.dart';
 
-void main() async {
-  // Garante que o Flutter está pronto antes de ligar a base de dados
+Future<void> main() async {
+  // Garante que os widgets do Flutter estão prontos antes de chamar o código assíncrono
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Inicializa o Supabase utilizando as chaves seguras do env.dart
+  // Inicializa a ponte de comunicação com o Supabase.
+  // IMPORTANTE: Precisa substituir estas duas strings pelos valores que estão no seu painel do Supabase (em Settings -> API)
   await Supabase.initialize(
-    url: Env.supabaseUrl,
-    publishableKey: Env.supabaseAnonKey,
+    url: 'https://eisfkemgooqbgqljvwvs.supabase.co',
+    anonKey: 'sb_publishable_7uVAOXQaut46NP0gTTv3dA_qh5CE0e7',
   );
 
-  // ProviderScope ativa o Riverpod em toda a aplicação
   runApp(const ProviderScope(child: DesperrengueApp()));
 }
 
@@ -25,21 +26,12 @@ class DesperrengueApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Desperrengue',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF003366),
-        ), // Azul escuro corporativo
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF003366)),
         useMaterial3: true,
       ),
-      home: const Scaffold(
-        body: Center(
-          child: Text(
-            'Infraestrutura Supabase & Riverpod Conectada!',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            textAlign: TextAlign.center,
-          ),
-        ),
-      ),
+      home: const LoginScreen(),
     );
   }
 }
