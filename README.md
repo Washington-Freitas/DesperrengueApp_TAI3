@@ -9,6 +9,7 @@ Toda a documentação acadêmica e de design exigida encontra-se estruturada na 
 - [📄 Documento de Contexto](./docs/Documento%20de%20Contexto.md) (Problema, Solução, Lean Canvas e Missão, Visão e Valores)
 - [📋 Especificação do Projeto](./docs/Especificação%20do%20Projeto.md) (Personas, Histórias de Usuário, Requisitos Funcionais/Não-Funcionais e Restrições)
 - [📱 Protótipos de Interface (UI/UX)](./docs/ui_ux/hi-fi_prototyping/) (Telas de Login, Autenticação e Fluxo de Agendamento)
+- [💼 Plano de Negócio e Tributação](./docs/Planos%20de%20Negocio%20e%20Tributação.md) (Planejamento dos Planos de Negócio e Tributação)
 
 ---
 
