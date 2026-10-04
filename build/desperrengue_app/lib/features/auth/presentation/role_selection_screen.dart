@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-// Certifique-se de que o caminho para o seu ficheiro de login está correto
 import 'login_screen.dart';
+// Importação obrigatória para redirecionar o Profissional para a verificação KYC
+import 'verificacao_step1_frente.dart';
 
 class RoleSelectionScreen extends StatefulWidget {
   const RoleSelectionScreen({super.key});
@@ -12,7 +13,8 @@ class RoleSelectionScreen extends StatefulWidget {
 }
 
 class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
-  String _nomeUsuario = 'Ana'; // Fallback padrão
+  String _nomeUsuario = 'Ana';
+  bool _isProcessing = false;
 
   @override
   void initState() {
@@ -20,22 +22,68 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
     _obterNomeUsuario();
   }
 
-  // Busca o nome real do Google na base de dados do Supabase
   void _obterNomeUsuario() {
     final user = Supabase.instance.client.auth.currentUser;
     if (user != null) {
       final fullName = user.userMetadata?['full_name'] as String?;
       if (fullName != null && fullName.isNotEmpty) {
         setState(() {
-          _nomeUsuario = fullName.split(' ')[0]; // Pega apenas o primeiro nome
+          _nomeUsuario = fullName.split(' ')[0];
         });
       }
     }
   }
 
   // ===========================================================================
-  // LÓGICA DO MODAL DE LOGOUT (COMPONENTE DE SOBREPOSIÇÃO)
+  // FASE A: COMUNICAÇÃO COM O BANCO DE DADOS & ROUTING
   // ===========================================================================
+  Future<void> _salvarPerfil(String roleEscolhida) async {
+    setState(() => _isProcessing = true);
+
+    try {
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user == null)
+        throw Exception('Sessão expirada. Faça login novamente.');
+
+      await Supabase.instance.client.from('perfis').upsert({
+        'id': user.id,
+        'nome': _nomeUsuario,
+        'role': roleEscolhida,
+      });
+
+      // Roteamento Persistente com base na escolha
+      if (mounted) {
+        if (roleEscolhida == 'cliente') {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const HomeClienteScreen()),
+          );
+        } else {
+          // O Profissional é agora obrigado a passar pelo fluxo de KYC
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const VerificacaoStep1FrenteScreen(),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Erro ao configurar perfil. Verifique sua conexão e tente novamente.',
+            ),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isProcessing = false);
+    }
+  }
+
   void _mostrarModalSair() {
     showModalBottomSheet(
       context: context,
@@ -82,7 +130,6 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                 const SizedBox(height: 32),
                 Row(
                   children: [
-                    // Botão Secundário (Cancelar)
                     Expanded(
                       child: OutlinedButton(
                         onPressed: () => Navigator.pop(context),
@@ -104,25 +151,18 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                       ),
                     ),
                     const SizedBox(width: 16),
-                    // Botão Primário (Sair - Ação Destrutiva)
                     Expanded(
                       child: ElevatedButton(
                         onPressed: () async {
-                          // 1. Fecha o modal
                           Navigator.pop(context);
-
-                          // 2. Destrói a sessão no Supabase e invalida o token
                           await Supabase.instance.client.auth.signOut();
-
-                          // 3. Limpa a árvore de navegação e volta para o Login
                           if (mounted) {
                             Navigator.pushAndRemoveUntil(
                               context,
                               MaterialPageRoute(
                                 builder: (context) => const LoginScreen(),
                               ),
-                              (route) =>
-                                  false, // Remove todas as rotas anteriores
+                              (route) => false,
                             );
                           }
                         },
@@ -156,19 +196,17 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // PopScope intercepta o gesto de voltar nativo do Android
     return PopScope(
-      canPop: false, // Bloqueia o fechamento automático da tela
+      canPop: false,
       onPopInvoked: (didPop) {
         if (didPop) return;
-        _mostrarModalSair(); // Invoca o nosso modal de segurança
+        _mostrarModalSair();
       },
       child: Scaffold(
         backgroundColor: Colors.white,
         appBar: AppBar(
           backgroundColor: Colors.white,
           elevation: 0,
-          // Substitui o comportamento da seta superior esquerda
           leading: IconButton(
             icon: const Icon(
               Icons.arrow_back_ios_new,
@@ -176,11 +214,11 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
             ),
             onPressed: _mostrarModalSair,
           ),
-          title: Row(
+          title: const Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(Icons.handyman, color: Color(0xFF003366), size: 20),
-              const SizedBox(width: 8),
+              SizedBox(width: 8),
               Text(
                 'Desperrengue',
                 style: TextStyle(
@@ -193,82 +231,88 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
           centerTitle: true,
         ),
         body: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const SizedBox(height: 24),
-                Text(
-                  'Olá, $_nomeUsuario!',
-                  style: const TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF6B4226), // Tom marrom do seu design
-                  ),
-                ),
-                const SizedBox(height: 4),
-                const Text(
-                  'Como você deseja usar\no Desperrengue hoje?',
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF6B4226),
-                    height: 1.2,
-                  ),
-                ),
-                const SizedBox(height: 40),
-
-                // Os dois Cards de Seleção
-                Expanded(
-                  child: Row(
-                    children: [
-                      // Card Cliente
-                      Expanded(
-                        child: _buildRoleCard(
-                          topColor: const Color(0xFF819F7F),
-                          icon: Icons.search_rounded,
-                          title: 'Preciso de\num serviço',
-                          subtitle: 'Encontre profissionais\npara resolver seu\nproblema',
-                          buttonColor: const Color(0xFF003366),
-                          buttonText: 'Cliente',
-                          buttonIcon: Icons.person,
-                        ),
+          child: Stack(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const SizedBox(height: 24),
+                    Text(
+                      'Olá, $_nomeUsuario!',
+                      style: const TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF6B4226),
                       ),
-                      const SizedBox(width: 16),
-                      // Card Profissional
-                      Expanded(
-                        child: _buildRoleCard(
-                          topColor: const Color(0xFFC67C53),
-                          icon: Icons.business_center_rounded,
-                          title: 'Quero\ntrabalhar',
-                          subtitle: 'Acesse seu painel, veja\npedidos e gerencie\nganhos',
-                          buttonColor: const Color(0xFF3B6B4F),
-                          buttonText: 'Profissional',
-                          buttonIcon: Icons.person_outline,
-                        ),
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Como você deseja usar\no Desperrengue hoje?',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF6B4226),
+                        height: 1.2,
                       ),
-                    ],
+                    ),
+                    const SizedBox(height: 40),
+                    Expanded(
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: _buildRoleCard(
+                              imagePath: 'assets/images/casa_lupa.png',
+                              title: 'Preciso de\num serviço',
+                              subtitle: 'Encontre profissionais\npara resolver seu\nproblema',
+                              buttonColor: const Color(0xFF003366),
+                              buttonText: 'Cliente',
+                              buttonIcon: Icons.person,
+                              onPressed: () => _salvarPerfil('cliente'),
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: _buildRoleCard(
+                              imagePath: 'assets/images/caixa_ferramentas.png',
+                              title: 'Quero\ntrabalhar',
+                              subtitle: 'Acesse seu painel, veja\npedidos e gerencie\nganhos',
+                              buttonColor: const Color(0xFF3B6B4F),
+                              buttonText: 'Profissional',
+                              buttonIcon: Icons.person_outline,
+                              onPressed: () => _salvarPerfil('profissional'),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 40),
+                  ],
+                ),
+              ),
+              if (_isProcessing)
+                Container(
+                  color: Colors.white.withValues(alpha: 0.7),
+                  child: const Center(
+                    child: CircularProgressIndicator(color: Color(0xFF003366)),
                   ),
                 ),
-                const SizedBox(height: 40),
-              ],
-            ),
+            ],
           ),
         ),
       ),
     );
   }
 
-  // Widget auxiliar para construir os Cards iguais ao seu Design
   Widget _buildRoleCard({
-    required Color topColor,
-    required IconData icon,
+    required String imagePath,
     required String title,
     required String subtitle,
     required Color buttonColor,
     required String buttonText,
     required IconData buttonIcon,
+    required VoidCallback onPressed,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -285,20 +329,19 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Metade superior (Colorida com Ícone)
           Expanded(
             flex: 4,
-            child: Container(
-              decoration: BoxDecoration(
-                color: topColor,
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(24),
-                ),
+            child: ClipRRect(
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(24),
               ),
-              child: Center(child: Icon(icon, size: 64, color: Colors.white)),
+              child: Image.asset(
+                imagePath,
+                width: double.infinity,
+                fit: BoxFit.cover,
+              ),
             ),
           ),
-          // Metade inferior (Textos e Botão)
           Expanded(
             flex: 6,
             child: Padding(
@@ -325,9 +368,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                   ),
                   const Spacer(),
                   ElevatedButton.icon(
-                    onPressed: () {
-                      // Lógica de navegação para a área de Cliente ou Profissional
-                    },
+                    onPressed: _isProcessing ? null : onPressed,
                     icon: Icon(buttonIcon, size: 16, color: Colors.white),
                     label: Text(
                       buttonText,
@@ -354,6 +395,17 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
           ),
         ],
       ),
+    );
+  }
+}
+
+class HomeClienteScreen extends StatelessWidget {
+  const HomeClienteScreen({super.key});
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Home Cliente')),
+      body: const Center(child: Text('Bem-vindo à área do Cliente!')),
     );
   }
 }

@@ -1,6 +1,6 @@
 name: desperrengue_app
 description: "A new Flutter project."
-publish_to: 'none'
+publish_to: "none"
 version: 0.1.0+1
 
 environment:
@@ -16,6 +16,7 @@ dependencies:
   google_sign_in: ^7.2.0
   http: ^1.6.0
   image_picker: ^1.2.3
+  lottie: ^3.6.1
   permission_handler: ^13.0.2
   supabase_flutter: ^2.17.2
 
@@ -27,3 +28,9 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+
+  # Adicione exatamente estas duas linhas prestando atenção aos espaços:
+  assets:
+    - assets/animations/
+    - assets/images/casa_lupa.png
+    - assets/images/caixa_ferramentas.png
