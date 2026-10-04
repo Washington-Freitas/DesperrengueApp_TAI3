@@ -222,8 +222,8 @@ class _CadastroVerificacaoOtpScreenState
                 maxLength: 6,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
-                  fontSize: 32,
-                  letterSpacing: 16,
+                  fontSize: 32, // Tamanho restaurado para melhor legibilidade com 6 dígitos
+                  letterSpacing: 16, // Espaçamento aumentado para 6 dígitos
                   fontWeight: FontWeight.bold,
                 ),
                 decoration: InputDecoration(
