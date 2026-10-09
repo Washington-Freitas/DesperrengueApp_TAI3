@@ -1,9 +1,13 @@
+import 'dart:async';
+
+import 'package:app_links/app_links.dart'; // Import da biblioteca de Deep Links
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '01_cadastro_dados_basicos.dart';
 import 'role_selection_screen.dart';
+import 'verificacao_step7_aprovado.dart'; // Import da Tela 7
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -13,44 +17,95 @@ class LoginScreen extends ConsumerStatefulWidget {
 }
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
-  // 1. Adicionamos a Chave de Formulário para gerir validações
+  // ===========================================================================
+  // VARIÁVEIS DE ESTADO
+  // ===========================================================================
   final _formKey = GlobalKey<FormState>();
-
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
   bool _isPasswordVisible = false;
   bool _isLoading = false;
-
   final Color _primaryBlue = const Color(0xFF003366);
+
+  // Variáveis para o Deep Link
+  late AppLinks _appLinks;
+  StreamSubscription<Uri>? _linkSubscription;
+
+  // ===========================================================================
+  // CICLO DE VIDA (INIT E DISPOSE)
+  // ===========================================================================
+  @override
+  void initState() {
+    super.initState();
+    _initDeepLinks(); // Aciona o radar de links assim que a tela abre
+  }
 
   @override
   void dispose() {
+    _linkSubscription?.cancel(); // Desliga o radar ao sair da tela
     _emailController.dispose();
-    // Limpeza de RAM por segurança
-    _passwordController.clear();
+    _passwordController.clear(); // Limpeza de RAM por segurança
     _passwordController.dispose();
     super.dispose();
   }
 
   // ===========================================================================
+  // LÓGICA DE DEEP LINK (O "PORTEIRO")
+  // ===========================================================================
+  Future<void> _initDeepLinks() async {
+    _appLinks = AppLinks();
+
+    // 1. Caso o app esteja totalmente fechado
+    try {
+      final initialUri = await _appLinks.getInitialLink();
+      if (initialUri != null) {
+        _rotearDeepLink(initialUri);
+      }
+    } catch (e) {
+      debugPrint("Erro no link inicial: $e");
+    }
+
+    // 2. Caso o app esteja em segundo plano (minimizado)
+    _linkSubscription = _appLinks.uriLinkStream.listen((uri) {
+      _rotearDeepLink(uri);
+    });
+  }
+
+  void _rotearDeepLink(Uri uri) {
+    final linkEmTexto = uri.toString();
+    debugPrint("🔗 Link recebido no Flutter: $linkEmTexto");
+
+    // Regra hiper flexível: Procura apenas se a URL contém as palavras-chave,
+    // blindando o código contra barras (/) perdidas ou formatações do Android.
+    if (linkEmTexto.contains('desperrengue') &&
+        linkEmTexto.contains('onboarding')) {
+      if (mounted) {
+        // Roteamento IMEDIATO (removemos o delay do addPostFrameCallback)
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(
+            builder: (context) => const VerificacaoStep7AprovadoScreen(),
+          ),
+          (Route<dynamic> route) => false,
+        );
+      }
+    }
+  }
+
+  // ===========================================================================
   // LÓGICA DE NEGÓCIO (AUTENTICAÇÃO REAL ATIVADA)
   // ===========================================================================
-
   Future<void> _entrarComEmail() async {
-    // 2. Barreira local: Impede submissão se os campos estiverem vazios ou inválidos
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
 
     try {
-      // 3. Comunicação REAL com o Supabase (A simulação foi removida)
       await Supabase.instance.client.auth.signInWithPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text,
       );
 
-      // Se o Supabase não atirar um erro, a credencial é verdadeira.
       if (mounted) {
         Navigator.pushReplacement(
           context,
@@ -58,7 +113,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         );
       }
     } on AuthException catch (e) {
-      // 4. Captura a rejeição do servidor (Senha errada ou e-mail inexistente)
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -129,7 +183,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   // ===========================================================================
   // INTERFACE VISUAL (BUILD)
   // ===========================================================================
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -145,7 +198,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24.0),
-          // 5. Envolver os campos com o Form
           child: Form(
             key: _formKey,
             child: Column(
@@ -169,7 +221,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ),
                 const SizedBox(height: 40),
 
-                // Campo E-mail com validação sintática
                 TextFormField(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
@@ -199,16 +250,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                   ),
                   validator: (value) {
-                    if (value == null || value.trim().isEmpty)
+                    if (value == null || value.trim().isEmpty) {
                       return 'Por favor, insira o seu e-mail.';
-                    if (!value.contains('@') || !value.contains('.'))
+                    }
+                    if (!value.contains('@') || !value.contains('.')) {
                       return 'Insira um e-mail válido.';
+                    }
                     return null;
                   },
                 ),
                 const SizedBox(height: 16),
 
-                // Campo Senha (Validando apenas se não está vazio, como manda a regra InfoSec)
                 TextFormField(
                   controller: _passwordController,
                   obscureText: !_isPasswordVisible,
@@ -249,8 +301,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                   ),
                   validator: (value) {
-                    if (value == null || value.isEmpty)
+                    if (value == null || value.isEmpty) {
                       return 'Por favor, insira a sua senha.';
+                    }
                     return null;
                   },
                 ),

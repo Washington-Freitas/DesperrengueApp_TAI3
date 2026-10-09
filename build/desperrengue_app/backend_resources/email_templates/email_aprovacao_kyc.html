@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="pt-PT">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>A sua conta Desperrengue foi aprovada!</title>
+    <style>
+      body {
+        font-family:
+          "Inter",
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          Roboto,
+          Helvetica,
+          Arial,
+          sans-serif;
+        background-color: #f8fafc;
+        margin: 0;
+        padding: 0;
+        color: #0f172a;
+      }
+      .container {
+        max-width: 600px;
+        margin: 40px auto;
+        background-color: #ffffff;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
+      }
+      .header {
+        background-color: #003366;
+        padding: 32px 24px;
+        text-align: center;
+      }
+      .header h1 {
+        color: #ffffff;
+        margin: 0;
+        font-size: 24px;
+        font-weight: 700;
+        letter-spacing: -0.5px;
+      }
+      .content {
+        padding: 32px 24px;
+      }
+      .greeting {
+        font-size: 20px;
+        font-weight: 600;
+        margin-bottom: 16px;
+        color: #001a33;
+      }
+      .text {
+        font-size: 16px;
+        line-height: 1.6;
+        color: #475569;
+        margin-bottom: 24px;
+      }
+      .button-container {
+        text-align: center;
+        margin: 32px 0;
+      }
+      .btn {
+        background-color: #2563eb;
+        color: #ffffff;
+        text-decoration: none;
+        padding: 16px 32px;
+        border-radius: 12px;
+        font-size: 16px;
+        font-weight: 700;
+        display: inline-block;
+      }
+      .tips-box {
+        background-color: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 24px;
+        margin-top: 32px;
+      }
+      .tips-title {
+        font-size: 14px;
+        font-weight: 800;
+        color: #003366;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 16px;
+        margin-top: 0;
+      }
+      .tip-item {
+        margin-bottom: 16px;
+      }
+      .tip-item:last-child {
+        margin-bottom: 0;
+      }
+      .tip-strong {
+        color: #0f172a;
+        font-weight: 600;
+        display: block;
+        margin-bottom: 4px;
+      }
+      .tip-text {
+        color: #64748b;
+        font-size: 14px;
+        line-height: 1.5;
+        margin: 0;
+      }
+      .footer {
+        text-align: center;
+        padding: 24px;
+        font-size: 13px;
+        color: #94a3b8;
+        background-color: #ffffff;
+        border-top: 1px solid #f1f5f9;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>Desperrengue</h1>
+      </div>
+
+      <div class="content">
+        <div class="greeting">Tudo pronto, {{nome_profissional}}! 🎉</div>
+
+        <p class="text">
+          Temos excelentes notícias! A nossa equipa concluiu a análise da sua
+          documentação e a sua conta de parceiro oficial
+          <strong>foi aprovada com sucesso.</strong>
+        </p>
+
+        <p class="text">
+          Está apenas a um passo de se conectar a centenas de clientes que
+          precisam dos seus serviços. Para garantir a segurança da sua conta e
+          iniciar a configuração do seu portefólio público, ative o seu acesso
+          através do seu telemóvel:
+        </p>
+
+        <div class="button-container">
+          <!-- O Link mágico que acordará o Flutter (Deep Link) -->
+          <a
+            href="desperrengue://onboarding/ativar?token={{token_de_ativacao}}"
+            class="btn"
+          >
+            Ativar e Configurar Perfil
+          </a>
+        </div>
+
+        <div class="tips-box">
+          <h3 class="tips-title">Dicas para um perfil de sucesso</h3>
+
+          <div class="tip-item">
+            <span class="tip-strong">📸 Uma foto transmite confiança</span>
+            <p class="tip-text">
+              Utilize uma fotografia clara de rosto, num ambiente iluminado.
+              Clientes tendem a fechar mais orçamentos com profissionais que
+              transmitem credibilidade logo no perfil.
+            </p>
+          </div>
+
+          <div class="tip-item">
+            <span class="tip-strong">✍️ Apresentação direta (Bio)</span>
+            <p class="tip-text">
+              Descreva as suas especialidades e tempo de experiência. Vá direto
+              ao ponto e mostre porque é o profissional certo para o trabalho.
+            </p>
+          </div>
+
+          <div class="tip-item">
+            <span class="tip-strong">💼 O seu trabalho fala por si</span>
+            <p class="tip-text">
+              No passo seguinte, poderá adicionar fotos de trabalhos anteriores
+              ("antes e depois"). Um bom portefólio é o seu melhor vendedor.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="footer">
+        Se não solicitou este registo, por favor ignore este e-mail.<br />
+        © 2026 Desperrengue. Todos os direitos reservados.
+      </div>
+    </div>
+  </body>
+</html>
