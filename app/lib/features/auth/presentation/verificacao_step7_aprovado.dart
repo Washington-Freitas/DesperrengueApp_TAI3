@@ -1,17 +1,54 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../../core/services/profile_service.dart';
+import 'auth_gate.dart';
+
 /// Tela 7: Celebração de Aprovação (Fim do Onboarding de Verificação)
 /// Destino do Deep-Link do e-mail de aprovação.
 /// Não possui AppBar com seta de voltar para evitar que o usuário retorne ao estado "Em Análise".
-class VerificacaoStep7AprovadoScreen extends StatelessWidget {
-  // Variável que no futuro virá do banco de dados/provedor de estado
+class VerificacaoStep7AprovadoScreen extends StatefulWidget {
+  /// Primeiro nome do profissional (vem do perfil no servidor, via PostAuthRouter).
   final String nomeProfissional;
 
   const VerificacaoStep7AprovadoScreen({
     super.key,
-    this.nomeProfissional = 'Roberto', // Nome mockado para o teste
+    this.nomeProfissional = 'Profissional',
   });
+
+  @override
+  State<VerificacaoStep7AprovadoScreen> createState() =>
+      _VerificacaoStep7AprovadoScreenState();
+}
+
+class _VerificacaoStep7AprovadoScreenState
+    extends State<VerificacaoStep7AprovadoScreen> {
+  bool _isActivating = false;
+
+  /// Ativa a conta no servidor (RPC idempotente) e devolve ao AuthGate, que
+  /// abrirá o painel do profissional. Funciona mesmo que o e-mail demore:
+  /// o deep link apenas reabre o app, a autorização vem da sessão + status.
+  Future<void> _ativarConta() async {
+    setState(() => _isActivating = true);
+    final navigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+
+    try {
+      await ProfileService().activateProvider();
+      navigator.pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const AuthGate()),
+        (_) => false,
+      );
+    } catch (_) {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Não foi possível ativar a conta. Tente novamente.'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      if (mounted) setState(() => _isActivating = false);
+    }
+  }
 
   // Paleta de Cores Institucionais
   static const Color _primaryBlue = Color(0xFF003366);
@@ -47,7 +84,7 @@ class VerificacaoStep7AprovadoScreen extends StatelessWidget {
 
                       // 2. Copywriting (Mensagem de Impacto)
                       Text(
-                        'Tudo pronto, $nomeProfissional!',
+                        'Tudo pronto, ${widget.nomeProfissional}!',
                         textAlign: TextAlign.center,
                         style: const TextStyle(
                           fontSize: 28,
@@ -254,18 +291,9 @@ class VerificacaoStep7AprovadoScreen extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
       child: ElevatedButton(
-        onPressed: () {
-          // Aqui no futuro faremos um Navigator.pushReplacement para a tela
-          // 02_profissional_identidade_bio.dart (O Início do Perfil Público)
-
-          // Feedback temporário
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Navegando para a edição de perfil...'),
-              backgroundColor: _successGreen,
-            ),
-          );
-        },
+        // Próximo passo do produto: levar para a edição do perfil público
+        // (features/profile_setup). Por ora ativa a conta e abre o painel.
+        onPressed: _isActivating ? null : _ativarConta,
         style: ElevatedButton.styleFrom(
           backgroundColor: _accentBlue,
           minimumSize: const Size(double.infinity, 56), // match_parent x 56px
@@ -274,15 +302,24 @@ class VerificacaoStep7AprovadoScreen extends StatelessWidget {
           ),
           elevation: 0,
         ),
-        child: const Text(
-          'Configurar Meu Perfil',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-            letterSpacing: 0.5,
-          ),
-        ),
+        child: _isActivating
+            ? const SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(
+                  color: Colors.white,
+                  strokeWidth: 2,
+                ),
+              )
+            : const Text(
+                'Configurar Meu Perfil',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                  letterSpacing: 0.5,
+                ),
+              ),
       ),
     );
   }

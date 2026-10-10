@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '03_cadastro_sucesso_routing.dart';
+import 'cadastro_sucesso_routing.dart';
 
 class CadastroVerificacaoOtpScreen extends StatefulWidget {
   final String email;

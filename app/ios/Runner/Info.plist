@@ -66,5 +66,23 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>O Desperrengue usa a câmera para fotografar seus documentos e selfie na verificação de identidade.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>O Desperrengue acessa suas fotos para anexar o documento de identificação na verificação.</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>br.com.desperrengue.app</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>desperrengue</string>
+				<string>br.com.desperrengue.app</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

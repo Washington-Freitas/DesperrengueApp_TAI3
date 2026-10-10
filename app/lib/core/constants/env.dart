@@ -1,5 +1,27 @@
+/// Configuração de ambiente do app.
+///
+/// Valores podem ser sobrescritos em tempo de build:
+///   flutter run --dart-define=SUPABASE_URL=... --dart-define=SUPABASE_PUBLISHABLE_KEY=...
+///
+/// A chave `sb_publishable_...` é pública por design (a proteção real está nas
+/// policies de RLS). NUNCA coloque aqui `service_role`, senha do banco ou chaves
+/// de terceiros: use `--dart-define` (ex.: ABSTRACT_API_KEY) ou o backend.
 class Env {
-  static const String supabaseUrl = 'https://eisfkemgooqbgqljvwvs.supabase.co';
-  static const String supabaseAnonKey =
-      'sb_publishable_7uVAOXQaut46NP0gTTv3dA_qh5CE0e7';
+  const Env._();
+
+  static const String supabaseUrl = String.fromEnvironment(
+    'SUPABASE_URL',
+    defaultValue: 'https://eisfkemgooqbgqljvwvs.supabase.co',
+  );
+
+  static const String supabasePublishableKey = String.fromEnvironment(
+    'SUPABASE_PUBLISHABLE_KEY',
+    defaultValue: 'sb_publishable_7uVAOXQaut46NP0gTTv3dA_qh5CE0e7',
+  );
+
+  /// Opcional. Vazia = a validação extra de e-mail (Abstract API) é desativada
+  /// e a verificação fica a cargo do código OTP enviado pelo Supabase.
+  static const String abstractApiKey = String.fromEnvironment(
+    'ABSTRACT_API_KEY',
+  );
 }

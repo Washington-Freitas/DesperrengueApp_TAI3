@@ -1,20 +1,109 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
-// Imports das telas informativas de apoio recém-criadas
+import '../../../core/models/user_profile.dart';
+import '../../../core/services/profile_service.dart';
+import 'auth_gate.dart';
+
+// Imports das telas informativas de apoio
 import 'verificacao_step6a_como_funciona.dart';
 import 'verificacao_step6b_dicas.dart';
 import 'verificacao_step6c_termos.dart';
 
 /// Tela 6: Feedback de Envio de Documentos e Espera de KYC (Em Análise).
 /// Atua como uma barreira de segurança e central educativa para o prestador.
-class VerificacaoStep6FeedbackScreen extends StatelessWidget {
+///
+/// Consulta o status no servidor a cada [_pollInterval] e também sob demanda
+/// (botão). Assim que o status deixa de ser PENDING, devolve o controle ao
+/// [AuthGate], que abre a tela correta (aprovado ou reenvio, se rejeitado).
+class VerificacaoStep6FeedbackScreen extends StatefulWidget {
   const VerificacaoStep6FeedbackScreen({super.key});
+
+  @override
+  State<VerificacaoStep6FeedbackScreen> createState() =>
+      _VerificacaoStep6FeedbackScreenState();
+}
+
+class _VerificacaoStep6FeedbackScreenState
+    extends State<VerificacaoStep6FeedbackScreen> {
+  static const Duration _pollInterval = Duration(seconds: 8);
 
   // Paleta de cores oficial baseada no branding do Desperrengue
   final Color _primaryBlue = const Color(0xFF003366);
-  final Color _accentBlue = const Color(0xFF2563EB);
   final Color _textDark = const Color(0xFF0F172A);
   final Color _textMuted = const Color(0xFF64748B);
+
+  Timer? _timer;
+  bool _checking = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(_pollInterval, (_) => _checkStatus(silent: true));
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _checkStatus({bool silent = false}) async {
+    if (_checking) return;
+    setState(() => _checking = true);
+
+    try {
+      final profile = await ProfileService().fetchCurrent();
+      if (!mounted) return;
+
+      if (profile != null &&
+          profile.verificationStatus != VerificationStatus.pending) {
+        _timer?.cancel();
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const AuthGate()),
+          (route) => false,
+        );
+        return;
+      }
+
+      if (!silent) _showInfo('Seu perfil ainda está em análise. Avisaremos por e-mail assim que for aprovado (até 48 horas úteis).');
+    } catch (_) {
+      if (!silent) _showInfo('Não foi possível consultar o status. Verifique a conexão.');
+    } finally {
+      if (mounted) setState(() => _checking = false);
+    }
+  }
+
+  void _showInfo(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.info_outline, color: Colors.white),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(message, style: const TextStyle(fontSize: 14)),
+            ),
+          ],
+        ),
+        backgroundColor: _primaryBlue,
+        duration: const Duration(seconds: 4),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+    );
+  }
+
+  Future<void> _signOut() async {
+    final navigator = Navigator.of(context);
+    await ProfileService().signOut();
+    navigator.pushAndRemoveUntil(
+      MaterialPageRoute(builder: (context) => const AuthGate()),
+      (route) => false,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -104,33 +193,27 @@ class VerificacaoStep6FeedbackScreen extends StatelessWidget {
 
               const Spacer(flex: 3),
 
-              // 3. Ação Principal (Verificação Pendente)
-              ElevatedButton(
-                onPressed: () {
-                  // Exibe feedback contextual amigável sobre o status do Roberto Silva
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Row(
-                        children: [
-                          const Icon(Icons.info_outline, color: Colors.white),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              'Seu perfil ainda está em análise! Confirme através do seu e-mail cadastrado dentre as próximas 48 horas úteis.',
-                              style: const TextStyle(fontSize: 14),
-                            ),
-                          ),
-                        ],
-                      ),
-                      backgroundColor: _primaryBlue,
-                      duration: const Duration(seconds: 4),
-                      behavior: SnackBarBehavior.floating,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                  );
-                },
+              // 3. Ação Principal: consulta o status real no servidor
+              ElevatedButton.icon(
+                onPressed: _checking ? null : () => _checkStatus(),
+                icon: _checking
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : const Icon(Icons.refresh_rounded, color: Colors.white),
+                label: const Text(
+                  'Verificar status agora',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: _primaryBlue,
                   padding: const EdgeInsets.symmetric(vertical: 16),
@@ -139,16 +222,14 @@ class VerificacaoStep6FeedbackScreen extends StatelessWidget {
                   ),
                   elevation: 0,
                 ),
-                child: const Text(
-                  'Ir para o Painel',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
+              ),
+              TextButton(
+                onPressed: _signOut,
+                child: Text(
+                  'Sair da conta',
+                  style: TextStyle(color: _textMuted),
                 ),
               ),
-              const SizedBox(height: 8),
             ],
           ),
         ),

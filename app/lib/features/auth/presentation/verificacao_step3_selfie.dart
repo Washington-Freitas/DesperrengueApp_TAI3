@@ -41,6 +41,7 @@ class _VerificacaoStep3SelfieScreenState
         });
       }
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Erro ao aceder à câmara frontal.'),

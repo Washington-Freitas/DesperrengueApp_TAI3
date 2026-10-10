@@ -4,7 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '02_cadastro_verificacao_otp.dart';
+import '../../../core/constants/env.dart';
+import 'cadastro_verificacao_otp.dart';
 
 class CadastroDadosBasicosScreen extends StatefulWidget {
   const CadastroDadosBasicosScreen({super.key});
@@ -30,8 +31,8 @@ class _CadastroDadosBasicosScreenState
 
   final Color _primaryBlue = const Color(0xFF003366);
 
-  // Chave da Abstract API mantida
-  final String _abstractApiKey = '7440597a74c042789e8817227722eb7e';
+  // Chave vem de --dart-define=ABSTRACT_API_KEY (nunca versionada). Vazia = desativado.
+  final String _abstractApiKey = Env.abstractApiKey;
 
   @override
   void dispose() {
@@ -45,7 +46,7 @@ class _CadastroDadosBasicosScreenState
   }
 
   Future<bool> _validarEmailRealAPI(String email) async {
-    if (_abstractApiKey == 'SUA_CHAVE_AQUI') {
+    if (_abstractApiKey.isEmpty) {
       return true;
     }
 

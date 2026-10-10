@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'login_screen.dart';
-// Importação obrigatória para redirecionar o Profissional para a verificação KYC
-import 'verificacao_step1_frente.dart';
+import '../../../core/models/user_profile.dart';
+import '../../../core/services/profile_service.dart';
+import 'auth_gate.dart';
 
 class RoleSelectionScreen extends StatefulWidget {
   const RoleSelectionScreen({super.key});
@@ -37,36 +37,20 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
   // ===========================================================================
   // FASE A: COMUNICAÇÃO COM O BANCO DE DADOS & ROUTING
   // ===========================================================================
-  Future<void> _salvarPerfil(String roleEscolhida) async {
+  Future<void> _salvarPerfil(UserRole roleEscolhida) async {
     setState(() => _isProcessing = true);
 
     try {
-      final user = Supabase.instance.client.auth.currentUser;
-      if (user == null)
-        throw Exception('Sessão expirada. Faça login novamente.');
+      // O banco só aceita definir o papel UMA vez (trigger profiles_protect_columns).
+      await ProfileService().setRole(roleEscolhida);
 
-      await Supabase.instance.client.from('perfis').upsert({
-        'id': user.id,
-        'nome': _nomeUsuario,
-        'role': roleEscolhida,
-      });
-
-      // Roteamento Persistente com base na escolha
+      // O AuthGate relê o perfil e roteia: cliente -> home; profissional -> KYC.
       if (mounted) {
-        if (roleEscolhida == 'cliente') {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const HomeClienteScreen()),
-          );
-        } else {
-          // O Profissional é agora obrigado a passar pelo fluxo de KYC
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const VerificacaoStep1FrenteScreen(),
-            ),
-          );
-        }
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const AuthGate()),
+          (route) => false,
+        );
       }
     } catch (e) {
       if (mounted) {
@@ -154,17 +138,15 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                     Expanded(
                       child: ElevatedButton(
                         onPressed: () async {
+                          final navigator = Navigator.of(this.context);
                           Navigator.pop(context);
-                          await Supabase.instance.client.auth.signOut();
-                          if (mounted) {
-                            Navigator.pushAndRemoveUntil(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const LoginScreen(),
-                              ),
-                              (route) => false,
-                            );
-                          }
+                          await ProfileService().signOut();
+                          navigator.pushAndRemoveUntil(
+                            MaterialPageRoute(
+                              builder: (context) => const AuthGate(),
+                            ),
+                            (route) => false,
+                          );
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.redAccent,
@@ -198,7 +180,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
   Widget build(BuildContext context) {
     return PopScope(
       canPop: false,
-      onPopInvoked: (didPop) {
+      onPopInvokedWithResult: (didPop, result) {
         if (didPop) return;
         _mostrarModalSair();
       },
@@ -269,7 +251,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                               buttonColor: const Color(0xFF003366),
                               buttonText: 'Cliente',
                               buttonIcon: Icons.person,
-                              onPressed: () => _salvarPerfil('cliente'),
+                              onPressed: () => _salvarPerfil(UserRole.client),
                             ),
                           ),
                           const SizedBox(width: 16),
@@ -281,7 +263,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                               buttonColor: const Color(0xFF3B6B4F),
                               buttonText: 'Profissional',
                               buttonIcon: Icons.person_outline,
-                              onPressed: () => _salvarPerfil('profissional'),
+                              onPressed: () => _salvarPerfil(UserRole.provider),
                             ),
                           ),
                         ],
@@ -399,13 +381,3 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
   }
 }
 
-class HomeClienteScreen extends StatelessWidget {
-  const HomeClienteScreen({super.key});
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Home Cliente')),
-      body: const Center(child: Text('Bem-vindo à área do Cliente!')),
-    );
-  }
-}

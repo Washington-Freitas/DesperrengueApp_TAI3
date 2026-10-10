@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
-// O ficheiro de destino final da jornada de cadastro
-import 'role_selection_screen.dart';
+import 'auth_gate.dart';
 
 class CadastroSucessoRoutingScreen extends StatefulWidget {
   const CadastroSucessoRoutingScreen({super.key});
@@ -30,10 +29,10 @@ class _CadastroSucessoRoutingScreenState
 
     if (mounted) {
       // Segurança: pushAndRemoveUntil desintegra os ecrãs anteriores da memória RAM.
-      // O "(route) => false" significa: Destrua toda a rota anterior, esta é a nova raiz.
+      // O AuthGate consulta o perfil no servidor e decide a tela (novo usuário -> escolha de papel).
       Navigator.pushAndRemoveUntil(
         context,
-        MaterialPageRoute(builder: (context) => const RoleSelectionScreen()),
+        MaterialPageRoute(builder: (context) => const AuthGate()),
         (route) => false,
       );
     }

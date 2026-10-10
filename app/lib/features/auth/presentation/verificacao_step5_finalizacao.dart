@@ -3,8 +3,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-// O import agora está ATIVO e não dará erro pois o ficheiro da Etapa 6 já existe!
-import 'verificacao_step6_feedback.dart';
+import '../../../core/services/profile_service.dart';
+import 'auth_gate.dart';
 
 class VerificacaoStep5FinalizacaoScreen extends StatefulWidget {
   final File frenteDocumento;
@@ -32,84 +32,63 @@ class _VerificacaoStep5FinalizacaoScreenState
   final Color _primaryBlue = const Color(0xFF003366);
   bool _isUploading = false;
 
+  /// Extensão segura (jpg/png/webp) a partir do caminho do arquivo capturado.
+  static String _ext(File file) {
+    final dot = file.path.lastIndexOf('.');
+    final raw = dot == -1 ? 'jpg' : file.path.substring(dot + 1).toLowerCase();
+    if (raw == 'jpeg') return 'jpg';
+    return const {'jpg', 'png', 'webp'}.contains(raw) ? raw : 'jpg';
+  }
+
+  void _mostrarErro(String mensagem) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(mensagem), backgroundColor: Colors.redAccent),
+    );
+  }
+
   Future<void> _enviarParaAnalise() async {
     setState(() => _isUploading = true);
 
     try {
-      final supabase = Supabase.instance.client;
-      final user = supabase.auth.currentUser;
+      // Os documentos vão para o bucket PRIVADO `kyc-documents`, dentro da pasta
+      // do próprio usuário, e o KYC é registrado pela RPC `submit_kyc`: o status
+      // de verificação só muda no servidor (o app não consegue se auto-aprovar).
+      await ProfileService().submitKyc(
+        frontBytes: await widget.frenteDocumento.readAsBytes(),
+        frontExt: _ext(widget.frenteDocumento),
+        backBytes: await widget.versoDocumento.readAsBytes(),
+        backExt: _ext(widget.versoDocumento),
+        selfieBytes: await widget.selfie.readAsBytes(),
+        selfieExt: _ext(widget.selfie),
+        registryType: widget.tipoRegistro,
+        registryNumber: widget.numeroRegistro,
+      );
 
-      if (user == null) throw Exception('Utilizador não autenticado.');
-
-      // 1. Caminhos únicos para as imagens baseados no ID do utilizador
-      final String pathFrente =
-          '${user.id}/frente_${DateTime.now().millisecondsSinceEpoch}.jpg';
-      final String pathVerso =
-          '${user.id}/verso_${DateTime.now().millisecondsSinceEpoch}.jpg';
-      final String pathSelfie =
-          '${user.id}/selfie_${DateTime.now().millisecondsSinceEpoch}.jpg';
-
-      // 2. Upload para o Supabase Storage (Bucket 'kyc_documentos')
-      await supabase.storage
-          .from('kyc_documentos')
-          .upload(pathFrente, widget.frenteDocumento);
-      await supabase.storage
-          .from('kyc_documentos')
-          .upload(pathVerso, widget.versoDocumento);
-      await supabase.storage
-          .from('kyc_documentos')
-          .upload(pathSelfie, widget.selfie);
-
-      // 3. Obter os links (URLs) públicos das imagens recém-carregadas
-      final String urlFrente = supabase.storage
-          .from('kyc_documentos')
-          .getPublicUrl(pathFrente);
-      final String urlVerso = supabase.storage
-          .from('kyc_documentos')
-          .getPublicUrl(pathVerso);
-      final String urlSelfie = supabase.storage
-          .from('kyc_documentos')
-          .getPublicUrl(pathSelfie);
-
-      // 4. Atualizar a Tabela 'perfis' com os dados todos
-      await supabase
-          .from('perfis')
-          .update({
-            'doc_frente_url': urlFrente,
-            'doc_verso_url': urlVerso,
-            'selfie_url': urlSelfie,
-            'tipo_registro': widget.tipoRegistro,
-            'numero_registro': widget.numeroRegistro,
-            'status_verificacao': 'pendente',
-          })
-          .eq('id', user.id);
-
-      // 5. Sucesso! Navegação ATIVADA para a Etapa 6
+      // O AuthGate relê o perfil (agora PENDING) e abre a tela "Em análise".
       if (mounted) {
         Navigator.pushAndRemoveUntil(
           context,
-          MaterialPageRoute(
-            builder: (context) => const VerificacaoStep6FeedbackScreen(),
-          ),
+          MaterialPageRoute(builder: (context) => const AuthGate()),
           (route) => false,
         );
       }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Erro ao enviar dados. Verifique a conexão e tente novamente.',
-            ),
-            backgroundColor: Colors.redAccent,
-          ),
-        );
-      }
+    } on AuthException {
+      _mostrarErro('Sessão expirada. Entre novamente para enviar os documentos.');
+    } on PostgrestException catch (e) {
+      _mostrarErro(
+        e.code == 'P0001'
+            ? 'Seus documentos já foram enviados e estão em análise.'
+            : 'Não foi possível registrar o envio. Tente novamente.',
+      );
+    } on StorageException {
+      _mostrarErro('Falha no upload dos documentos. Verifique a conexão.');
+    } catch (_) {
+      _mostrarErro('Erro ao enviar dados. Verifique a conexão e tente novamente.');
     } finally {
       if (mounted) setState(() => _isUploading = false);
     }
   }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(

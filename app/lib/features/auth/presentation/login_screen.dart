@@ -1,13 +1,9 @@
-import 'dart:async';
-
-import 'package:app_links/app_links.dart'; // Import da biblioteca de Deep Links
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '01_cadastro_dados_basicos.dart';
-import 'role_selection_screen.dart';
-import 'verificacao_step7_aprovado.dart'; // Import da Tela 7
+import 'cadastro_dados_basicos.dart';
+import 'auth_gate.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -28,22 +24,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   bool _isLoading = false;
   final Color _primaryBlue = const Color(0xFF003366);
 
-  // Variáveis para o Deep Link
-  late AppLinks _appLinks;
-  StreamSubscription<Uri>? _linkSubscription;
-
   // ===========================================================================
-  // CICLO DE VIDA (INIT E DISPOSE)
+  // CICLO DE VIDA
+  // (O deep link do e-mail de aprovação agora é tratado no AuthGate.)
   // ===========================================================================
-  @override
-  void initState() {
-    super.initState();
-    _initDeepLinks(); // Aciona o radar de links assim que a tela abre
-  }
-
   @override
   void dispose() {
-    _linkSubscription?.cancel(); // Desliga o radar ao sair da tela
     _emailController.dispose();
     _passwordController.clear(); // Limpeza de RAM por segurança
     _passwordController.dispose();
@@ -51,50 +37,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   // ===========================================================================
-  // LÓGICA DE DEEP LINK (O "PORTEIRO")
+  // LÓGICA DE NEGÓCIO (AUTENTICAÇÃO REAL)
   // ===========================================================================
-  Future<void> _initDeepLinks() async {
-    _appLinks = AppLinks();
 
-    // 1. Caso o app esteja totalmente fechado
-    try {
-      final initialUri = await _appLinks.getInitialLink();
-      if (initialUri != null) {
-        _rotearDeepLink(initialUri);
-      }
-    } catch (e) {
-      debugPrint("Erro no link inicial: $e");
-    }
-
-    // 2. Caso o app esteja em segundo plano (minimizado)
-    _linkSubscription = _appLinks.uriLinkStream.listen((uri) {
-      _rotearDeepLink(uri);
-    });
+  /// Depois de autenticar, o AuthGate consulta o perfil no servidor e decide a
+  /// tela (escolha de papel, KYC, home...). Nunca mais "todo login -> escolha de papel".
+  void _irParaRaiz() {
+    if (!mounted) return;
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const AuthGate()),
+      (_) => false,
+    );
   }
 
-  void _rotearDeepLink(Uri uri) {
-    final linkEmTexto = uri.toString();
-    debugPrint("🔗 Link recebido no Flutter: $linkEmTexto");
-
-    // Regra hiper flexível: Procura apenas se a URL contém as palavras-chave,
-    // blindando o código contra barras (/) perdidas ou formatações do Android.
-    if (linkEmTexto.contains('desperrengue') &&
-        linkEmTexto.contains('onboarding')) {
-      if (mounted) {
-        // Roteamento IMEDIATO (removemos o delay do addPostFrameCallback)
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(
-            builder: (context) => const VerificacaoStep7AprovadoScreen(),
-          ),
-          (Route<dynamic> route) => false,
-        );
-      }
-    }
-  }
-
-  // ===========================================================================
-  // LÓGICA DE NEGÓCIO (AUTENTICAÇÃO REAL ATIVADA)
-  // ===========================================================================
   Future<void> _entrarComEmail() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -105,14 +60,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         email: _emailController.text.trim(),
         password: _passwordController.text,
       );
-
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const RoleSelectionScreen()),
-        );
-      }
-    } on AuthException catch (e) {
+      _irParaRaiz();
+    } on AuthException {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -121,7 +70,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           ),
         );
       }
-    } catch (e) {
+    } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -139,6 +88,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     setState(() => _isLoading = true);
 
     try {
+      // Abre o navegador/seletor de contas. O login só termina quando o Google
+      // devolve o usuário por deep link: nesse momento o Supabase cria a sessão
+      // e o AuthGate (que escuta onAuthStateChange) troca a tela sozinho.
       final bool abriuTelaDeLogin = await Supabase.instance.client.auth
           .signInWithOAuth(
             OAuthProvider.google,
@@ -149,13 +101,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
       if (!abriuTelaDeLogin) {
         throw 'Não foi possível iniciar o login com o Google.';
-      }
-
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const RoleSelectionScreen()),
-        );
       }
     } on AuthException catch (e) {
       if (mounted) {

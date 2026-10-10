@@ -35,6 +35,7 @@ class _VerificacaoStep2VersoScreenState
         });
       }
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Erro ao aceder à câmara ou galeria.'),
