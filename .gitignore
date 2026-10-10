@@ -1,0 +1,18 @@
+# Segredos e credenciais: nunca versionar
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets.env
+
+# Sistema / editores
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+*.iml
+
+# Resíduos de build antigos (o app agora vive em app/)
+/build/
+/desperrengue_app/
