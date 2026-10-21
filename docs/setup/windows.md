@@ -65,7 +65,7 @@ O Chocolatey atua no Windows de forma análoga ao apt no Linux ou brew no macOS.
 2. Pressione a tecla Windows, digite PowerShell, clique com o botão direito e selecione "Executar como administrador".
 3. Execute o comando para libertar a política de execução:
    ```powershell
-   Set-ExecutionPolicy Unrestricted
+   Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
    ```
    _(Pressione S para confirmar)._
 4. Feche o PowerShell e abra-o novamente como Administrador (para garantir que a nova política está ativa).
@@ -75,13 +75,13 @@ O Chocolatey atua no Windows de forma análoga ao apt no Linux ou brew no macOS.
    choco -?
    ```
 
-## 4. Java Development Kit (JDK 11)
+## 4. Java Development Kit (JDK 17)
 
 A máquina virtual Java e as suas ferramentas de compilação são um pré-requisito estrito para o Android SDK. O Gradle (sistema de build do Android) requer uma versão estável do Java para compilar o código nativo.
 
 **Procedimento de Instalação:**
 
-1. Aceda ao arquivo oficial da Oracle: https://www.oracle.com/br/java/technologies/javase/jdk11-archive-downloads.html.
+1. Aceda ao arquivo oficial da Oracle: https://www.oracle.com/br/java/technologies/javase/jdk17-archive-downloads.html.
 2. Procure pela secção Windows e faça o download do ficheiro que termina em x64 Installer (evite a versão Compressed Archive).
 3. **Nota:** Será solicitado o login na Oracle. Caso não possua conta, crie uma (é um processo gratuito e rápido).
 4. Execute o instalador transferido, clique em Next mantendo os caminhos padrão, e no final clique em Close.
@@ -89,7 +89,7 @@ A máquina virtual Java e as suas ferramentas de compilação são um pré-requi
    ```bash
    java --version
    ```
-   Deverá ser impresso o output da versão 11 do Java SE Runtime Environment.
+   Deverá ser impresso o output da versão 17 do Java SE Runtime Environment (o Gradle 9.x usado pelo projeto exige JDK 17 ou superior).
 
 ## 5. Android Studio & Emulação Virtual
 
@@ -201,4 +201,4 @@ A infraestrutura está agora perfeitamente alinhada. O ciclo de vida de um novo 
    code .
    ```
 
-O workspace no Ambiente de Desenvolvimento Integrado (IDE) Visual Studio Code será inicializado. A instanciação da máquina virtual, correspondente ao emulador do dispositivo Pixel 8, deve ser orquestrada via gerenciador de devices, interface alocada na extremidade inferior direita da ferramenta. Subsequentemente, o processo de compilação, acoplamento do debugger e execução do artefato de software é disparado por meio do acionamento da tecla de atalho F5. Ressalta-se que a atual infraestrutura do ambiente encontra-se rigorosamente homologada e validada para implantação em nível de produção (production-ready).
+O workspace no Ambiente de Desenvolvimento Integrado (IDE) Visual Studio Code será inicializado. A instanciação da máquina virtual, correspondente ao emulador do dispositivo Pixel 8, deve ser orquestrada via gerenciador de devices, interface alocada na extremidade inferior direita da ferramenta. Subsequentemente, o processo de compilação, acoplamento do debugger e execução do artefato de software é disparado por meio do acionamento da tecla de atalho F5. Ao final, `flutter doctor` deve mostrar os itens de Android e VS Code com visto verde; isso valida apenas o ambiente de desenvolvimento local (a publicação nas lojas exige configuração adicional de assinatura e contas de desenvolvedor).

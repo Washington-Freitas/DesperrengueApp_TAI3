@@ -1,26 +1,122 @@
 # Desperrengue: Marketplace de Serviços Residenciais
 
+[![CI](https://github.com/Washington-Freitas/DesperrengueApp_TAI3/actions/workflows/ci.yml/badge.svg)](https://github.com/Washington-Freitas/DesperrengueApp_TAI3/actions/workflows/ci.yml)
+![Versão](https://img.shields.io/badge/vers%C3%A3o-0.2.0--dev-blue)
+![Estágio](https://img.shields.io/badge/est%C3%A1gio-MVP%20acad%C3%AAmico-orange)
+![Flutter](https://img.shields.io/badge/Flutter-3.47-02569B?logo=flutter&logoColor=white)
+![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL%2017-3ECF8E?logo=supabase&logoColor=white)
+![Testes](https://img.shields.io/badge/testes-16%20unit%20%C2%B7%2062%20SQL-brightgreen)
+![Licença](https://img.shields.io/badge/licen%C3%A7a-todos%20os%20direitos%20reservados-lightgrey)
+
+> **Cobertura de testes:** a cobertura global ainda é baixa (somente camadas puras e banco estão cobertas); números medidos, metas e plano em [TESTING.md](./TESTING.md#2-estado-atual-medido). O selo de CI refere-se ao *workflow* [`ci.yml`](./.github/workflows/ci.yml).
+
 Projeto acadêmico desenvolvido para as disciplinas de Trabalho Acadêmico Integrado, Engenharia de Software e Gestão de Startups. O **Desperrengue** é um aplicativo mobile focado em conectar clientes a prestadores de serviços de manutenção residencial com segurança, rapidez e um modelo de comissionamento justo (fim da cobrança por orçamentos).
 
-## 📖 Documentação da Etapa 1
+## 🎯 Propósito
 
-Toda a documentação acadêmica e de design exigida encontra-se estruturada na pasta `docs/`. Pode acessá-la diretamente pelos links abaixo:
+Reduzir a **assimetria de confiança** entre quem precisa de um reparo e quem o executa. O sistema combina: **verificação de identidade e registro profissional (KYC)**, **orçamento gratuito** (até 3 propostas), **custódia do pagamento** liberada por **PIN de presença** e **evidências fotográficas**, **mediação de disputas** e **reputação bidirecional**. Receita por **comissão de 12–15 % apenas sobre serviço concluído** (ver o [plano de negócio](./docs/Planos%20de%20Negocio%20e%20Tributação.md)).
+
+Uma **mesma conta** pode atuar como **cliente** ("Preciso de um serviço") e como **profissional** ("Quero trabalhar").
+
+> ⚠️ **Estágio MVP:** o fluxo financeiro é **simulado** (sem gateway de pagamento) e a aprovação do KYC pode estar em modo automático (mock). Ver [SECURITY.md](./SECURITY.md#9-limitações-conhecidas-transparência).
+
+## 🧭 Documentação do projeto
+
+| Tema | Documento |
+| :-- | :-- |
+| 🚀 Primeiros passos (clonar, rodar, 1º commit) | [SETUP.md](./SETUP.md) |
+| 🏗️ Arquitetura (C4, dados, estados, segurança) | [ARCHITECTURE.md](./ARCHITECTURE.md) |
+| 🧾 Decisões de arquitetura | [docs/adr/](./docs/adr/README.md) |
+| 🗺️ Visão de produto e épicos | [ROADMAP.md](./ROADMAP.md) |
+| 📝 Histórico de mudanças (SemVer) | [CHANGELOG.md](./CHANGELOG.md) |
+| 🤝 Como contribuir (Git, commits, PR, DoD) | [CONTRIBUTING.md](./CONTRIBUTING.md) |
+| 🧪 Estratégia de testes e cobertura | [TESTING.md](./TESTING.md) |
+| 🔐 Política de segurança e divulgação | [SECURITY.md](./SECURITY.md) |
+| ⚖️ Licença | [LICENSE.md](./LICENSE.md) |
+| 🫶 Código de conduta | [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md) |
+| 📱 App Flutter (arquitetura e telas) | [app/README.md](./app/README.md) |
+| 🗄️ Backend Supabase (modelo, RPCs, testes) | [supabase/README.md](./supabase/README.md) |
+
+### Documentação acadêmica e de design (Etapa 1)
 
 - [📄 Documento de Contexto](./docs/Documento%20de%20Contexto.md) (Problema, Solução, Lean Canvas e Missão, Visão e Valores)
 - [📋 Especificação do Projeto](./docs/Especificação%20do%20Projeto.md) (Personas, Histórias de Usuário, Requisitos Funcionais/Não-Funcionais e Restrições)
-- [📱 Protótipos de Interface (UI/UX)](./docs/ui_ux/hi-fi_prototyping/) (Telas de Login, Autenticação e Fluxo de Agendamento)
-- [💼 Plano de Negócio e Tributação](./docs/Planos%20de%20Negocio%20e%20Tributação.md) (Planejamento dos Planos de Negócio e Tributação)
+- [📱 Protótipos de Interface (UI/UX)](./docs/ui_ux/hi-fi_prototyping/) e [análise das telas](./docs/specs/) (cliente, profissional e telas comuns)
+- [💼 Plano de Negócio e Tributação](./docs/Planos%20de%20Negocio%20e%20Tributação.md)
+- [🪪 Onboarding Profissional (KYC)](./docs/onboarding_profissional.md) · [✉️ Domínio e e-mail (Resend)](./docs/registro_dominio_resend.md)
+- Ambiente de desenvolvimento: [Windows](./docs/setup/windows.md) · [macOS](./docs/setup/macos.md) · [Linux](./docs/setup/linux.md)
 
 ---
 
 ## 🛠️ Tecnologias Utilizadas (MVP)
 
-A arquitetura do Desperrengue foi desenhada para garantir escalabilidade, segurança e desenvolvimento rápido (conforme detalhado na nossa [Especificação Técnica](./build/desperrengue_app/README.md)). As principais tecnologias escolhidas são:
-
-- **Frontend Mobile:** Flutter (Dart 3.x)
-- **Gestão de Estado:** Riverpod 2.x
-- **Roteamento:** GoRouter
+- **Frontend Mobile:** Flutter (Dart ≥ 3.13) — Android e iOS
 - **Backend (BaaS):** Supabase
-  - **Database:** PostgreSQL com RLS (Row Level Security)
-  - **Autenticação:** GoTrue Auth
-  - **Armazenamento:** Supabase Storage
+  - **Banco:** PostgreSQL 17 com **RLS** e regras de negócio em RPCs `SECURITY DEFINER`
+  - **Autenticação:** GoTrue (e-mail+senha com OTP, Google)
+  - **Tempo real:** Supabase Realtime (pedidos, orçamentos, chat, notificações)
+  - **Armazenamento:** Supabase Storage (KYC e mídia de pedidos privados; avatar/portfólio públicos)
+  - **Agendamento:** `pg_cron` (expiração de convites e estorno de emergências)
+  - **Edge Functions:** Deno (e-mail de aprovação via Resend)
+- **Integrações:** Resend (e-mail), ViaCEP (CEP), Google OAuth; Abstract API opcional.
+
+> **Estado atual da implementação:** autenticação, **KYC**, **multi-modo (cliente/profissional)** e o **ciclo completo do serviço** (pedido → convites → orçamentos → aceite → custódia simulada → execução → PIN → avaliação, com emergência, chat, notificações, carteira e suporte) estão implementados. A navegação ainda usa `Navigator` + `AuthGate` ([ADR-0009](./docs/adr/0009-roteamento-por-funcao-pura-e-authgate.md)); `go_router`/Riverpod amplo, gateway real, mapa e push estão no [ROADMAP](./ROADMAP.md).
+
+## ✅ Pré-requisitos (resumo)
+
+| Ferramenta | Versão |
+| :-- | :-- |
+| Git | ≥ 2.40 |
+| Flutter (stable) | 3.47.x (Dart ≥ 3.13.4) |
+| JDK | **17** |
+| Android SDK / emulador (ou Xcode no macOS) | recente |
+| Supabase CLI | opcional (≥ 2.100) |
+
+Guia passo a passo: **[SETUP.md](./SETUP.md)**.
+
+## 🗂️ Estrutura do repositório
+
+| Pasta | Conteúdo |
+| :-- | :-- |
+| `app/` | Aplicativo Flutter (`lib/`, `test/`, plataformas Android/iOS) |
+| `supabase/migrations/` | **Fonte da verdade do banco** (schema, RLS, funções, storage) |
+| `supabase/functions/` | Edge Functions (`enviar-email-aprovacao`) |
+| `supabase/tests/` | Teste de fumaça de segurança e regras do banco (SQL, 62 asserções) |
+| `docs/` | Documentação acadêmica, ADRs, specs de tela, protótipos e guias de ambiente |
+| `.github/` | Templates de PR/issue e *workflow* de CI |
+
+## 🚀 Como rodar o app
+
+```bash
+cd app
+flutter pub get
+flutter run
+```
+
+Configuração opcional por `--dart-define` (os padrões apontam para o projeto Supabase do MVP):
+
+```bash
+flutter run \
+  --dart-define=SUPABASE_URL=https://<ref>.supabase.co \
+  --dart-define=SUPABASE_PUBLISHABLE_KEY=sb_publishable_... \
+  --dart-define=ABSTRACT_API_KEY=<opcional>   # validação extra de e-mail no cadastro
+```
+
+Verificação de qualidade: `flutter analyze` e `flutter test` devem passar sem avisos. Teste do banco: `supabase db query --linked -f supabase/tests/security_smoke.sql` (esperado: `FALHAS=0`).
+
+## 🔐 Segurança em resumo
+
+- O status de verificação do profissional **não pode ser alterado pelo app** (permissão de coluna + trigger); só o servidor muda (RPCs/cron/admin).
+- Documentos de KYC ficam num bucket **privado**, em pasta por usuário, e são lidos por _signed URL_.
+- Regras de negócio críticas vivem no banco: máximo de **3 orçamentos** por demanda, só **prestador ativo** orça, aceite atômico, **custódia** com liberação por **PIN**, estorno automático de emergência sem resposta.
+- **Endereço completo** e **PIN** só são visíveis a quem tem relação legítima com o pedido ([ADR-0007](./docs/adr/0007-privacidade-por-minimizacao-de-dados.md)).
+- Nenhum segredo é versionado. Chaves de terceiros entram por `--dart-define` ou como _secret_ do Supabase.
+- Vulnerabilidades: relate de forma **confidencial** conforme [SECURITY.md](./SECURITY.md).
+
+## 🤝 Contribuindo
+
+Leia o [CONTRIBUTING.md](./CONTRIBUTING.md) (fluxo Git, Conventional Commits, revisão, DoD) e o [Código de Conduta](./CODE_OF_CONDUCT.md). Use os *templates* de [bug](./.github/ISSUE_TEMPLATE/bug_report.md), [funcionalidade](./.github/ISSUE_TEMPLATE/feature_request.md) e [pull request](./.github/PULL_REQUEST_TEMPLATE.md).
+
+## ⚖️ Licença
+
+**Todos os direitos reservados** — ver [LICENSE.md](./LICENSE.md). Uso para avaliação acadêmica permitido; uso comercial e redistribuição dependem de autorização.

@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: "🔐 Reportar vulnerabilidade de segurança"
+    url: https://github.com/Washington-Freitas/DesperrengueApp_TAI3/security/advisories/new
+    about: "Relate de forma confidencial. NÃO abra uma issue pública. Veja o SECURITY.md."
+  - name: "📚 Dúvidas de ambiente e onboarding"
+    url: https://github.com/Washington-Freitas/DesperrengueApp_TAI3/blob/main/SETUP.md
+    about: "Consulte o SETUP.md (solução de problemas) antes de abrir uma issue."
