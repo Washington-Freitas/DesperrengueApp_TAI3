@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/user_profile.dart';
+import 'app_session.dart';
 
 /// Acesso ao perfil e às RPCs de KYC. É a única camada que conhece nomes de
 /// tabelas, colunas e funções do banco — as telas só falam com este serviço.
@@ -14,6 +15,10 @@ class ProfileService {
 
   static const String kycBucket = 'kyc-documents';
 
+  static const String _profileCols =
+      'id, full_name, role, is_client, is_provider, client_setup_done, provider_setup_done, '
+      'last_mode, verification_status, avatar_url, bio, phone, address_line, address_city, latitude, longitude';
+
   /// Perfil do usuário logado (null se não houver sessão ou linha).
   Future<UserProfile?> fetchCurrent() async {
     final user = _client.auth.currentUser;
@@ -21,20 +26,36 @@ class ProfileService {
 
     final row = await _client
         .from('profiles')
-        .select('id, full_name, role, verification_status')
+        .select(_profileCols)
         .eq('id', user.id)
         .maybeSingle();
 
     return row == null ? null : UserProfile.fromMap(row);
   }
 
-  /// Define o papel UMA vez (o banco rejeita qualquer mudança posterior).
-  Future<void> setRole(UserRole role) async {
-    final user = _client.auth.currentUser;
-    if (user == null) throw const AuthException('Sessão expirada.');
-    await _client.from('profiles').update({'role': role.wire}).eq('id', user.id);
+  /// Cadastra o usuário no modo escolhido (cliente e/ou profissional). Idempotente.
+  Future<void> enrollMode(UserMode mode) =>
+      _client.rpc('enroll_mode', params: {'p_mode': mode.wire});
+
+  /// Registra o último modo usado (só se o usuário já estiver cadastrado nele).
+  Future<void> setLastMode(UserMode mode) async {
+    try {
+      await _client.rpc('set_last_mode', params: {'p_mode': mode.wire});
+    } catch (_) {
+      // Melhor esforço: não impede o uso do app.
+    }
   }
 
+  /// Marca a edição inicial do perfil como concluída.
+  Future<void> completeSetup(UserMode mode) =>
+      _client.rpc('complete_setup', params: {'p_mode': mode.wire});
+
+  /// Atualiza dados comuns do perfil (colunas liberadas por GRANT).
+  Future<void> updateProfile(Map<String, dynamic> values) async {
+    final user = _client.auth.currentUser;
+    if (user == null) throw const AuthException('Sessão expirada.');
+    await _client.from('profiles').update(values).eq('id', user.id);
+  }
   /// Envia os 3 arquivos para o bucket PRIVADO (pasta = id do usuário) e
   /// registra o KYC via RPC. Devolve nada: o status muda no servidor.
   Future<void> submitKyc({
@@ -78,7 +99,10 @@ class ProfileService {
     return VerificationStatus.parse(result as String?);
   }
 
-  Future<void> signOut() => _client.auth.signOut();
+  Future<void> signOut() async {
+    await _client.auth.signOut();
+    AppSession.instance.reset();
+  }
 
   Future<void> _upload(
     StorageFileApi storage,

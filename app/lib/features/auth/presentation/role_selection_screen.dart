@@ -3,10 +3,14 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/models/user_profile.dart';
 import '../../../core/services/profile_service.dart';
+import '../../../core/services/app_session.dart';
 import 'auth_gate.dart';
 
 class RoleSelectionScreen extends StatefulWidget {
-  const RoleSelectionScreen({super.key});
+  const RoleSelectionScreen({super.key, this.profile});
+
+  /// Perfil carregado (para saudação e para mostrar em quais modos já há cadastro).
+  final UserProfile? profile;
 
   @override
   State<RoleSelectionScreen> createState() => _RoleSelectionScreenState();
@@ -14,7 +18,7 @@ class RoleSelectionScreen extends StatefulWidget {
 
 class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
   String _nomeUsuario = 'Ana';
-  bool _isProcessing = false;
+  final bool _isProcessing = false;
 
   @override
   void initState() {
@@ -23,6 +27,11 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
   }
 
   void _obterNomeUsuario() {
+    final p = widget.profile;
+    if (p != null) {
+      _nomeUsuario = p.firstName;
+      return;
+    }
     final user = Supabase.instance.client.auth.currentUser;
     if (user != null) {
       final fullName = user.userMetadata?['full_name'] as String?;
@@ -37,37 +46,13 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
   // ===========================================================================
   // FASE A: COMUNICAÇÃO COM O BANCO DE DADOS & ROUTING
   // ===========================================================================
-  Future<void> _salvarPerfil(UserRole roleEscolhida) async {
-    setState(() => _isProcessing = true);
-
-    try {
-      // O banco só aceita definir o papel UMA vez (trigger profiles_protect_columns).
-      await ProfileService().setRole(roleEscolhida);
-
-      // O AuthGate relê o perfil e roteia: cliente -> home; profissional -> KYC.
-      if (mounted) {
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (context) => const AuthGate()),
-          (route) => false,
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Erro ao configurar perfil. Verifique sua conexão e tente novamente.',
-            ),
-            backgroundColor: Colors.redAccent,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _isProcessing = false);
-    }
+  Future<void> _salvarPerfil(UserMode modo) async {
+    // O cadastro no modo (enroll_mode) é feito pelo PostAuthRouter; aqui só
+    // registramos a escolha desta sessão. Um mesmo usuário pode ser cliente
+    // e profissional e alternar quando quiser.
+    AppSession.instance.choose(modo);
+    ProfileService().setLastMode(modo);
   }
-
   void _mostrarModalSair() {
     showModalBottomSheet(
       context: context,
@@ -251,7 +236,8 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                               buttonColor: const Color(0xFF003366),
                               buttonText: 'Cliente',
                               buttonIcon: Icons.person,
-                              onPressed: () => _salvarPerfil(UserRole.client),
+                              onPressed: () => _salvarPerfil(UserMode.client),
+                              registered: widget.profile?.isClient ?? false,
                             ),
                           ),
                           const SizedBox(width: 16),
@@ -263,7 +249,8 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                               buttonColor: const Color(0xFF3B6B4F),
                               buttonText: 'Profissional',
                               buttonIcon: Icons.person_outline,
-                              onPressed: () => _salvarPerfil(UserRole.provider),
+                              onPressed: () => _salvarPerfil(UserMode.provider),
+                              registered: widget.profile?.isProvider ?? false,
                             ),
                           ),
                         ],
@@ -295,6 +282,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
     required String buttonText,
     required IconData buttonIcon,
     required VoidCallback onPressed,
+    bool registered = false,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -349,6 +337,11 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                     ),
                   ),
                   const Spacer(),
+                  if (registered)
+                    const Padding(
+                      padding: EdgeInsets.only(bottom: 6),
+                      child: Text('Já cadastrado ✓', style: TextStyle(fontSize: 11, color: Colors.green, fontWeight: FontWeight.w700)),
+                    ),
                   ElevatedButton.icon(
                     onPressed: _isProcessing ? null : onPressed,
                     icon: Icon(buttonIcon, size: 16, color: Colors.white),

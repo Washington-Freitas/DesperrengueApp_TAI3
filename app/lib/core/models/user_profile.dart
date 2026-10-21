@@ -19,19 +19,17 @@ enum VerificationStatus {
       .firstWhere((s) => s.wire == value, orElse: () => notSubmitted);
 }
 
-/// Espelha `profiles.role` (`client`, `provider`, `admin`).
-enum UserRole {
+/// Modo de uso. O mesmo usuário pode ser cliente E profissional.
+enum UserMode {
   client('client'),
-  provider('provider'),
-  admin('admin');
+  provider('provider');
 
-  const UserRole(this.wire);
-
+  const UserMode(this.wire);
   final String wire;
 
-  static UserRole? parse(String? value) {
-    for (final r in UserRole.values) {
-      if (r.wire == value) return r;
+  static UserMode? parse(String? v) {
+    for (final m in UserMode.values) {
+      if (m.wire == v) return m;
     }
     return null;
   }
@@ -41,50 +39,109 @@ class UserProfile {
   const UserProfile({
     required this.id,
     required this.fullName,
-    required this.role,
-    required this.verificationStatus,
+    this.isAdmin = false,
+    this.isClient = false,
+    this.isProvider = false,
+    this.clientSetupDone = false,
+    this.providerSetupDone = false,
+    this.lastMode,
+    this.verificationStatus = VerificationStatus.notSubmitted,
+    this.avatarUrl,
+    this.bio,
+    this.phone,
+    this.addressLine,
+    this.addressCity,
+    this.latitude,
+    this.longitude,
   });
 
   final String id;
   final String fullName;
-  final UserRole? role;
+  final bool isAdmin;
+  final bool isClient;
+  final bool isProvider;
+  final bool clientSetupDone;
+  final bool providerSetupDone;
+  final UserMode? lastMode;
   final VerificationStatus verificationStatus;
+  final String? avatarUrl;
+  final String? bio;
+  final String? phone;
+  final String? addressLine;
+  final String? addressCity;
+  final double? latitude;
+  final double? longitude;
 
   factory UserProfile.fromMap(Map<String, dynamic> map) => UserProfile(
     id: map['id'] as String,
     fullName: (map['full_name'] as String?)?.trim().isNotEmpty == true
         ? (map['full_name'] as String).trim()
         : 'Usuário',
-    role: UserRole.parse(map['role'] as String?),
-    verificationStatus: VerificationStatus.parse(
-      map['verification_status'] as String?,
-    ),
+    isAdmin: map['role'] == 'admin',
+    isClient: map['is_client'] == true,
+    isProvider: map['is_provider'] == true,
+    clientSetupDone: map['client_setup_done'] == true,
+    providerSetupDone: map['provider_setup_done'] == true,
+    lastMode: UserMode.parse(map['last_mode'] as String?),
+    verificationStatus: VerificationStatus.parse(map['verification_status'] as String?),
+    avatarUrl: map['avatar_url'] as String?,
+    bio: map['bio'] as String?,
+    phone: map['phone'] as String?,
+    addressLine: map['address_line'] as String?,
+    addressCity: map['address_city'] as String?,
+    latitude: (map['latitude'] as num?)?.toDouble(),
+    longitude: (map['longitude'] as num?)?.toDouble(),
   );
 
   String get firstName => fullName.split(' ').first;
+
+  bool get hasBothModes => isClient && isProvider;
+
+  /// Modo a abrir automaticamente quando o usuário só tem UM modo cadastrado.
+  UserMode? get autoMode {
+    if (isClient && !isProvider) return UserMode.client;
+    if (isProvider && !isClient) return UserMode.provider;
+    return null;
+  }
 }
 
 /// Para onde o usuário autenticado deve ir.
 enum AppDestination {
-  roleSelection,
+  adminHome,
+  modeSelection,
+  clientEnroll,
+  clientSetup,
   clientHome,
+  providerEnroll,
   kycStart,
   kycInReview,
   kycApproved,
+  providerSetup,
   providerHome,
-  adminHome,
 }
 
-/// Regra única de roteamento pós-autenticação, baseada no estado do servidor.
-AppDestination destinationFor(UserProfile profile) {
-  switch (profile.role) {
-    case null:
-      return AppDestination.roleSelection;
-    case UserRole.client:
+/// Regra única de roteamento pós-autenticação.
+///
+/// [mode] é o modo escolhido na sessão atual (null = ainda não escolheu).
+/// [forceSelection] reabre a seleção mesmo com um único modo ("Trocar de modo").
+AppDestination destinationFor(
+  UserProfile profile, {
+  UserMode? mode,
+  bool forceSelection = false,
+}) {
+  if (profile.isAdmin) return AppDestination.adminHome;
+
+  var current = mode;
+  if (current == null && !forceSelection) current = profile.autoMode;
+  if (current == null) return AppDestination.modeSelection;
+
+  switch (current) {
+    case UserMode.client:
+      if (!profile.isClient) return AppDestination.clientEnroll;
+      if (!profile.clientSetupDone) return AppDestination.clientSetup;
       return AppDestination.clientHome;
-    case UserRole.admin:
-      return AppDestination.adminHome;
-    case UserRole.provider:
+    case UserMode.provider:
+      if (!profile.isProvider) return AppDestination.providerEnroll;
       switch (profile.verificationStatus) {
         case VerificationStatus.notSubmitted:
         case VerificationStatus.rejected:
@@ -94,7 +151,9 @@ AppDestination destinationFor(UserProfile profile) {
         case VerificationStatus.approvedPendingEmail:
           return AppDestination.kycApproved;
         case VerificationStatus.active:
-          return AppDestination.providerHome;
+          return profile.providerSetupDone
+              ? AppDestination.providerHome
+              : AppDestination.providerSetup;
       }
   }
 }
