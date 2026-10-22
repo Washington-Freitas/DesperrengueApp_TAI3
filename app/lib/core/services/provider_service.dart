@@ -20,18 +20,22 @@ class ProviderService {
 
   /// Busca profissionais ATIVOS. [category] filtra por especialidade; [query]
   /// busca no nome/título/bio. Distância calculada no cliente.
+  ///
+  /// Com [includeSelf] o próprio usuário (quando também é profissional) aparece
+  /// na lista — só para ele se ver; contratar a si mesmo continua bloqueado.
   Future<List<ProviderCard>> search({
     String? category,
     String? query,
     double? fromLat,
     double? fromLng,
+    bool includeSelf = false,
   }) async {
     var q = _client.from('provider_public_profiles').select();
     if (category != null && category.isNotEmpty) {
       q = q.contains('specialties', [category]);
     }
     final rows = await q.limit(60);
-    var list = rows.map(ProviderCard.fromMap).where((p) => p.id != uid).toList();
+    var list = rows.map(ProviderCard.fromMap).where((p) => includeSelf || p.id != uid).toList();
 
     final term = query?.trim().toLowerCase() ?? '';
     if (term.isNotEmpty) {

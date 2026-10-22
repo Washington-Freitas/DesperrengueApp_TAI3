@@ -61,7 +61,7 @@ class _ProviderSearchScreenState extends State<ProviderSearchScreen> {
     final matched = kCategories.where((c) => c.name.toLowerCase() == term.toLowerCase()).toList();
     final category = matched.isNotEmpty ? matched.first.name : _category;
     final text = matched.isNotEmpty ? null : term;
-    var list = await _service.search(category: category, query: text);
+    var list = await _service.search(category: category, query: text, includeSelf: widget.onPick == null);
     list = list.where((p) => !widget.excludeIds.contains(p.id)).toList();
 
     final lat = widget.profile.latitude;
@@ -75,7 +75,7 @@ class _ProviderSearchScreenState extends State<ProviderSearchScreen> {
     return list;
   }
 
-  void _refresh() => setState(() => _future = _load());
+  void _refresh() => setState(() { _future = _load(); });
 
   List<ProviderCard> _sorted(List<ProviderCard> list) {
     final l = [...list];
@@ -87,6 +87,8 @@ class _ProviderSearchScreenState extends State<ProviderSearchScreen> {
       case _Sort.fee:
         l.sort((a, b) => a.visitFee.compareTo(b.visitFee));
     }
+    // O próprio perfil profissional (se houver) vem primeiro, identificado.
+    l.sort((a, b) => (a.id == widget.profile.id ? 0 : 1).compareTo(b.id == widget.profile.id ? 0 : 1));
     return l;
   }
 
@@ -165,6 +167,7 @@ class _ProviderSearchScreenState extends State<ProviderSearchScreen> {
                     padding: const EdgeInsets.only(bottom: 12),
                     child: _ProviderTile(
                       provider: p,
+                      isSelf: p.id == widget.profile.id,
                       onTap: () async {
                         if (widget.onPick != null) {
                           final ok = await confirmDialog(
@@ -210,10 +213,11 @@ class _ProviderSearchScreenState extends State<ProviderSearchScreen> {
 }
 
 class _ProviderTile extends StatelessWidget {
-  const _ProviderTile({required this.provider, required this.onTap});
+  const _ProviderTile({required this.provider, required this.onTap, this.isSelf = false});
 
   final ProviderCard provider;
   final VoidCallback onTap;
+  final bool isSelf;
 
   @override
   Widget build(BuildContext context) {
@@ -229,7 +233,15 @@ class _ProviderTile extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(p.fullName, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 17)),
+                Row(
+                  children: [
+                    Flexible(child: Text(p.fullName, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 17))),
+                    if (isSelf) ...[
+                      const SizedBox(width: 8),
+                      const StatusChip('Você', color: AppColors.providerAccent, icon: Icons.person_pin_rounded),
+                    ],
+                  ],
+                ),
                 Text(p.title, style: const TextStyle(color: AppColors.muted)),
                 const SizedBox(height: 6),
                 Wrap(

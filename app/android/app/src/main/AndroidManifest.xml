@@ -2,6 +2,10 @@
     <!-- Necessário em builds release: Supabase (API, Auth, Storage) e Resend via HTTPS -->
     <uses-permission android:name="android.permission.INTERNET"/>
 
+    <!-- "Usar minha localizacao atual" (endereco do cadastro/pedido do cliente) -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+
     <application
         android:label="desperrengue_app"
         android:name="${applicationName}"

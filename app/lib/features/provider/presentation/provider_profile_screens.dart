@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../../core/models/marketplace_models.dart';
 import '../../../core/services/app_session.dart';
+import '../../../core/services/draft_store.dart';
 import '../../../core/services/media_service.dart';
 import '../../../core/services/profile_service.dart';
 import '../../../core/services/provider_service.dart';
@@ -37,20 +40,65 @@ class _EditProviderProfileScreenState extends State<EditProviderProfileScreen> {
   bool _loading = true;
   bool _saving = false;
   bool _uploading = false;
+  Timer? _saveTimer;
+  String? _draftKey;
 
   @override
   void initState() {
     super.initState();
+    if (widget.setupMode) {
+      _draftKey = DraftStore.keyFor('provider_setup');
+      for (final c in [_bio, _headline, _hourly, _visit]) {
+        c.addListener(_scheduleDraft);
+      }
+    }
     _load();
   }
 
   @override
   void dispose() {
+    _saveTimer?.cancel();
     _bio.dispose();
     _headline.dispose();
     _hourly.dispose();
     _visit.dispose();
     super.dispose();
+  }
+
+  void _scheduleDraft() {
+    if (_draftKey == null || _loading) return;
+    _saveTimer?.cancel();
+    _saveTimer = Timer(const Duration(milliseconds: 500), () => DraftStore.write(_draftKey!, {
+          'bio': _bio.text,
+          'headline': _headline.text,
+          'hourly': _hourly.text,
+          'visit': _visit.text,
+          'specialties': _specialties.toList(),
+          'radius': _radius,
+        }));
+  }
+
+  /// No cadastro inicial, reaplica o que o usuário já tinha digitado antes de sair.
+  Future<void> _applyDraft() async {
+    final key = _draftKey;
+    if (key == null) return;
+    final d = await DraftStore.read(key);
+    if (d == null || !mounted) return;
+    setState(() {
+      String s(String k) => (d[k] as String?) ?? '';
+      if (s('bio').isNotEmpty) _bio.text = s('bio');
+      if (s('headline').isNotEmpty) _headline.text = s('headline');
+      if (s('hourly').isNotEmpty) _hourly.text = s('hourly');
+      if (s('visit').isNotEmpty) _visit.text = s('visit');
+      final sp = (d['specialties'] as List?)?.cast<String>() ?? const <String>[];
+      if (sp.isNotEmpty) {
+        _specialties
+          ..clear()
+          ..addAll(sp);
+      }
+      final r = (d['radius'] as num?)?.toDouble();
+      if (r != null) _radius = r.clamp(1, 100);
+    });
   }
 
   Future<void> _load() async {
@@ -71,6 +119,7 @@ class _EditProviderProfileScreenState extends State<EditProviderProfileScreen> {
         _radius = ((row?['service_radius_km'] as num?)?.toDouble() ?? 15).clamp(1, 100);
         _loading = false;
       });
+      await _applyDraft();
     } catch (e) {
       if (mounted) {
         setState(() => _loading = false);
@@ -114,6 +163,8 @@ class _EditProviderProfileScreenState extends State<EditProviderProfileScreen> {
         radiusKm: _radius.round(),
       );
       AppSession.instance.refreshProfile();
+      _saveTimer?.cancel();
+      if (_draftKey != null) await DraftStore.clear(_draftKey!);
       if (!mounted) return;
       if (widget.setupMode) {
         widget.onDone?.call();
@@ -202,7 +253,10 @@ class _EditProviderProfileScreenState extends State<EditProviderProfileScreen> {
                         showCheckmark: false,
                         selectedColor: accent,
                         labelStyle: TextStyle(color: _specialties.contains(c.name) ? Colors.white : AppColors.ink, fontWeight: FontWeight.w700),
-                        onSelected: (v) => setState(() => v ? _specialties.add(c.name) : _specialties.remove(c.name)),
+                        onSelected: (v) {
+                          setState(() => v ? _specialties.add(c.name) : _specialties.remove(c.name));
+                          _scheduleDraft();
+                        },
                       ),
                   ],
                 ),
@@ -228,7 +282,16 @@ class _EditProviderProfileScreenState extends State<EditProviderProfileScreen> {
                 ),
                 const SizedBox(height: 16),
                 Text('Raio de atendimento: ${_radius.round()} km', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
-                Slider(value: _radius, min: 1, max: 100, divisions: 99, label: '${_radius.round()} km', onChanged: (v) => setState(() => _radius = v)),
+                Slider(
+                    value: _radius,
+                    min: 1,
+                    max: 100,
+                    divisions: 99,
+                    label: '${_radius.round()} km',
+                    onChanged: (v) {
+                      setState(() => _radius = v);
+                      _scheduleDraft();
+                    }),
               ],
             ),
       bottomNavigationBar: BottomBar(
@@ -259,7 +322,7 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
   late Future<List<PortfolioItem>> _future = _providers.portfolio(_providers.uid);
   bool _uploading = false;
 
-  void _reload() => setState(() => _future = _providers.portfolio(_providers.uid));
+  void _reload() => setState(() { _future = _providers.portfolio(_providers.uid); });
 
   Future<void> _add() async {
     final img = await pickImage(context);
@@ -385,7 +448,7 @@ class _CertificatesScreenState extends State<CertificatesScreen> {
   final _providers = ProviderService();
   late Future<List<Certificate>> _future = _providers.myCertificates();
 
-  void _reload() => setState(() => _future = _providers.myCertificates());
+  void _reload() => setState(() { _future = _providers.myCertificates(); });
 
   Future<void> _add() async {
     final title = TextEditingController();

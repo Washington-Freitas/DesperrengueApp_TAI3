@@ -208,7 +208,7 @@ class SupportCenterScreen extends StatefulWidget {
 class _SupportCenterScreenState extends State<SupportCenterScreen> {
   late Future<List<Map<String, dynamic>>> _future = SocialService().myTickets();
 
-  void _reload() => setState(() => _future = SocialService().myTickets());
+  void _reload() => setState(() { _future = SocialService().myTickets(); });
 
   @override
   Widget build(BuildContext context) {

@@ -224,7 +224,12 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                         height: 1.2,
                       ),
                     ),
-                    const SizedBox(height: 40),
+                    const SizedBox(height: 10),
+                    Text(
+                      _intro,
+                      style: TextStyle(fontSize: 13.5, color: Colors.grey.shade700, height: 1.35),
+                    ),
+                    const SizedBox(height: 24),
                     Expanded(
                       child: Row(
                         children: [
@@ -234,10 +239,9 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                               title: 'Preciso de\num serviço',
                               subtitle: 'Encontre profissionais\npara resolver seu\nproblema',
                               buttonColor: const Color(0xFF003366),
-                              buttonText: 'Cliente',
-                              buttonIcon: Icons.person,
+                              mode: UserMode.client,
                               onPressed: () => _salvarPerfil(UserMode.client),
-                              registered: widget.profile?.isClient ?? false,
+                              stage: _stage(UserMode.client),
                             ),
                           ),
                           const SizedBox(width: 16),
@@ -247,16 +251,15 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                               title: 'Quero\ntrabalhar',
                               subtitle: 'Acesse seu painel, veja\npedidos e gerencie\nganhos',
                               buttonColor: const Color(0xFF3B6B4F),
-                              buttonText: 'Profissional',
-                              buttonIcon: Icons.person_outline,
+                              mode: UserMode.provider,
                               onPressed: () => _salvarPerfil(UserMode.provider),
-                              registered: widget.profile?.isProvider ?? false,
+                              stage: _stage(UserMode.provider),
                             ),
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 40),
+                    const SizedBox(height: 24),
                   ],
                 ),
               ),
@@ -274,20 +277,48 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
     );
   }
 
+  ModeStage _stage(UserMode mode) => widget.profile?.stageOf(mode) ?? ModeStage.notEnrolled;
+
+  /// Texto de apoio conforme o momento do usuário (primeiro acesso x já cadastrado).
+  String get _intro {
+    final c = _stage(UserMode.client);
+    final p = _stage(UserMode.provider);
+    if (c == ModeStage.notEnrolled && p == ModeStage.notEnrolled) {
+      return 'Escolha como quer começar. Com o mesmo e-mail você pode ter os dois perfis e alternar quando quiser.';
+    }
+    if (c == ModeStage.incomplete || p == ModeStage.incomplete) {
+      return 'Seu cadastro ficou pela metade. Continue de onde parou: o que você já preencheu foi salvo.';
+    }
+    return 'Escolha o perfil para entrar agora ou crie o que ainda não tem.';
+  }
+
   Widget _buildRoleCard({
     required String imagePath,
     required String title,
     required String subtitle,
     required Color buttonColor,
-    required String buttonText,
-    required IconData buttonIcon,
+    required UserMode mode,
     required VoidCallback onPressed,
-    bool registered = false,
+    required ModeStage stage,
   }) {
+    final isClient = mode == UserMode.client;
+    final (String buttonText, IconData buttonIcon) = switch (stage) {
+      ModeStage.notEnrolled => (isClient ? 'Criar conta de cliente' : 'Criar conta de profissional', Icons.add_circle_outline_rounded),
+      ModeStage.incomplete => ('Continuar cadastro', Icons.edit_note_rounded),
+      ModeStage.awaitingReview => ('Ver andamento', Icons.hourglass_top_rounded),
+      ModeStage.ready => (isClient ? 'Entrar como cliente' : 'Entrar como profissional', isClient ? Icons.person : Icons.engineering_rounded),
+    };
+    final (String? tagText, Color tagColor, Color tagBg, IconData? tagIcon) = switch (stage) {
+      ModeStage.notEnrolled => (null, Colors.grey, Colors.grey, null),
+      ModeStage.incomplete => ('Termine o seu cadastro', const Color(0xFF9A5200), const Color(0xFFFFF0D6), Icons.edit_rounded),
+      ModeStage.awaitingReview => ('Em análise', const Color(0xFF1D5FB8), const Color(0xFFDCEBFA), Icons.schedule_rounded),
+      ModeStage.ready => ('Já cadastrado', const Color(0xFF1E8E5A), const Color(0xFFE3F6EC), Icons.check_circle_rounded),
+    };
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
+        border: stage == ModeStage.incomplete ? Border.all(color: const Color(0xFFF2B15A), width: 1.5) : null,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
@@ -315,7 +346,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
           Expanded(
             flex: 6,
             child: Padding(
-              padding: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(14.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -337,30 +368,53 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                     ),
                   ),
                   const Spacer(),
-                  if (registered)
-                    const Padding(
-                      padding: EdgeInsets.only(bottom: 6),
-                      child: Text('Já cadastrado ✓', style: TextStyle(fontSize: 11, color: Colors.green, fontWeight: FontWeight.w700)),
-                    ),
-                  ElevatedButton.icon(
-                    onPressed: _isProcessing ? null : onPressed,
-                    icon: Icon(buttonIcon, size: 16, color: Colors.white),
-                    label: Text(
-                      buttonText,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                  if (tagText != null)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(color: tagBg, borderRadius: BorderRadius.circular(10)),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(tagIcon, size: 12, color: tagColor),
+                            const SizedBox(width: 4),
+                            Flexible(
+                              child: Text(
+                                tagText,
+                                maxLines: 2,
+                                style: TextStyle(fontSize: 11, color: tagColor, fontWeight: FontWeight.w800, height: 1.15),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: buttonColor,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: _isProcessing ? null : onPressed,
+                      icon: Icon(buttonIcon, size: 16, color: Colors.white),
+                      label: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          buttonText,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
                       ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: stage == ModeStage.incomplete ? const Color(0xFFE8820C) : buttonColor,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 10,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
                       ),
                     ),
                   ),

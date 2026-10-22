@@ -39,17 +39,52 @@ void main() {
       expect(vazio.fullName, 'Usuário');
     });
 
-    test('autoMode só existe quando há exatamente um modo cadastrado', () {
+    test('autoMode só existe com UM modo cadastrado E concluído (ou em análise)', () {
       expect(profile().autoMode, isNull);
-      expect(profile(client: true).autoMode, UserMode.client);
-      expect(profile(provider: true).autoMode, UserMode.provider);
+      expect(profile(client: true, clientDone: true).autoMode, UserMode.client);
+      expect(profile(provider: true, status: 'PENDING').autoMode, UserMode.provider);
+      expect(profile(provider: true, status: 'ACTIVE', providerDone: true).autoMode, UserMode.provider);
       expect(profile(client: true, provider: true).autoMode, isNull);
+    });
+
+    test('cadastro pela metade NUNCA abre direto: volta para a seleção', () {
+      expect(profile(client: true).autoMode, isNull); // cliente sem concluir
+      expect(profile(provider: true).autoMode, isNull); // profissional sem KYC
+      expect(profile(provider: true, status: 'REJECTED').autoMode, isNull);
+      expect(profile(provider: true, status: 'ACTIVE').autoMode, isNull); // falta editar o perfil
+    });
+  });
+
+  group('ModeStage (selo "Termine o seu cadastro")', () {
+    test('cliente', () {
+      expect(profile().stageOf(UserMode.client), ModeStage.notEnrolled);
+      expect(profile(client: true).stageOf(UserMode.client), ModeStage.incomplete);
+      expect(profile(client: true, clientDone: true).stageOf(UserMode.client), ModeStage.ready);
+    });
+
+    test('profissional segue o KYC', () {
+      ModeStage s(String st, {bool done = false}) =>
+          profile(provider: true, providerDone: done, status: st).stageOf(UserMode.provider);
+      expect(profile().stageOf(UserMode.provider), ModeStage.notEnrolled);
+      expect(s('NOT_SUBMITTED'), ModeStage.incomplete);
+      expect(s('REJECTED'), ModeStage.incomplete);
+      expect(s('PENDING'), ModeStage.awaitingReview);
+      expect(s('APPROVED_PENDING_EMAIL'), ModeStage.awaitingReview);
+      expect(s('ACTIVE'), ModeStage.incomplete);
+      expect(s('ACTIVE', done: true), ModeStage.ready);
     });
   });
 
   group('destinationFor (multi-modo)', () {
-    test('usuário novo escolhe o modo', () {
+    test('usuário novo (inclusive login com Google) escolhe o modo', () {
       expect(destinationFor(profile()), AppDestination.modeSelection);
+    });
+
+    test('quem começou como profissional e não terminou volta à seleção, não ao KYC', () {
+      final half = profile(provider: true); // is_provider = true, KYC não enviado
+      expect(destinationFor(half), AppDestination.modeSelection);
+      // ...e ao tocar em "Continuar cadastro" segue para o KYC.
+      expect(destinationFor(half, mode: UserMode.provider), AppDestination.kycStart);
     });
 
     test('quem tem os dois modos sempre vê a seleção, até escolher', () {

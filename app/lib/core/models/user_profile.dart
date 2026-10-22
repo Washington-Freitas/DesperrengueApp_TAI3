@@ -1,4 +1,4 @@
-/// Modelos puros (sem dependência de Flutter/Supabase) do perfil do usuário e
+﻿/// Modelos puros (sem dependência de Flutter/Supabase) do perfil do usuário e
 /// da regra de roteamento pós-login. Mantidos isolados para serem testáveis.
 library;
 
@@ -97,12 +97,56 @@ class UserProfile {
 
   bool get hasBothModes => isClient && isProvider;
 
-  /// Modo a abrir automaticamente quando o usuário só tem UM modo cadastrado.
-  UserMode? get autoMode {
-    if (isClient && !isProvider) return UserMode.client;
-    if (isProvider && !isClient) return UserMode.provider;
-    return null;
+  /// Em que ponto do cadastro o usuário está em cada modo.
+  ModeStage stageOf(UserMode mode) {
+    switch (mode) {
+      case UserMode.client:
+        if (!isClient) return ModeStage.notEnrolled;
+        return clientSetupDone ? ModeStage.ready : ModeStage.incomplete;
+      case UserMode.provider:
+        if (!isProvider) return ModeStage.notEnrolled;
+        switch (verificationStatus) {
+          case VerificationStatus.notSubmitted:
+          case VerificationStatus.rejected:
+            return ModeStage.incomplete;
+          case VerificationStatus.pending:
+          case VerificationStatus.approvedPendingEmail:
+            return ModeStage.awaitingReview;
+          case VerificationStatus.active:
+            return providerSetupDone ? ModeStage.ready : ModeStage.incomplete;
+        }
+    }
   }
+
+  /// Modo a abrir automaticamente: só quando existe UM único modo cadastrado e
+  /// o cadastro dele já foi concluído (ou está em análise). Se o usuário nunca
+  /// se cadastrou, ou deixou um cadastro pela metade, ele vê a seleção para
+  /// escolher/terminar ("Termine o seu cadastro").
+  UserMode? get autoMode {
+    final only = (isClient && !isProvider)
+        ? UserMode.client
+        : (isProvider && !isClient)
+            ? UserMode.provider
+            : null;
+    if (only == null) return null;
+    final stage = stageOf(only);
+    return (stage == ModeStage.ready || stage == ModeStage.awaitingReview) ? only : null;
+  }
+}
+
+/// Estágio do cadastro do usuário em um modo (cliente ou profissional).
+enum ModeStage {
+  /// Nunca escolheu este modo.
+  notEnrolled,
+
+  /// Começou mas ainda falta concluir ("Termine o seu cadastro").
+  incomplete,
+
+  /// Enviou tudo e aguarda a análise/aprovação (profissional).
+  awaitingReview,
+
+  /// Cadastro concluído.
+  ready,
 }
 
 /// Para onde o usuário autenticado deve ir.
