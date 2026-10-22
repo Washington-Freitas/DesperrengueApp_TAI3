@@ -30,7 +30,7 @@ class _WalletTabState extends State<WalletTab> {
   }
 
   Future<void> _refresh() async {
-    setState(() => _future = _load());
+    setState(() { _future = _load(); });
     await _future;
   }
 

@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 
+import '../../../core/services/draft_store.dart';
+
 // Importação ATIVADA para que a navegação funcione
 import 'verificacao_step5_finalizacao.dart';
 
@@ -39,10 +41,35 @@ class _VerificacaoStep4RegistroScreenState
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _restoreDraft();
+    _numeroRegistroController.addListener(_saveDraft);
+  }
+
+  @override
   void dispose() {
     _numeroRegistroController.dispose();
     super.dispose();
   }
+
+  /// Rascunho local do registro (as fotos NUNCA são guardadas no aparelho).
+  String get _draftKey => DraftStore.keyFor('kyc_registro');
+
+  Future<void> _restoreDraft() async {
+    final d = await DraftStore.read(_draftKey);
+    if (d == null || !mounted) return;
+    final tipo = d['type'] as String?;
+    setState(() {
+      if (tipo != null && _tiposRegistro.contains(tipo)) _tipoRegistroSelecionado = tipo;
+      _numeroRegistroController.text = (d['number'] as String?) ?? '';
+    });
+  }
+
+  void _saveDraft() => DraftStore.write(_draftKey, {
+        'type': _tipoRegistroSelecionado,
+        'number': _numeroRegistroController.text,
+      });
 
   void _avancarParaEtapa5() {
     if (!_formKey.currentState!.validate()) {
@@ -213,6 +240,7 @@ class _VerificacaoStep4RegistroScreenState
 
                       // Dropdown para Tipo de Registro
                       DropdownButtonFormField<String>(
+                        key: ValueKey(_tipoRegistroSelecionado),
                         initialValue: _tipoRegistroSelecionado,
                         decoration: InputDecoration(
                           prefixIcon: const Icon(
@@ -238,6 +266,7 @@ class _VerificacaoStep4RegistroScreenState
                           setState(() {
                             _tipoRegistroSelecionado = newValue;
                           });
+                          _saveDraft();
                         },
                       ),
                       const SizedBox(height: 16),

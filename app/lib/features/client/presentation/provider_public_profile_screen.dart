@@ -29,6 +29,9 @@ class _ProviderPublicProfileScreenState extends State<ProviderPublicProfileScree
   late final Future<List<PortfolioItem>> _portfolio = _service.portfolio(widget.provider.id);
   late final Future<List<PublicReview>> _reviews = _service.reviews(widget.provider.id);
 
+  /// O usuário está vendo o PRÓPRIO perfil profissional (visão do cliente).
+  bool get _isSelf => widget.provider.id == widget.profile.id;
+
   @override
   Widget build(BuildContext context) {
     final p = widget.provider;
@@ -80,6 +83,15 @@ class _ProviderPublicProfileScreenState extends State<ProviderPublicProfileScree
                     ],
                   ),
                   const SizedBox(height: 18),
+                    if (_isSelf) ...[
+                      const InfoBanner(
+                        'É assim que os clientes veem você. Só você enxerga este aviso.',
+                        tone: BannerTone.promo,
+                        icon: Icons.visibility_outlined,
+                        title: 'Visão do cliente',
+                      ),
+                      const SizedBox(height: 14),
+                    ],
                     AppCard(
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       child: Row(
@@ -190,7 +202,16 @@ class _ProviderPublicProfileScreenState extends State<ProviderPublicProfileScree
             ),
           ],
         ),
-      bottomNavigationBar: widget.hideCta
+      bottomNavigationBar: _isSelf
+          ? BottomBar(
+              child: const InfoBanner(
+                'Você não pode solicitar serviços a si mesmo. Para editar este perfil, entre no modo profissional.',
+                tone: BannerTone.info,
+                icon: Icons.lock_outline_rounded,
+                title: 'Este é o seu perfil profissional',
+              ),
+            )
+          : widget.hideCta
           ? null
           : BottomBar(
               child: Row(

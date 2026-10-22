@@ -104,7 +104,7 @@ class _ProviderDashboardTabState extends State<ProviderDashboardTab> {
   void initState() {
     super.initState();
     _timer = Timer.periodic(const Duration(seconds: 20), (_) {
-      if (mounted) setState(() => _future = _load());
+      if (mounted) setState(() { _future = _load(); });
     });
   }
 
@@ -132,7 +132,7 @@ class _ProviderDashboardTabState extends State<ProviderDashboardTab> {
   }
 
   Future<void> _refresh() async {
-    setState(() => _future = _load());
+    setState(() { _future = _load(); });
     await _future;
   }
 
@@ -371,7 +371,7 @@ class _OpportunitiesTabState extends State<OpportunitiesTab> {
   void initState() {
     super.initState();
     _timer = Timer.periodic(const Duration(seconds: 15), (_) {
-      if (mounted) setState(() => _future = _load());
+      if (mounted) setState(() { _future = _load(); });
     });
   }
 
@@ -390,7 +390,7 @@ class _OpportunitiesTabState extends State<OpportunitiesTab> {
   }
 
   Future<void> _refresh() async {
-    setState(() => _future = _load());
+    setState(() { _future = _load(); });
     await _future;
   }
 

@@ -49,6 +49,12 @@ Categorias: **Adicionado** · **Alterado** · **Descontinuado** · **Removido** 
 - `README`, `ROADMAP`, `CHANGELOG`, `ARCHITECTURE`, `SETUP`, `CONTRIBUTING`, `TESTING`, `SECURITY`, `LICENSE`, `CODE_OF_CONDUCT`, ADRs 0001–0010, *templates* de PR/issue e *workflow* de CI.
 - Especificação das telas derivada dos protótipos hi-fi em `docs/specs/`.
 - 16 testes unitários (roteamento multi-modo, formatação, modelos).
+- **Seleção de modo com estado do cadastro**: cada cartão mostra "Criar conta…", **"Termine o seu cadastro"** (com botão "Continuar cadastro"), "Em análise" ou "Já cadastrado". Primeiro acesso (Google ou e-mail) e cadastros pela metade sempre passam pela seleção, nunca caem direto no KYC.
+- **Rascunho automático do cadastro** (`DraftStore`, local por conta): nome/telefone/endereço do cliente, perfil do profissional e registro profissional são recuperados ao voltar. Fotos e documentos não são guardados.
+- **Endereço automático**: ao digitar os 8 dígitos do CEP o formulário preenche rua, bairro, cidade e UF (ViaCEP, com BrasilAPI de reserva) e leva o cursor ao **número**. "Usar minha localização atual" captura o GPS, descobre o endereço (OpenStreetMap Nominatim + refinamento por CEP) e preenche os campos. APIs gratuitas, **sem cadastro nem chave**.
+- O cliente que também é profissional **se vê** nos resultados de busca (etiqueta "Você" e aviso "Visão do cliente"), mas não pode contratar a si mesmo (UI, assistente de pedido e banco).
+- Migration `20261022100000_self_service_guards` (`accept_emergency` recusa o próprio pedido).
+- Testes unitários: 36 (estágios do cadastro, parsers de CEP/GPS, rascunhos).
 
 ### Alterado
 - **(quebra de compatibilidade)** `profiles.role` deixa de aceitar `client`/`provider`; passa a existir só para `admin`. Os papéis são as *flags* `is_client`/`is_provider`.
@@ -68,7 +74,10 @@ Categorias: **Adicionado** · **Alterado** · **Descontinuado** · **Removido** 
 - Constante de chave de terceiros do código-fonte (Abstract API passa a vir de `--dart-define`).
 
 ### Corrigido
-- **Divergência entre duas tabelas de perfil**, que desconectava o fluxo automático de KYC.
+- **Permissão de localização ausente** no manifesto Android (e descrição no `Info.plist`): o botão "Usar minha localização atual" não conseguia funcionar.
+- Excluir foto do portfólio não funcionava e exibia `setState() callback argument returned a Future`; o mesmo padrão foi corrigido em Certificados, Oportunidades, Carteira, Suporte e busca de profissionais.
+- Profissional não aparecia como cliente na busca (a própria conta era excluída da lista).
+- Quem já tinha `is_provider` sem KYC enviado era levado direto às fotos de verificação ao logar.- **Divergência entre duas tabelas de perfil**, que desconectava o fluxo automático de KYC.
 - Brecha de **auto-aprovação do KYC** e de **escalada de papel** pela API.
 - Navegação pós-OAuth executada antes de a sessão existir; ausência de guarda de sessão; deep link sem efeito.
 - Permissão `INTERNET` ausente no manifesto Android de release; descrições de câmera/fotos e esquemas de URL ausentes no iOS.

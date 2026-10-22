@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../core/services/draft_store.dart';
 import '../../../core/services/profile_service.dart';
 import 'auth_gate.dart';
 
@@ -66,6 +67,7 @@ class _VerificacaoStep5FinalizacaoScreenState
       );
 
       // O AuthGate relê o perfil (agora PENDING) e abre a tela "Em análise".
+      await DraftStore.clear(DraftStore.keyFor('kyc_registro'));
       if (mounted) {
         Navigator.pushAndRemoveUntil(
           context,

@@ -113,6 +113,10 @@ class _RequestWizardScreenState extends State<RequestWizardScreen> {
   }
 
   Future<void> _submit() async {
+    if (_provider?.id == widget.profile.id) {
+      showSnack(context, 'Você não pode solicitar um serviço a si mesmo.', error: true);
+      return;
+    }
     if (_currentAddress.isEmpty) {
       showSnack(context, 'Informe o endereço do atendimento.', error: true);
       return;

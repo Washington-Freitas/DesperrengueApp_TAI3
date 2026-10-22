@@ -68,6 +68,8 @@
 	</array>
 	<key>NSCameraUsageDescription</key>
 	<string>O Desperrengue usa a câmera para fotografar seus documentos e selfie na verificação de identidade.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>O Desperrengue usa sua localizaÃ§Ã£o para preencher o endereÃ§o do atendimento e encontrar profissionais perto de vocÃª.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>O Desperrengue acessa suas fotos para anexar o documento de identificação na verificação.</string>
 	<key>CFBundleURLTypes</key>

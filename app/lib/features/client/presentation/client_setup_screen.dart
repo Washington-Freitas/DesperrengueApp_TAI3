@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../../core/models/user_profile.dart';
 import '../../../core/services/app_session.dart';
+import '../../../core/services/draft_store.dart';
 import '../../../core/services/profile_service.dart';
 import '../../../core/ui/widgets.dart';
 import 'address_form.dart';
@@ -87,15 +90,71 @@ class ClientSetupScreen extends StatefulWidget {
 class _ClientSetupScreenState extends State<ClientSetupScreen> {
   late final TextEditingController _name = TextEditingController(text: widget.profile.fullName);
   final _phone = TextEditingController();
+  late final String _draftKey = DraftStore.keyFor('client_setup', userId: widget.profile.id);
   AddressData _address = const AddressData();
+  AddressData? _draftAddress;
   int _step = 0;
   bool _saving = false;
+  bool _restoring = true;
+  bool _restored = false;
+  Timer? _saveTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _restoreDraft();
+    _name.addListener(_scheduleSave);
+    _phone.addListener(_scheduleSave);
+  }
 
   @override
   void dispose() {
+    _saveTimer?.cancel();
     _name.dispose();
     _phone.dispose();
     super.dispose();
+  }
+
+  /// Recupera o que o usuário já havia digitado (se voltou à tela inicial e entrou de novo).
+  Future<void> _restoreDraft() async {
+    final d = await DraftStore.read(_draftKey);
+    if (!mounted) return;
+    if (d != null) {
+      final name = (d['name'] as String?) ?? '';
+      if (name.trim().isNotEmpty) _name.text = name;
+      _phone.text = (d['phone'] as String?) ?? '';
+      final addr = d['address'];
+      if (addr is Map<String, dynamic>) {
+        final a = AddressData.fromJson(addr);
+        if (!a.isEmpty) {
+          _draftAddress = a;
+          _address = a;
+        }
+      }
+      _step = ((d['step'] as num?)?.toInt() ?? 0).clamp(0, 1);
+      _restored = name.trim().isNotEmpty || _phone.text.isNotEmpty || _draftAddress != null;
+    }
+    setState(() => _restoring = false);
+    if (_restored) {
+      showSnack(context, 'Recuperamos o que você já tinha preenchido.');
+    }
+  }
+
+  void _scheduleSave() {
+    _saveTimer?.cancel();
+    _saveTimer = Timer(const Duration(milliseconds: 500), _saveDraft);
+  }
+
+  Future<void> _saveDraft() => DraftStore.write(_draftKey, {
+        'name': _name.text,
+        'phone': _phone.text,
+        'address': _address.toJson(),
+        'step': _step,
+      });
+
+  void _setStep(int s) {
+    setState(() => _step = s);
+    _scheduleSave();
   }
 
   Future<void> _finish() async {
@@ -118,6 +177,8 @@ class _ClientSetupScreenState extends State<ClientSetupScreen> {
         'longitude': ?_address.longitude,
       });
       await service.completeSetup(UserMode.client);
+      _saveTimer?.cancel();
+      await DraftStore.clear(_draftKey);
       AppSession.instance.refreshProfile();
     } catch (e) {
       if (mounted) showSnack(context, friendlyError(e), error: true);
@@ -133,8 +194,9 @@ class _ClientSetupScreenState extends State<ClientSetupScreen> {
       onPopInvokedWithResult: (didPop, _) {
         if (didPop) return;
         if (_step > 0) {
-          setState(() => _step = 0);
+          _setStep(0);
         } else {
+          _saveDraft();
           AppSession.instance.switchMode();
         }
       },
@@ -142,11 +204,20 @@ class _ClientSetupScreenState extends State<ClientSetupScreen> {
         appBar: AppBar(
           leading: IconButton(
             icon: const Icon(Icons.arrow_back_ios_new_rounded),
-            onPressed: () => _step > 0 ? setState(() => _step = 0) : AppSession.instance.switchMode(),
+            onPressed: () {
+              if (_step > 0) {
+                _setStep(0);
+              } else {
+                _saveDraft();
+                AppSession.instance.switchMode();
+              }
+            },
           ),
           title: const BrandLogo(),
         ),
-        body: SingleChildScrollView(
+        body: _restoring
+            ? const LoadingView()
+            : SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -182,7 +253,14 @@ class _ClientSetupScreenState extends State<ClientSetupScreen> {
                 const Text('O endereço completo só é compartilhado com o profissional contratado.',
                     style: TextStyle(color: Color(0xFF6B7280), height: 1.4)),
                 const SizedBox(height: 8),
-                AddressForm(onChanged: (a) => _address = a),
+                AddressForm(
+                  initial: _address.isEmpty ? null : _address,
+                  onChanged: (a) {
+                    final changed = a.toJson().toString() != _address.toJson().toString();
+                    _address = a;
+                    if (changed) _scheduleSave();
+                  },
+                ),
               ],
             ],
           ),
@@ -197,7 +275,7 @@ class _ClientSetupScreenState extends State<ClientSetupScreen> {
                       showSnack(context, 'Informe seu nome.', error: true);
                       return;
                     }
-                    setState(() => _step = 1);
+                    _setStep(1);
                   },
                 )
               : PrimaryButton(label: 'Concluir e começar', onPressed: _finish, loading: _saving),
