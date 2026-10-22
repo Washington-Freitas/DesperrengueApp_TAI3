@@ -133,6 +133,24 @@ flutter analyze && flutter test        # antes de cada commit
 dart format lib test                   # formatação
 ```
 
+### 6.1 Executar no VS Code e no Android Studio
+
+**VS Code** (extensões recomendadas em `.vscode/extensions.json`; *tasks* em `.vscode/tasks.json`; configurações de execução em `.vscode/launch.json`):
+
+```powershell
+cd app
+flutter pub get
+flutter emulators --launch Pixel_8     # inicia o AVD (aguarde ~1 min)
+flutter devices                        # confirme "emulator-5554"
+flutter run -d emulator-5554           # r = hot reload · R = hot restart · q = sair
+```
+
+Alternativa: `F5` com a configuração **Desperrengue (debug)**, ou `Ctrl+Shift+P` → *Tasks: Run Task*.
+
+**Android Studio** (plugins **Flutter** e **Dart** instalados): *File → Open* e escolha a pasta **`app/`** (não a raiz do repositório, nem `app/android`). Em *Settings → Languages & Frameworks → Flutter*, aponte o *Flutter SDK path* se não for detectado. Selecione o dispositivo `Pixel_8` e clique em **Run ▶**.
+
+> O aviso `Visual Studio not installed` do `flutter doctor` refere-se apenas a *desktop* Windows e pode ser ignorado para o app móvel.
+
 ---
 
 ## 7. Seu primeiro *commit* (checklist de Dia 1)

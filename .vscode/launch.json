@@ -1,0 +1,25 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Desperrengue (debug)",
+      "request": "launch",
+      "type": "dart",
+      "cwd": "${workspaceFolder}/app"
+    },
+    {
+      "name": "Desperrengue (profile)",
+      "request": "launch",
+      "type": "dart",
+      "flutterMode": "profile",
+      "cwd": "${workspaceFolder}/app"
+    },
+    {
+      "name": "Desperrengue (release)",
+      "request": "launch",
+      "type": "dart",
+      "flutterMode": "release",
+      "cwd": "${workspaceFolder}/app"
+    }
+  ]
+}
