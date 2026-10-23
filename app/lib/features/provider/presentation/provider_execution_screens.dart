@@ -14,6 +14,7 @@ import '../../../core/ui/media_widgets.dart';
 import '../../../core/ui/widgets.dart';
 import '../../../core/utils/format.dart';
 import '../../shared/presentation/chat_screen.dart';
+import '../../shared/presentation/review_widgets.dart';
 import '../../shared/presentation/support_screens.dart';
 
 /// Volta até a tela raiz do serviço (ProviderJobScreen) que reage ao stream.
@@ -655,7 +656,7 @@ class PaidSuccessScreen extends StatefulWidget {
 class _PaidSuccessScreenState extends State<PaidSuccessScreen> {
   double _balance = 0;
   double _credited = 0;
-  bool _reviewed = false;
+  String _reviewStatus = 'none';
   bool _hide = false;
 
   @override
@@ -667,12 +668,12 @@ class _PaidSuccessScreenState extends State<PaidSuccessScreen> {
   Future<void> _load() async {
     try {
       final payments = await ProviderService().myPayments();
-      final reviewed = await SocialService().alreadyReviewed(widget.job.id);
+      final status = await SocialService().reviewStatus(widget.job.id);
       if (!mounted) return;
       setState(() {
         _balance = ProviderService.summarize(payments).available;
         _credited = payments.where((p) => p.jobId == widget.job.id).fold(0.0, (a, p) => a + p.netAmount);
-        _reviewed = reviewed;
+        _reviewStatus = status;
       });
     } catch (_) {}
   }
@@ -711,7 +712,7 @@ class _PaidSuccessScreenState extends State<PaidSuccessScreen> {
             ),
           ),
           const SizedBox(height: 24),
-          if (!_reviewed)
+          if (_reviewStatus == 'none')
             PrimaryButton(
               label: 'Avaliar atendimento do cliente',
               trailingArrow: true,
@@ -719,6 +720,13 @@ class _PaidSuccessScreenState extends State<PaidSuccessScreen> {
                 await Navigator.of(context).push(MaterialPageRoute(builder: (_) => RateClientScreen(job: widget.job)));
                 _load();
               },
+            )
+          else if (_reviewStatus == 'waiting')
+            const InfoBanner(
+              'Ela será revelada quando o cliente também avaliar, ou em até 48 horas.',
+              tone: BannerTone.security,
+              icon: Icons.hourglass_top_rounded,
+              title: 'Avaliação enviada (cega)',
             )
           else
             const InfoBanner('Avaliação enviada. Obrigado!', tone: BannerTone.success),
@@ -739,14 +747,16 @@ class RateClientScreen extends StatefulWidget {
   State<RateClientScreen> createState() => _RateClientScreenState();
 }
 
+/// Profissional avalia o cliente (avaliação cega): estrelas -> pílulas de
+/// segurança/respeito -> comentário. Só é revelada quando as duas partes avaliam.
 class _RateClientScreenState extends State<RateClientScreen> {
   final _comment = TextEditingController();
-  final _ratings = <String, int>{};
+  int _rating = 0;
+  Set<String> _tags = <String>{};
   bool _busy = false;
   String _name = 'Cliente';
   String? _avatar;
-
-  static const _criteria = ['Simpatia', 'Educação', 'Recepção', 'Comunicação', 'Pontualidade'];
+  ({double avg, int count})? _reputation;
 
   @override
   void initState() {
@@ -759,6 +769,9 @@ class _RateClientScreenState extends State<RateClientScreen> {
         });
       }
     }).catchError((_) {});
+    ProviderService().clientReputation(widget.job.clientId).then((r) {
+      if (mounted) setState(() => _reputation = r);
+    });
   }
 
   @override
@@ -767,15 +780,17 @@ class _RateClientScreenState extends State<RateClientScreen> {
     super.dispose();
   }
 
-  bool get _complete => _criteria.every(_ratings.containsKey);
-
   Future<void> _submit() async {
-    final avg = (_ratings.values.reduce((a, b) => a + b) / _ratings.length).round().clamp(1, 5);
+    if (_rating == 0) {
+      showSnack(context, 'Toque nas estrelas para dar uma nota.', error: true);
+      return;
+    }
     setState(() => _busy = true);
     try {
-      await SocialService().submitReview(jobId: widget.job.id, rating: avg, comment: _comment.text, criteria: Map<String, int>.from(_ratings));
+      await SocialService().submitReview(jobId: widget.job.id, rating: _rating, comment: _comment.text, tags: _tags.toList());
+      final status = await SocialService().reviewStatus(widget.job.id);
       if (!mounted) return;
-      Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const ThanksScreen()));
+      Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => ThanksScreen(revealed: status == 'revealed')));
     } catch (e) {
       if (mounted) showSnack(context, friendlyError(e), error: true);
     } finally {
@@ -785,6 +800,8 @@ class _RateClientScreenState extends State<RateClientScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final negative = ReviewTags.isNegative(_rating);
+    final rep = _reputation;
     return Scaffold(
       appBar: AppBar(title: const Text('Avaliar cliente')),
       body: ListView(
@@ -793,58 +810,80 @@ class _RateClientScreenState extends State<RateClientScreen> {
           Center(child: UserAvatar(url: _avatar, name: _name, radius: 40)),
           const SizedBox(height: 8),
           Center(child: Text('$_name (Cliente)', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18))),
+          if (rep != null && rep.count > 0)
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text('Nota atual do cliente: ${rep.avg.toStringAsFixed(1).replaceAll('.', ',')} (${rep.count} avaliações)',
+                    style: const TextStyle(color: AppColors.muted, fontSize: 12.5)),
+              ),
+            ),
           const SizedBox(height: 14),
           Text('Como foi sua experiência com ${firstName(_name)}?', textAlign: TextAlign.center, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900, height: 1.2)),
-          const SizedBox(height: 6),
-          const Text('Avalie nos 5 critérios para finalizar.', textAlign: TextAlign.center, style: TextStyle(color: AppColors.muted)),
-          const SizedBox(height: 16),
-          AppCard(
-            padding: EdgeInsets.zero,
-            child: Column(
-              children: [
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(12),
-                  decoration: const BoxDecoration(color: Color(0xFFF1F2F5), borderRadius: BorderRadius.vertical(top: Radius.circular(15))),
-                  child: const Text('* Todos os critérios são obrigatórios', style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.muted)),
-                ),
-                for (final c in _criteria)
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-                    child: Row(
-                      children: [
-                        Expanded(child: Text.rich(TextSpan(children: [TextSpan(text: c, style: const TextStyle(fontWeight: FontWeight.w800)), const TextSpan(text: ' *', style: TextStyle(color: Color(0xFF9B1C1C)))]))),
-                        RatingStars(value: (_ratings[c] ?? 0).toDouble(), size: 28, onChanged: (v) => setState(() => _ratings[c] = v)),
-                        SizedBox(width: 24, child: _ratings.containsKey(c) ? const Icon(Icons.check_rounded, color: Color(0xFF1E8E4E), size: 20) : null),
-                      ],
-                    ),
-                  ),
-              ],
+          const SizedBox(height: 14),
+          Center(
+            child: RatingStars(
+              value: _rating.toDouble(),
+              size: 46,
+              onChanged: (v) => setState(() {
+                _rating = v;
+                _tags = ReviewTags.keepValid(_tags, v, byClient: false);
+              }),
             ),
           ),
-          const SizedBox(height: 16),
+          AnimatedSize(
+            duration: const Duration(milliseconds: 250),
+            alignment: Alignment.topCenter,
+            child: _rating == 0
+                ? const Padding(
+                    padding: EdgeInsets.only(top: 10),
+                    child: Text('Toque numa estrela para começar', textAlign: TextAlign.center, style: TextStyle(color: AppColors.muted)),
+                  )
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 22),
+                      Text(ReviewTags.title(_rating), style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
+                      const SizedBox(height: 4),
+                      const Text('Escolha quantas quiser (opcional).', style: TextStyle(color: AppColors.muted, fontSize: 12.5)),
+                      const SizedBox(height: 10),
+                      ReviewTagPills(
+                        options: ReviewTags.options(_rating, byClient: false),
+                        selected: _tags,
+                        negative: negative,
+                        onToggle: (t, on) => setState(() => on ? _tags.add(t) : _tags.remove(t)),
+                      ),
+                    ],
+                  ),
+          ),
+          const SizedBox(height: 22),
           const Text('Deixe um comentário (opcional)', style: TextStyle(fontWeight: FontWeight.w900)),
           const SizedBox(height: 8),
           TextField(controller: _comment, maxLines: 3, maxLength: 1000, decoration: const InputDecoration(hintText: 'Descreva como foi o atendimento e a postura do cliente...')),
-          if (!_complete) const Padding(padding: EdgeInsets.only(top: 6), child: Text('Selecione todos os critérios para enviar', style: TextStyle(color: Color(0xFF9B1C1C), fontWeight: FontWeight.w700))),
+          const SizedBox(height: 12),
+          const BlindReviewBanner(who: 'o cliente'),
         ],
       ),
-      bottomNavigationBar: BottomBar(child: PrimaryButton(label: 'Enviar avaliação', loading: _busy, onPressed: _complete ? _submit : null)),
+      bottomNavigationBar: BottomBar(child: PrimaryButton(label: 'Enviar avaliação', loading: _busy, onPressed: _submit)),
     );
   }
 }
 
 class ThanksScreen extends StatelessWidget {
-  const ThanksScreen({super.key});
+  const ThanksScreen({super.key, this.revealed = false});
+
+  final bool revealed;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(automaticallyImplyLeading: false, title: const BrandLogo()),
-      body: const EmptyView(
-        icon: Icons.handshake_rounded,
+      body: EmptyView(
+        icon: revealed ? Icons.handshake_rounded : Icons.hourglass_top_rounded,
         title: 'Obrigado pela sua avaliação!',
-        subtitle: 'Seu feedback ajuda a manter a comunidade da Desperrengue segura, transparente e justa para todos os profissionais.',
+        subtitle: revealed
+            ? 'As duas avaliações já foram reveladas. Seu feedback ajuda a manter a comunidade da Desperrengue segura, transparente e justa.'
+            : 'Por ser uma avaliação cega, ela será revelada quando o cliente também avaliar, ou em até 48 horas.',
       ),
       bottomNavigationBar: BottomBar(
         child: PrimaryButton(label: 'Voltar ao painel', trailingArrow: true, onPressed: () => Navigator.of(context).popUntil((r) => r.isFirst)),

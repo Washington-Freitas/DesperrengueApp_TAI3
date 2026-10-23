@@ -6,6 +6,7 @@ import '../../../core/services/provider_service.dart';
 import '../../../core/ui/app_theme.dart';
 import '../../../core/ui/widgets.dart';
 import '../../../core/utils/format.dart';
+import '../../shared/presentation/review_widgets.dart';
 import 'provider_public_profile_screen.dart';
 import 'request_wizard.dart';
 
@@ -83,7 +84,8 @@ class _ProviderSearchScreenState extends State<ProviderSearchScreen> {
       case _Sort.nearest:
         l.sort((a, b) => (a.distanceKm ?? 9999).compareTo(b.distanceKm ?? 9999));
       case _Sort.rating:
-        l.sort((a, b) => b.ratingAvg.compareTo(a.ratingAvg));
+        // Nota de ranqueamento (Média Bayesiana): evita que 1 serviço nota 5 passe 85 serviços nota 4,88.
+        l.sort((a, b) => b.rankingValue.compareTo(a.rankingValue));
       case _Sort.fee:
         l.sort((a, b) => a.visitFee.compareTo(b.visitFee));
     }
@@ -137,7 +139,7 @@ class _ProviderSearchScreenState extends State<ProviderSearchScreen> {
                 scrollDirection: Axis.horizontal,
                 child: Row(
                   children: [
-                    for (final (s, label) in [(_Sort.nearest, 'Mais próximos 📍'), (_Sort.rating, 'Maior nota ★'), (_Sort.fee, 'Menor taxa')])
+                    for (final (s, label) in [(_Sort.nearest, 'Mais próximos 📍'), (_Sort.rating, 'Melhor avaliados ★'), (_Sort.fee, 'Menor taxa')])
                       Padding(
                         padding: const EdgeInsets.only(right: 8),
                         child: ChoiceChip(
@@ -265,6 +267,10 @@ class _ProviderTile extends StatelessWidget {
                       const StatusChip('Perfil Verificado', color: AppColors.info, icon: Icons.verified_rounded),
                   ],
                 ),
+                if (p.badges.any((b) => b != ProviderBadge.superPro.code)) ...[
+                  const SizedBox(height: 6),
+                  BadgeChips([for (final b in p.badges) if (b != ProviderBadge.superPro.code) b], max: 2),
+                ],
                 const SizedBox(height: 6),
                 Text(
                   'Taxa de visita: ${brl(p.visitFee)}${p.distanceKm != null ? ' • ${distanceLabel(p.distanceKm)}' : ''}',

@@ -110,6 +110,7 @@ Cobertos hoje (`app/test/user_profile_test.dart`):
 
 ```bash
 supabase db query --linked -f supabase/tests/security_smoke.sql
+supabase db query --linked -f supabase/tests/review_system_smoke.sql   # avaliações cegas, Bayes, selos e respostas (30 asserções)
 # A saída é uma "falha" proposital contendo o relatório; o critério é "FALHAS=0".
 ```
 
@@ -278,6 +279,7 @@ flutter test --coverage        # relatório em app/coverage/lcov.info
 # Banco (relatório de 62 asserções)
 cd ..
 supabase db query --linked -f supabase/tests/security_smoke.sql
+supabase db query --linked -f supabase/tests/review_system_smoke.sql   # avaliações cegas, Bayes, selos e respostas (30 asserções)
 ```
 
 **Integração contínua:** o *workflow* [`.github/workflows/ci.yml`](.github/workflows/ci.yml) executa `flutter analyze` e `flutter test --coverage` a cada PR e *push* em `main`, publicando o `lcov.info` como artefato. O teste de banco **não** roda no CI (exige credenciais de projeto); ele é executado localmente e a **saída é anexada ao PR** de banco — a automação com *staging* está no [ROADMAP](ROADMAP.md) (E-08).

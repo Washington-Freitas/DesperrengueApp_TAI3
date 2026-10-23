@@ -506,6 +506,7 @@ class ProviderProfileTab extends StatelessWidget {
         tile(Icons.edit_rounded, 'Editar perfil', 'Foto, bio, especialidades e preços', () => push(const EditProviderProfileScreen())),
         tile(Icons.photo_library_rounded, 'Meu portfólio', 'Fotos dos seus trabalhos', () => push(const PortfolioScreen())),
         tile(Icons.workspace_premium_rounded, 'Meus certificados', 'Cofre de qualificações', () => push(const CertificatesScreen())),
+        tile(Icons.reviews_rounded, 'Minhas avaliações', 'Nota, selos e respostas aos clientes', () => push(MyReviewsScreen(profile: profile))),
         tile(Icons.support_agent_rounded, 'Ajuda e suporte', 'Central e chamados', () => push(const SupportCenterScreen())),
         const Divider(height: 32),
         InfoBanner(

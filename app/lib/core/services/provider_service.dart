@@ -78,6 +78,22 @@ class ProviderService {
     return rows.map(PublicReview.fromMap).toList();
   }
 
+  /// Direito de resposta: o profissional responde UMA vez a cada avaliação revelada.
+  Future<void> replyToReview(String reviewId, String text) =>
+      _client.rpc('reply_to_review', params: {'p_review': reviewId, 'p_text': text});
+
+  /// Reputação do cliente (nota média e quantidade), só para profissionais envolvidos.
+  Future<({double avg, int count})?> clientReputation(String clientId) async {
+    try {
+      final rows = await _client.rpc('client_reputation', params: {'p_client': clientId});
+      if (rows is List && rows.isNotEmpty) {
+        final m = rows.first as Map<String, dynamic>;
+        return (avg: (m['avg_rating'] as num?)?.toDouble() ?? 0, count: (m['rating_count'] as num?)?.toInt() ?? 0);
+      }
+    } catch (_) {}
+    return null;
+  }
+
   /// Horários já ocupados do profissional (para desabilitar no agendamento).
   Future<List<DateTime>> busySlots(String providerId) async {
     final rows = await _client.from('provider_busy_slots').select('scheduled_for').eq('provider_id', providerId);

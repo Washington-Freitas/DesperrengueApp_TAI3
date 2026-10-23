@@ -7,6 +7,7 @@ import '../../../core/ui/app_theme.dart';
 import '../../../core/ui/media_widgets.dart';
 import '../../../core/ui/widgets.dart';
 import '../../../core/utils/format.dart';
+import '../../shared/presentation/review_widgets.dart';
 import 'request_wizard.dart';
 
 /// Perfil público do profissional (protótipos 3, 4 e 5).
@@ -27,7 +28,8 @@ class ProviderPublicProfileScreen extends StatefulWidget {
 class _ProviderPublicProfileScreenState extends State<ProviderPublicProfileScreen> {
   final _service = ProviderService();
   late final Future<List<PortfolioItem>> _portfolio = _service.portfolio(widget.provider.id);
-  late final Future<List<PublicReview>> _reviews = _service.reviews(widget.provider.id);
+  late final Future<List<PublicReview>> _reviews = _service.reviews(widget.provider.id, limit: 60);
+  int _tab = 0;
 
   /// O usuário está vendo o PRÓPRIO perfil profissional (visão do cliente).
   bool get _isSelf => widget.provider.id == widget.profile.id;
@@ -158,39 +160,69 @@ class _ProviderPublicProfileScreenState extends State<ProviderPublicProfileScree
                         );
                       },
                     ),
-                    const SectionTitle('Reviews recentes'),
+                    if (p.badges.isNotEmpty) ...[
+                      const SectionTitle('Selos conquistados'),
+                      BadgeWall(earned: p.badges),
+                    ],
+                    const SectionTitle('Avaliações de clientes'),
                     FutureBuilder<List<PublicReview>>(
                       future: _reviews,
                       builder: (context, snap) {
-                        final items = snap.data ?? const [];
+                        final items = snap.data ?? const <PublicReview>[];
                         if (snap.connectionState != ConnectionState.done) return const SizedBox(height: 60, child: LoadingView());
+                        final photos = [for (final r in items) ...r.photoPaths];
                         if (items.isEmpty) {
                           return const Text('Ainda não há avaliações.', style: TextStyle(color: AppColors.muted));
                         }
                         return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            for (final r in items)
-                              AppCard(
-                                margin: const EdgeInsets.only(bottom: 10),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
+                            SegmentedButton<int>(
+                              showSelectedIcon: false,
+                              segments: [
+                                ButtonSegment(value: 0, label: Text('Avaliações (${items.length})')),
+                                ButtonSegment(value: 1, label: Text('Fotos de clientes (${photos.length})'), icon: const Icon(Icons.photo_library_outlined, size: 18)),
+                              ],
+                              selected: {_tab},
+                              onSelectionChanged: (s) => setState(() => _tab = s.first),
+                            ),
+                            const SizedBox(height: 12),
+                            if (_tab == 0)
+                              for (final r in items) ReviewCard(review: r)
+                            else if (photos.isEmpty)
+                              const Text('Nenhum cliente enviou fotos ainda.', style: TextStyle(color: AppColors.muted))
+                            else
+                              GridView.count(
+                                crossAxisCount: 3,
+                                mainAxisSpacing: 8,
+                                crossAxisSpacing: 8,
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                children: [
+                                  for (final path in photos)
+                                    Stack(
+                                      fit: StackFit.expand,
                                       children: [
-                                        UserAvatar(name: r.reviewerName, radius: 20),
-                                        const SizedBox(width: 10),
-                                        Expanded(child: Text(r.reviewerName, style: const TextStyle(fontWeight: FontWeight.w800))),
-                                        Text(relativeTime(r.createdAt), style: const TextStyle(color: AppColors.muted, fontSize: 12)),
+                                        PublicImage(path: path, radius: 12),
+                                        Positioned(
+                                          left: 4,
+                                          bottom: 4,
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                                            decoration: BoxDecoration(color: AppColors.success, borderRadius: BorderRadius.circular(8)),
+                                            child: const Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Icon(Icons.verified_rounded, size: 11, color: Colors.white),
+                                                SizedBox(width: 2),
+                                                Text('Verificado', style: TextStyle(color: Colors.white, fontSize: 9.5, fontWeight: FontWeight.w800)),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
                                       ],
                                     ),
-                                    const SizedBox(height: 6),
-                                    RatingStars(value: r.rating.toDouble(), size: 16),
-                                    if (r.comment != null && r.comment!.isNotEmpty) ...[
-                                      const SizedBox(height: 6),
-                                      Text(r.comment!, style: const TextStyle(height: 1.4)),
-                                    ],
-                                  ],
-                                ),
+                                ],
                               ),
                           ],
                         );

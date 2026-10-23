@@ -55,6 +55,8 @@ Categorias: **Adicionado** · **Alterado** · **Descontinuado** · **Removido** 
 - O cliente que também é profissional **se vê** nos resultados de busca (etiqueta "Você" e aviso "Visão do cliente"), mas não pode contratar a si mesmo (UI, assistente de pedido e banco).
 - Migration `20261022100000_self_service_guards` (`accept_emergency` recusa o próprio pedido).
 - Testes unitários: 36 (estágios do cadastro, parsers de CEP/GPS, rascunhos).
+- **Avaliações v2** ([ADR-0011](docs/adr/0011-avaliacoes-cegas-bayes-e-selos.md)): pílulas de contexto que mudam com a nota (1–3 ⭐ "O que deu errado?", 4–5 ⭐ "O que mais te impressionou?"); **avaliação bidirecional cega** (revelada quando as duas partes avaliam ou 48 h depois); **ranqueamento por Média Bayesiana** (`WR = v/(v+m)·R + m/(v+m)·C`, com peso de recência) calculado no banco; **selos automáticos** (Mestre da Organização, Sempre Pontual, Super Profissional…); **fotos "antes e depois"** com selo "Verificado" e aba "Fotos de clientes"; **direito de resposta** público (uma vez); **trava de retenção de crise** (garantia/suporte antes de publicar nota 1–2 com "Problema não resolvido"); reputação do cliente visível aos profissionais envolvidos; tela "Minhas avaliações" do profissional.
+- Testes: `supabase/tests/review_system_smoke.sql` (30 asserções, `FALHAS=0`) e 44 testes unitários.
 
 ### Alterado
 - **(quebra de compatibilidade)** `profiles.role` deixa de aceitar `client`/`provider`; passa a existir só para `admin`. Os papéis são as *flags* `is_client`/`is_provider`.

@@ -25,3 +25,4 @@ Registro histórico das decisões arquiteturalmente significativas do Desperreng
 | [0008](0008-migrations-sem-docker-e-teste-transacional.md) | *Migrations* sem Docker e teste de fumaça transacional | Aceito | 2026-10-09 |
 | [0009](0009-roteamento-por-funcao-pura-e-authgate.md) | Roteamento por função pura (`destinationFor`) e `AuthGate`; adiamento do `go_router` | Aceito | 2026-10-09 |
 | [0010](0010-webhook-autenticado-por-segredo-no-vault.md) | *Webhook* do banco para Edge Function autenticado por segredo no Vault | Aceito | 2026-10-09 |
+| [0011](0011-avaliacoes-cegas-bayes-e-selos.md) | Avaliações cegas, ranqueamento por Média Bayesiana e selos automáticos | Aceito | 2026-10-23 |

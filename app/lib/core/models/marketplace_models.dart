@@ -211,6 +211,8 @@ class ProviderCard {
     this.latitude,
     this.longitude,
     this.distanceKm,
+    this.badges = const [],
+    this.rankScore,
   });
 
   final String id;
@@ -230,17 +232,28 @@ class ProviderCard {
   final double? longitude;
   final double? distanceKm;
 
+  /// Selos automáticos (códigos em [ProviderBadge]).
+  final List<String> badges;
+
+  /// Nota de ranqueamento (Média Bayesiana) calculada no banco. Ordena a busca.
+  final double? rankScore;
+
   String get title => (headline != null && headline!.trim().isNotEmpty)
       ? headline!
       : (specialties.isNotEmpty ? specialties.first : 'Profissional');
 
-  bool get isSuper => ratingAvg >= 4.8 && ratingCount >= 10;
+  /// "Super Profissional": selo concedido pelo banco (20 últimas avaliações nota 5).
+  bool get isSuper => badges.contains(ProviderBadge.superPro.code);
+
+  /// Valor usado para ordenar "Melhor avaliados": a nota Bayesiana quando existe.
+  double get rankingValue => rankScore ?? ratingAvg;
 
   ProviderCard withDistance(double? km) => ProviderCard(
     id: id, fullName: fullName, avatarUrl: avatarUrl, bio: bio, city: city, headline: headline,
     specialties: specialties, hourlyRate: hourlyRate, visitFee: visitFee, ratingAvg: ratingAvg,
     ratingCount: ratingCount, jobsDone: jobsDone, accepting: accepting,
     latitude: latitude, longitude: longitude, distanceKm: km,
+    badges: badges, rankScore: rankScore,
   );
 
   factory ProviderCard.fromMap(Map<String, dynamic> m) => ProviderCard(
@@ -259,6 +272,8 @@ class ProviderCard {
     accepting: m['accepting_jobs'] != false,
     latitude: _num(m['latitude']),
     longitude: _num(m['longitude']),
+    badges: ((m['badges'] as List?) ?? const []).cast<String>(),
+    rankScore: _num(m['rank_score']),
   );
 }
 
@@ -371,6 +386,9 @@ class PublicReview {
     required this.createdAt,
     this.comment,
     this.tags = const [],
+    this.photoPaths = const [],
+    this.reply,
+    this.replyAt,
   });
 
   final String id;
@@ -380,6 +398,15 @@ class PublicReview {
   final List<String> tags;
   final DateTime createdAt;
 
+  /// Fotos do serviço anexadas pelo cliente ("Serviço verificado").
+  final List<String> photoPaths;
+
+  /// Resposta pública do profissional (uma por avaliação).
+  final String? reply;
+  final DateTime? replyAt;
+
+  bool get hasReply => reply != null && reply!.trim().isNotEmpty;
+
   factory PublicReview.fromMap(Map<String, dynamic> m) => PublicReview(
     id: m['id'] as String,
     rating: (m['rating'] as num).toInt(),
@@ -387,7 +414,76 @@ class PublicReview {
     comment: m['comment'] as String?,
     tags: ((m['tags'] as List?) ?? const []).cast<String>(),
     createdAt: _dt(m['created_at']) ?? DateTime.now(),
+    photoPaths: ((m['photo_paths'] as List?) ?? const []).cast<String>(),
+    reply: m['reply'] as String?,
+    replyAt: _dt(m['reply_at']),
   );
+}
+
+/// Selos automáticos concedidos pelo banco (`provider_profiles.badges`).
+enum ProviderBadge {
+  superPro('super', 'Super Profissional', 'As 20 últimas avaliações foram nota 5', null, 20),
+  organizacao('organizacao', 'Mestre da Organização', '15 clientes elogiaram: "Limpou tudo depois"', 'Limpou tudo depois', 15),
+  pontual('pontual', 'Sempre Pontual', '15 clientes elogiaram: "Super pontual"', 'Super pontual', 15),
+  mestre('mestre', 'Mestre no que faz', '15 clientes elogiaram: "Mestre no que faz"', 'Mestre no que faz', 15),
+  honesto('honesto', 'Preço Honesto', '15 clientes elogiaram: "Preço honesto"', 'Preço honesto', 15),
+  confiavel('confiavel', 'Educado e Confiável', '15 clientes elogiaram: "Educado e confiável"', 'Educado e confiável', 15);
+
+  const ProviderBadge(this.code, this.label, this.description, this.tag, this.goal);
+
+  final String code;
+  final String label;
+  final String description;
+
+  /// Pílula cujas marcações contam para o selo (null = regra própria).
+  final String? tag;
+  final int goal;
+
+  static ProviderBadge? parse(String code) {
+    for (final b in ProviderBadge.values) {
+      if (b.code == code) return b;
+    }
+    return null;
+  }
+}
+
+/// Pílulas de contexto (Quick Tags) e regras do fluxo guiado de avaliação.
+class ReviewTags {
+  const ReviewTags._();
+
+  /// Pílula que aciona a "trava de retenção de crise".
+  static const unresolved = 'Problema não resolvido';
+
+  static const clientNegative = ['Atrasou', 'Deixou sujeira', 'Cobrou valor diferente', unresolved, 'Falta de educação'];
+  static const clientPositive = ['Super pontual', 'Limpou tudo depois', 'Mestre no que faz', 'Preço honesto', 'Educado e confiável'];
+
+  static const providerNegative = ['Local inseguro', 'Problema diferente do descrito', 'Acesso difícil', 'Pagamento com problema', 'Falta de respeito'];
+  static const providerPositive = ['Ambiente seguro', 'Descrição realista', 'Acesso fácil', 'Pagamento tranquilo', 'Educado e respeitoso'];
+
+  /// 1 a 3 estrelas = o que deu errado; 4 e 5 = o que impressionou.
+  static bool isNegative(int rating) => rating >= 1 && rating <= 3;
+
+  static String title(int rating) {
+    if (rating == 0) return 'Como foi o atendimento?';
+    return isNegative(rating) ? 'O que deu errado?' : 'O que mais te impressionou?';
+  }
+
+  /// Pílulas exibidas para a nota escolhida (`byClient`: o cliente avalia o profissional;
+  /// senão, o profissional avalia o cliente). Sem nota, nenhuma.
+  static List<String> options(int rating, {required bool byClient}) {
+    if (rating == 0) return const [];
+    if (byClient) return isNegative(rating) ? clientNegative : clientPositive;
+    return isNegative(rating) ? providerNegative : providerPositive;
+  }
+
+  /// Ao mudar a nota, mantém só as pílulas que existem no novo conjunto.
+  static Set<String> keepValid(Set<String> selected, int rating, {required bool byClient}) {
+    final valid = options(rating, byClient: byClient).toSet();
+    return selected.where(valid.contains).toSet();
+  }
+
+  /// Trava de retenção de crise: nota 1 ou 2 + "Problema não resolvido".
+  static bool shouldOfferGuarantee(int rating, Iterable<String> tags) => rating >= 1 && rating <= 2 && tags.contains(unresolved);
 }
 
 class PortfolioItem {

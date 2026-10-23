@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 
 import '../../../core/models/marketplace_models.dart';
 import '../../../core/services/job_service.dart';
+import '../../../core/services/media_service.dart';
 import '../../../core/services/provider_service.dart';
 import '../../../core/services/social_service.dart';
 import '../../../core/ui/app_theme.dart';
+import '../../../core/ui/image_picking.dart';
 import '../../../core/ui/widgets.dart';
 import '../../../core/utils/format.dart';
+import '../../shared/presentation/review_widgets.dart';
 import '../../shared/presentation/support_screens.dart';
 
 /// "Serviço Concluído!" (protótipo 06): resumo + avaliar / relatar problema.
@@ -22,7 +25,7 @@ class CompletionScreen extends StatefulWidget {
 class _CompletionScreenState extends State<CompletionScreen> {
   ProviderCard? _provider;
   Payment? _payment;
-  bool _reviewed = false;
+  String _reviewStatus = 'none';
   bool _loaded = false;
 
   @override
@@ -37,13 +40,13 @@ class _CompletionScreenState extends State<CompletionScreen> {
       final results = await Future.wait([
         job.providerId == null ? Future.value(null) : ProviderService().byId(job.providerId!),
         JobService().fetchPayment(job.id),
-        SocialService().alreadyReviewed(job.id),
+        SocialService().reviewStatus(job.id),
       ]);
       if (!mounted) return;
       setState(() {
         _provider = results[0] as ProviderCard?;
         _payment = results[1] as Payment?;
-        _reviewed = results[2] as bool;
+        _reviewStatus = results[2] as String;
         _loaded = true;
       });
     } catch (_) {
@@ -123,8 +126,15 @@ class _CompletionScreenState extends State<CompletionScreen> {
                   ),
                 ),
                 const SizedBox(height: 20),
-                if (_reviewed)
+                if (_reviewStatus == 'revealed')
                   const InfoBanner('Obrigado! Sua avaliação ajuda toda a comunidade.', tone: BannerTone.success, title: 'Avaliação enviada')
+                else if (_reviewStatus == 'waiting')
+                  const InfoBanner(
+                    'Ela será revelada quando o profissional também avaliar, ou em até 48 horas.',
+                    tone: BannerTone.security,
+                    icon: Icons.hourglass_top_rounded,
+                    title: 'Avaliação enviada (cega)',
+                  )
                 else
                   PrimaryButton(
                     label: 'Avaliar serviço',
@@ -162,7 +172,8 @@ class _CompletionScreenState extends State<CompletionScreen> {
   }
 }
 
-/// Avaliação detalhada (protótipo 07): estrelas, tags, comentário e gorjeta.
+/// Avaliação guiada (protótipo 07): estrelas -> pílulas de contexto que mudam com
+/// a nota -> comentário -> foto do serviço ("Antes e Depois") -> gorjeta.
 class RatingScreen extends StatefulWidget {
   const RatingScreen({super.key, required this.job, required this.provider});
 
@@ -175,13 +186,12 @@ class RatingScreen extends StatefulWidget {
 
 class _RatingScreenState extends State<RatingScreen> {
   int _rating = 0;
-  final _tags = <String>{};
+  Set<String> _tags = <String>{};
   final _comment = TextEditingController();
+  final _photos = <PickedImage>[];
   double _tip = 0;
   bool _busy = false;
-
-  static const _positive = ['Pontual', 'Trabalho limpo', 'Preço justo', 'Resolveu o problema', 'Educado'];
-  static const _negative = ['Atrasou', 'Não resolveu', 'Deixou bagunça', 'Preço diferente do combinado', 'Mal-educado'];
+  bool _crisisShown = false;
 
   @override
   void dispose() {
@@ -189,22 +199,94 @@ class _RatingScreenState extends State<RatingScreen> {
     super.dispose();
   }
 
+  Future<void> _addPhoto() async {
+    final img = await pickImage(context);
+    if (img != null && mounted) setState(() => _photos.add(img));
+  }
+
+  /// Trava de retenção de crise: antes de publicar uma nota baixa com "Problema
+  /// não resolvido", oferece a garantia ou o suporte. Devolve true para seguir
+  /// com o envio da avaliação.
+  Future<bool> _crisisCheck() async {
+    if (_crisisShown || !ReviewTags.shouldOfferGuarantee(_rating, _tags)) return true;
+    _crisisShown = true;
+    final choice = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(22, 18, 22, 22),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(child: Container(width: 44, height: 4, decoration: BoxDecoration(color: AppColors.line, borderRadius: BorderRadius.circular(2)))),
+              const SizedBox(height: 16),
+              const Row(
+                children: [
+                  CircleAvatar(radius: 22, backgroundColor: AppColors.successSoft, child: Icon(Icons.shield_rounded, color: AppColors.successInk)),
+                  SizedBox(width: 12),
+                  Expanded(child: Text('Sentimos muito por isso!', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900))),
+                ],
+              ),
+              const SizedBox(height: 10),
+              const Text(
+                'Antes de publicar, podemos resolver isso agora. Você prefere acionar a Garantia Desperrengue ou falar com o nosso suporte?',
+                style: TextStyle(height: 1.45, color: AppColors.muted),
+              ),
+              const SizedBox(height: 18),
+              PrimaryButton(label: 'Acionar a garantia do serviço', icon: Icons.verified_user_rounded, onPressed: () => Navigator.pop(ctx, 'guarantee')),
+              const SizedBox(height: 10),
+              SecondaryButton(label: 'Falar com o suporte agora', icon: Icons.support_agent_rounded, onPressed: () => Navigator.pop(ctx, 'support')),
+              const SizedBox(height: 4),
+              Center(child: TextButton(onPressed: () => Navigator.pop(ctx, 'send'), child: const Text('Enviar a avaliação mesmo assim'))),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (!mounted) return false;
+    switch (choice) {
+      case 'guarantee':
+        await Navigator.of(context).push(MaterialPageRoute(
+          builder: (_) => ReportProblemScreen(job: widget.job, asProvider: false, initialReason: 'O serviço não foi finalizado'),
+        ));
+        return false;
+      case 'support':
+        await Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SupportCenterScreen()));
+        return false;
+      case 'send':
+        return true;
+      default:
+        return false; // fechou o painel: continua editando
+    }
+  }
+
   Future<void> _submit() async {
     if (_rating == 0) {
       showSnack(context, 'Toque nas estrelas para dar uma nota.', error: true);
       return;
     }
+    if (!await _crisisCheck()) return;
     setState(() => _busy = true);
     try {
+      final media = MediaService();
+      final paths = <String>[];
+      for (final p in _photos) {
+        paths.add(await media.uploadPublicPath(p.bytes, p.ext, prefix: 'review'));
+      }
       await SocialService().submitReview(
         jobId: widget.job.id,
         rating: _rating,
         comment: _comment.text,
         tags: _tags.toList(),
         tip: _tip,
+        photoPaths: paths,
       );
+      final status = await SocialService().reviewStatus(widget.job.id);
       if (!mounted) return;
-      Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const RatingSuccessScreen()));
+      Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => RatingSuccessScreen(revealed: status == 'revealed')));
     } catch (e) {
       if (mounted) showSnack(context, friendlyError(e), error: true);
     } finally {
@@ -215,56 +297,87 @@ class _RatingScreenState extends State<RatingScreen> {
   @override
   Widget build(BuildContext context) {
     final p = widget.provider;
-    final options = _rating > 0 && _rating <= 2 ? _negative : _positive;
+    final negative = ReviewTags.isNegative(_rating);
+    final options = ReviewTags.options(_rating, byClient: true);
     return Scaffold(
       appBar: AppBar(leading: IconButton(icon: const Icon(Icons.arrow_back_ios_new_rounded), onPressed: () => Navigator.maybePop(context)), title: const BrandLogo()),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
         children: [
-          Text('Como foi o serviço do ${firstName(p.fullName)}?', style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w900, color: AppColors.clientInk)),
+          AppCard(
+            child: Row(
+              children: [
+                UserAvatar(url: p.avatarUrl, name: p.fullName, radius: 30, verified: true),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(p.fullName, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 17)),
+                      Text('${p.title} • ${widget.job.category}', style: const TextStyle(color: AppColors.muted)),
+                      const SizedBox(height: 2),
+                      Text('OS ${widget.job.code}', style: const TextStyle(color: AppColors.muted, fontSize: 12, fontWeight: FontWeight.w700)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
           const SizedBox(height: 18),
-          Center(child: UserAvatar(url: p.avatarUrl, name: p.fullName, radius: 44)),
-          const SizedBox(height: 8),
-          Center(child: Text('${p.fullName} • ${p.title}', style: const TextStyle(fontWeight: FontWeight.w700))),
-          const SizedBox(height: 14),
+          Text('Como foi o serviço do ${firstName(p.fullName)}?', textAlign: TextAlign.center, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: AppColors.clientInk)),
+          const SizedBox(height: 12),
           Center(
             child: RatingStars(
               value: _rating.toDouble(),
               size: 46,
               onChanged: (v) => setState(() {
                 _rating = v;
-                _tags.clear();
+                _tags = ReviewTags.keepValid(_tags, v, byClient: true);
               }),
             ),
           ),
-          const SizedBox(height: 22),
-          Text(_rating > 0 && _rating <= 2 ? 'O que deu errado?' : 'O que você mais gostou?', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 17)),
-          const SizedBox(height: 10),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              for (final t in options)
-                FilterChip(
-                  label: Text(t),
-                  selected: _tags.contains(t),
-                  showCheckmark: false,
-                  selectedColor: AppColors.clientAccent,
-                  labelStyle: TextStyle(color: _tags.contains(t) ? Colors.white : AppColors.ink, fontWeight: FontWeight.w700),
-                  onSelected: (v) => setState(() => v ? _tags.add(t) : _tags.remove(t)),
-                ),
-            ],
+          AnimatedSize(
+            duration: const Duration(milliseconds: 250),
+            alignment: Alignment.topCenter,
+            child: _rating == 0
+                ? const Padding(
+                    padding: EdgeInsets.only(top: 10),
+                    child: Text('Toque numa estrela para começar', textAlign: TextAlign.center, style: TextStyle(color: AppColors.muted)),
+                  )
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 22),
+                      Text(ReviewTags.title(_rating), style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
+                      const SizedBox(height: 4),
+                      const Text('Escolha quantas quiser (opcional).', style: TextStyle(color: AppColors.muted, fontSize: 12.5)),
+                      const SizedBox(height: 10),
+                      ReviewTagPills(
+                        options: options,
+                        selected: _tags,
+                        negative: negative,
+                        onToggle: (t, on) => setState(() => on ? _tags.add(t) : _tags.remove(t)),
+                      ),
+                    ],
+                  ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 22),
           const Text('Deixe um comentário (opcional)', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 17)),
           const SizedBox(height: 8),
           TextField(
             controller: _comment,
             maxLines: 4,
             maxLength: 1000,
-            decoration: const InputDecoration(hintText: 'Escreva aqui como foi a sua experiência...'),
+            decoration: const InputDecoration(hintText: 'Conte em poucas palavras como foi a sua experiência...'),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
+          const Text('Foto do serviço (opcional)', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 17)),
+          const SizedBox(height: 4),
+          const Text('Mostre o resultado: fotos reais de "antes e depois" ajudam outros clientes e ganham o selo "Serviço verificado".',
+              style: TextStyle(color: AppColors.muted, fontSize: 12.5, height: 1.35)),
+          const SizedBox(height: 10),
+          MediaPickerRow(images: _photos, onAdd: _addPhoto, onRemove: (i) => setState(() => _photos.removeAt(i)), max: 3),
+          const SizedBox(height: 22),
           Text('Quer deixar uma gorjeta para o ${firstName(p.fullName)}?', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 17)),
           const SizedBox(height: 4),
           const Text('Simulada no MVP: registramos a intenção, sem cobrança.', style: TextStyle(color: AppColors.muted, fontSize: 12.5)),
@@ -283,6 +396,8 @@ class _RatingScreenState extends State<RatingScreen> {
                 ),
             ],
           ),
+          const SizedBox(height: 18),
+          const BlindReviewBanner(who: 'o profissional'),
         ],
       ),
       bottomNavigationBar: BottomBar(child: PrimaryButton(label: 'Enviar avaliação', loading: _busy, onPressed: _submit)),
@@ -290,17 +405,23 @@ class _RatingScreenState extends State<RatingScreen> {
   }
 }
 
+/// Confirmação do envio. Explica a avaliação cega: se a outra parte ainda não
+/// avaliou, a nota fica guardada até as duas serem reveladas (ou 48 h).
 class RatingSuccessScreen extends StatelessWidget {
-  const RatingSuccessScreen({super.key});
+  const RatingSuccessScreen({super.key, this.revealed = false});
+
+  final bool revealed;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(automaticallyImplyLeading: false, title: const BrandLogo()),
-      body: const EmptyView(
-        icon: Icons.favorite_rounded,
+      body: EmptyView(
+        icon: revealed ? Icons.favorite_rounded : Icons.hourglass_top_rounded,
         title: 'Avaliação enviada!',
-        subtitle: 'Obrigado pela sua avaliação! Seu feedback ajuda a manter a comunidade da Desperrengue segura e com qualidade.',
+        subtitle: revealed
+            ? 'As duas avaliações já foram reveladas. Obrigado! Seu feedback ajuda a manter a comunidade da Desperrengue segura e com qualidade.'
+            : 'Obrigado! Por ser uma avaliação cega, ela será revelada quando a outra parte também avaliar, ou em até 48 horas.',
       ),
       bottomNavigationBar: BottomBar(
         child: PrimaryButton(

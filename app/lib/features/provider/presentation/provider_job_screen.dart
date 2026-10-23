@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/models/marketplace_models.dart';
 import '../../../core/services/job_service.dart';
+import '../../../core/services/provider_service.dart';
 import '../../../core/ui/app_theme.dart';
 import '../../../core/ui/media_widgets.dart';
 import '../../../core/ui/widgets.dart';
@@ -129,10 +130,35 @@ class ClientCardTile extends StatelessWidget {
                 children: [
                   Text(name, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
                   Text(subtitle ?? 'Cliente', style: const TextStyle(color: AppColors.muted, fontSize: 13)),
+                  if (snap.data?['client_id'] is String) _ClientReputationChip(snap.data!['client_id'] as String),
                 ],
               ),
             ),
           ],
+        );
+      },
+    );
+  }
+}
+
+/// Nota média do cliente (avaliações dos profissionais anteriores), quando houver.
+class _ClientReputationChip extends StatelessWidget {
+  const _ClientReputationChip(this.clientId);
+
+  final String clientId;
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<({double avg, int count})?>(
+      future: ProviderService().clientReputation(clientId),
+      builder: (context, snap) {
+        final r = snap.data;
+        if (r == null || r.count == 0) {
+          return const Padding(padding: EdgeInsets.only(top: 4), child: StatusChip('Cliente novo', color: AppColors.info, icon: Icons.fiber_new_rounded));
+        }
+        return Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: StatusChip('${r.avg.toStringAsFixed(1).replaceAll('.', ',')} • ${r.count} avaliações do cliente', color: AppColors.warningInk, icon: Icons.star_rounded),
         );
       },
     );

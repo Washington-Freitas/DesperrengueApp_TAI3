@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../../core/models/marketplace_models.dart';
+import '../../../core/models/user_profile.dart';
 import '../../../core/services/app_session.dart';
 import '../../../core/services/draft_store.dart';
 import '../../../core/services/media_service.dart';
@@ -13,6 +14,7 @@ import '../../../core/ui/image_picking.dart';
 import '../../../core/ui/media_widgets.dart';
 import '../../../core/ui/widgets.dart';
 import '../../../core/utils/format.dart';
+import '../../shared/presentation/review_widgets.dart';
 
 /// Editar Perfil (protótipo P02): foto, título, bio, especialidades, preços.
 /// Em [setupMode] vira o 1º passo do cadastro inicial (botão "Continuar").
@@ -552,6 +554,144 @@ class _CertificatesScreenState extends State<CertificatesScreen> {
               SecondaryButton(label: '+ Adicionar registro ou certificado', onPressed: _add),
               const SizedBox(height: 12),
               const Center(child: Text('🔒 Seus dados são protegidos e visíveis só para você e a equipe.', style: TextStyle(fontSize: 12, color: AppColors.muted), textAlign: TextAlign.center)),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+/// Minhas avaliações: nota, nota de ranqueamento, selos (com progresso) e
+/// direito de resposta (uma vez por avaliação).
+class MyReviewsScreen extends StatefulWidget {
+  const MyReviewsScreen({super.key, required this.profile});
+
+  final UserProfile profile;
+
+  @override
+  State<MyReviewsScreen> createState() => _MyReviewsScreenState();
+}
+
+class _MyReviewsScreenState extends State<MyReviewsScreen> {
+  final _providers = ProviderService();
+  late Future<({ProviderCard? card, List<PublicReview> reviews})> _future = _load();
+
+  Future<({ProviderCard? card, List<PublicReview> reviews})> _load() async {
+    final card = await _providers.byId(widget.profile.id);
+    final reviews = await _providers.reviews(widget.profile.id, limit: 100);
+    return (card: card, reviews: reviews);
+  }
+
+  void _reload() => setState(() {
+        _future = _load();
+      });
+
+  Future<void> _reply(PublicReview r) async {
+    final ctl = TextEditingController();
+    final text = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.fromLTRB(20, 20, 20, MediaQuery.of(ctx).viewInsets.bottom + 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Responder avaliação', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
+            const SizedBox(height: 6),
+            const Text('Sua resposta é pública e só pode ser enviada uma vez. Seja cordial e objetivo.',
+                style: TextStyle(color: AppColors.muted, height: 1.4)),
+            const SizedBox(height: 12),
+            TextField(controller: ctl, maxLines: 4, maxLength: 500, autofocus: true, decoration: const InputDecoration(hintText: 'Escreva sua resposta...')),
+            const SizedBox(height: 8),
+            PrimaryButton(label: 'Publicar resposta', onPressed: () => Navigator.pop(ctx, ctl.text.trim())),
+          ],
+        ),
+      ),
+    );
+    ctl.dispose();
+    if (text == null || text.length < 3) return;
+    try {
+      await _providers.replyToReview(r.id, text);
+      if (mounted) showSnack(context, 'Resposta publicada!');
+      _reload();
+    } catch (e) {
+      if (mounted) showSnack(context, friendlyError(e), error: true);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Minhas avaliações')),
+      body: FutureBuilder<({ProviderCard? card, List<PublicReview> reviews})>(
+        future: _future,
+        builder: (context, snap) {
+          if (snap.connectionState != ConnectionState.done) return const LoadingView();
+          if (snap.hasError) return ErrorView(message: 'Não foi possível carregar suas avaliações.', onRetry: _reload);
+          final card = snap.data!.card;
+          final reviews = snap.data!.reviews;
+          final counts = <String, int>{};
+          for (final r in reviews) {
+            for (final t in r.tags) {
+              counts[t] = (counts[t] ?? 0) + 1;
+            }
+          }
+          final avg = card?.ratingAvg ?? 0;
+          final count = card?.ratingCount ?? 0;
+          return ListView(
+            padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+            children: [
+              AppCard(
+                child: Row(
+                  children: [
+                    Column(
+                      children: [
+                        Text(count > 0 ? avg.toStringAsFixed(2).replaceAll('.', ',') : '—', style: const TextStyle(fontSize: 38, fontWeight: FontWeight.w900)),
+                        RatingStars(value: avg, size: 16),
+                        const SizedBox(height: 2),
+                        Text('$count avaliações', style: const TextStyle(color: AppColors.muted, fontSize: 12)),
+                      ],
+                    ),
+                    const SizedBox(width: 18),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('Nota de ranqueamento', style: TextStyle(fontWeight: FontWeight.w900)),
+                          Text(
+                            card?.rankScore == null ? '—' : card!.rankScore!.toStringAsFixed(2).replaceAll('.', ','),
+                            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: AppColors.providerAccent),
+                          ),
+                          const SizedBox(height: 2),
+                          const Text(
+                            'Define sua posição na busca. Considera a média e o volume de avaliações: quanto mais serviços bem avaliados, mais você sobe.',
+                            style: TextStyle(color: AppColors.muted, fontSize: 12, height: 1.35),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
+              const InfoBanner(
+                'As avaliações são cegas: a nota de um serviço só aparece aqui quando você e o cliente avaliarem, ou 48 horas depois da primeira avaliação.',
+                tone: BannerTone.security,
+                icon: Icons.visibility_off_rounded,
+              ),
+              const SectionTitle('Meus selos'),
+              BadgeWall(earned: card?.badges ?? const [], tagCounts: counts, showProgress: true),
+              const SectionTitle('Avaliações recebidas'),
+              if (reviews.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 16),
+                  child: Text('Você ainda não recebeu avaliações reveladas.', style: TextStyle(color: AppColors.muted)),
+                )
+              else
+                for (final r in reviews) ReviewCard(review: r, onReply: r.hasReply ? null : () => _reply(r)),
             ],
           );
         },
