@@ -37,12 +37,18 @@ Uma **mesma conta** pode atuar como **cliente** ("Preciso de um serviço") e com
 | 📱 App Flutter (arquitetura e telas) | [app/README.md](./app/README.md) |
 | 🗄️ Backend Supabase (modelo, RPCs, testes) | [supabase/README.md](./supabase/README.md) |
 
-### Documentação acadêmica e de design (Etapa 1)
+### Documentação acadêmica, de design e de gestão (Etapas 1, 2 e 3)
 
 - [📄 Documento de Contexto](./docs/Documento%20de%20Contexto.md) (Problema, Solução, Lean Canvas e Missão, Visão e Valores)
 - [📋 Especificação do Projeto](./docs/Especificação%20do%20Projeto.md) (Personas, Histórias de Usuário, Requisitos Funcionais/Não-Funcionais e Restrições)
+- [🎨 Projeto de Interface (UI/UX)](./docs/Projeto%20de%20Interface.md) (Fluxo de Telas, Protótipos Hi-Fi e Rastreabilidade com Telas Implementadas)
+- [🖌️ Template Padrão e Design System](./docs/Template.md) (Paleta de Cores por Modo, Tipografia, Grid e Catálogo de Componentes)
+- [🏛️ Arquitetura do Sistema](./docs/Arquitetura%20do%20Sistema.md) (Planejamento da Stack, Diagramas C4, Modelo Relacional e Segurança)
 - [📱 Protótipos de Interface (UI/UX)](./docs/ui_ux/hi-fi_prototyping/) e [análise das telas](./docs/specs/) (cliente, profissional e telas comuns)
 - [💼 Plano de Negócio e Tributação](./docs/Planos%20de%20Negocio%20e%20Tributação.md)
+- [🧭 Análise de Ambientes e Matriz SWOT](./docs/Analise%20de%20Ambientes%20e%20SWOT.md) (PESTEL, Benchmarking, SWOT e SWOT Cruzada)
+- [🎯 Balanced Scorecard (BSC)](./docs/Balanced%20Scorecard%20(BSC).md) e [Planilha BSC (`.csv`)](./docs/planilhas/bsc_desperrengue.csv) (Mapa Estratégico e 16 Objetivos nas 4 Perspectivas)
+- [💰 Projeção de Fluxo de Caixa (12 Meses)](./docs/Fluxo%20de%20Caixa.md) e [Planilha Fluxo de Caixa (`.csv`)](./docs/planilhas/fluxo_de_caixa_12m.csv)
 - [🪪 Onboarding Profissional (KYC)](./docs/onboarding_profissional.md) · [✉️ Domínio e e-mail (Resend)](./docs/registro_dominio_resend.md)
 - Ambiente de desenvolvimento: [Windows](./docs/setup/windows.md) · [macOS](./docs/setup/macos.md) · [Linux](./docs/setup/linux.md)
 
