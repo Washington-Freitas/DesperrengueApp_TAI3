@@ -144,7 +144,7 @@ class _UpdateBanner extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      downloading ? 'Baixando a atualização...' : 'Nova versão disponível',
+                      downloading ? 'Baixando...' : 'Nova versão',
                       style: TextStyle(fontWeight: FontWeight.w800, color: tk.text, fontSize: 14.5),
                     ),
                     const SizedBox(height: 2),

@@ -96,14 +96,14 @@ void main() {
 
     testWidgets('mostra o aviso quando há versão nova e esconde com "Depois"', (t) async {
       await pump(t, check: () async => info(5));
-      expect(find.text('Nova versão disponível'), findsNothing, reason: 'ainda não checou');
+      expect(find.text('Nova versão'), findsNothing, reason: 'ainda não checou');
       await t.pump(const Duration(milliseconds: 100));
       await t.pump();
-      expect(find.text('Nova versão disponível'), findsOneWidget);
+      expect(find.text('Nova versão'), findsOneWidget);
       expect(find.text('Versão 0.2.0 · 61 MB'), findsOneWidget);
       await t.tap(find.text('Depois'));
       await t.pump();
-      expect(find.text('Nova versão disponível'), findsNothing);
+      expect(find.text('Nova versão'), findsNothing);
       await t.pumpWidget(const SizedBox()); // desmonta e cancela os timers
     });
 
@@ -115,7 +115,7 @@ void main() {
       await t.tap(find.text('Atualizar'));
       await t.pump();
       expect(opened, 'https://x/y.apk');
-      expect(find.text('Baixando a atualização...'), findsOneWidget);
+      expect(find.text('Baixando...'), findsOneWidget);
       expect(find.textContaining('toque na notificação'), findsOneWidget);
       await t.pumpWidget(const SizedBox());
     });
@@ -124,7 +124,7 @@ void main() {
       await pump(t, check: () async => null, b: Brightness.dark);
       await t.pump(const Duration(milliseconds: 100));
       await t.pump();
-      expect(find.text('Nova versão disponível'), findsNothing);
+      expect(find.text('Nova versão'), findsNothing);
       expect(t.takeException(), isNull);
       await t.pumpWidget(const SizedBox());
     });
