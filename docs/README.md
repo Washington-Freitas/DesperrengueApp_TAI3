@@ -25,6 +25,7 @@
 | [Telas analisadas dos protótipos](specs/cliente_telas.md) | [cliente](specs/cliente_telas.md) · [profissional](specs/profissional_telas.md) · [comuns](specs/comum_telas.md) |
 | [App Flutter](../app/README.md) · [Backend Supabase](../supabase/README.md) | READMEs dos módulos |
 | [Publicação na Play Store](PLAY_STORE.md) | Teste interno, assinatura e declarações |
+| [Testar com outras pessoas (sem Play Console)](TESTE_COM_AMIGOS.md) | Instalador APK no GitHub Releases: passo a passo para testadores e para publicar versões |
 
 ## 3. Produto, reputação e gamificação
 
