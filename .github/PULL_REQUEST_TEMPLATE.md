@@ -30,7 +30,7 @@ Closes #
 
 **Qualidade**
 - [ ] `flutter analyze` sem avisos e `flutter test` verdes (local e CI)
-- [ ] Testes novos/atualizados cobrem o comportamento (ver [TESTING](../TESTING.md))
+- [ ] Testes novos/atualizados cobrem o comportamento (ver [TESTING](../docs/TESTING.md))
 - [ ] Verifiquei estados de **carregamento, erro e vazio**, e textos em pt-BR
 - [ ] Sem `print`/logs de dados pessoais; sem código morto ou comentado
 
@@ -49,7 +49,7 @@ Closes #
 - [ ] Regras de negócio ficam no **banco/servidor**, não só na UI ([ADR-0003](../docs/adr/0003-regras-de-negocio-no-banco-via-rpc.md))
 
 **Documentação**
-- [ ] [CHANGELOG](../CHANGELOG.md) atualizado em **Não lançado**
+- [ ] [CHANGELOG](../docs/CHANGELOG.md) atualizado em **Não lançado**
 - [ ] README/ARCHITECTURE/SETUP/ADR atualizados quando aplicável (mudança estrutural exige ADR)
 
 ## Riscos, impacto e plano de reversão
@@ -62,4 +62,4 @@ Closes #
 
 ## Uso de IA
 
-- [ ] Houve apoio de IA; **li, entendi e validei** todo o código gerado (ver [CONTRIBUTING §9](../CONTRIBUTING.md#9-código-assistido-por-ia))
+- [ ] Houve apoio de IA; **li, entendi e validei** todo o código gerado (ver [CONTRIBUTING §9](CONTRIBUTING.md#9-código-assistido-por-ia))

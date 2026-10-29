@@ -67,6 +67,7 @@ class SocialService {
     List<String> tags = const [],
     double tip = 0,
     Map<String, int>? criteria,
+    List<String> photoPaths = const [],
   }) =>
       _client.rpc('submit_review', params: {
         'p_job_id': jobId,
@@ -75,7 +76,15 @@ class SocialService {
         'p_tags': tags,
         'p_tip': tip,
         'p_criteria': criteria,
+        'p_photo_paths': photoPaths,
       });
+
+  /// Estado da avaliação do serviço para o usuário: `none`, `waiting` (enviada,
+  /// aguardando a outra parte ou 48 h) ou `revealed`.
+  Future<String> reviewStatus(String jobId) async {
+    final r = await _client.rpc('review_status', params: {'p_job': jobId});
+    return (r as String?) ?? 'none';
+  }
 
   Future<bool> alreadyReviewed(String jobId) async {
     final row = await _client

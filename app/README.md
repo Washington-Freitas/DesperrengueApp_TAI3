@@ -57,7 +57,7 @@ lib/
 ```bash
 flutter pub get
 flutter analyze     # deve retornar "No issues found!"
-flutter test        # 16 testes (roteamento multi-modo, formatação, modelos)
+flutter test        # 55 testes (roteamento, formatação, modelos, CEP/GPS, rascunhos, avaliações, conquistas)
 flutter run         # escolha o emulador/dispositivo
 ```
 

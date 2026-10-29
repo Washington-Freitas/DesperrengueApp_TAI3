@@ -1,6 +1,6 @@
 # Análise de Ambientes e Matriz SWOT — Desperrengue
 
-> **Escopo:** Este documento apresenta a análise estratégica de ambientes (Macroambiente PESTEL, Microambiente Setorial e Matriz SWOT / FOFA) da startup **Desperrengue**, fundamentada nos dados empíricos coletados na Pesquisa de Mercado do projeto ($N = 46$ respondentes), no [Documento de Contexto](./Documento%20de%20Contexto.md), no [Plano de Negócio e Tributação](./Planos%20de%20Negocio%20e%20Tributação.md) e no mapeamento de riscos técnicos do [ROADMAP](../ROADMAP.md).
+> **Escopo:** Este documento apresenta a análise estratégica de ambientes (Macroambiente PESTEL, Microambiente Setorial e Matriz SWOT / FOFA) da startup **Desperrengue**, fundamentada nos dados empíricos coletados na Pesquisa de Mercado do projeto ($N = 46$ respondentes), no [Documento de Contexto](./Documento%20de%20Contexto.md), no [Plano de Negócio e Tributação](./Planos%20de%20Negocio%20e%20Tributação.md) e no mapeamento de riscos técnicos do [ROADMAP](ROADMAP.md).
 
 ---
 
@@ -69,7 +69,7 @@ flowchart TB
 
 #### ⚠️ Fraquezas (*Weaknesses*)
 1. **Equipe Reduzida (*Bus Factor* = 1):** Estrutura inicial composta por 1 Desenvolvedor e 1 Product Owner em regime *Sweat Equity*, limitando a velocidade de atendimento manual de suporte e revisão documental em larga escala.
-2. **Fluxos Financeiro e de KYC Simulados no Estágio MVP:** Conforme documentado em [`SECURITY.md`](../SECURITY.md) e no [ROADMAP](../ROADMAP.md) (DT-04 e DT-05), o checkout financeiro e a aprovação de KYC operam em modo simulado (*mock*) para fins de validação acadêmica, exigindo integração com gateway real (Pix/Stripe/Pagar.me) antes do lançamento comercial.
+2. **Fluxos Financeiro e de KYC Simulados no Estágio MVP:** Conforme documentado em [`SECURITY.md`](../.github/SECURITY.md) e no [ROADMAP](ROADMAP.md) (DT-04 e DT-05), o checkout financeiro e a aprovação de KYC operam em modo simulado (*mock*) para fins de validação acadêmica, exigindo integração com gateway real (Pix/Stripe/Pagar.me) antes do lançamento comercial.
 3. **Limitação de Verba Publicitária Inicial:** No cenário Lean (R$ 400 a R$ 600/mês), a aquisição depende fortemente de tráfego orgânico e parcerias locais, sem capital para campanhas massivas de mídia.
 4. **Dívidas Técnicas Conhecidas de Infraestrutura:** Operação atual em ambiente único no Supabase (sem ambiente de *staging* separado — DT-01) e ausência temporária de notificações *push* externas via FCM/APNs (DT-07).
 

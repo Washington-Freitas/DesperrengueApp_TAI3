@@ -6,7 +6,7 @@ labels: ["bug", "triagem"]
 assignees: ""
 ---
 
-> ⚠️ **Segurança:** se o problema permite acessar dados de outras pessoas, burlar pagamento/PIN/KYC ou escalar privilégios, **não publique aqui**. Siga o [SECURITY.md](../../SECURITY.md).
+> ⚠️ **Segurança:** se o problema permite acessar dados de outras pessoas, burlar pagamento/PIN/KYC ou escalar privilégios, **não publique aqui**. Siga o [SECURITY.md](../SECURITY.md).
 > 🔒 **Privacidade:** não inclua dados reais de usuários (nome, e-mail, endereço, documentos, tokens) em texto, *prints* ou logs. Oculte-os.
 
 ## Resumo

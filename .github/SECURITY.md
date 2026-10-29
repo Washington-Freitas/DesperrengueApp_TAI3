@@ -44,7 +44,7 @@ Use **um** dos canais confidenciais:
 | Correção de severidade **Média/Baixa** | ≤ **60 / 90 dias** |
 | Divulgação coordenada | Após a correção, ou em até **90 dias** do relato (o que ocorrer primeiro), de comum acordo |
 
-Manteremos você informado(a) do andamento e, com sua autorização, creditaremos a descoberta no [CHANGELOG](CHANGELOG.md).
+Manteremos você informado(a) do andamento e, com sua autorização, creditaremos a descoberta no [CHANGELOG](../docs/CHANGELOG.md).
 
 ## 4. Escopo
 
@@ -75,7 +75,7 @@ Se agir de **boa-fé** e respeitar as regras abaixo, **não tomaremos ação leg
 
 ## 6. Controles de segurança implementados (resumo)
 
-Detalhes em [ARCHITECTURE §8](ARCHITECTURE.md#8-modelo-de-segurança) e nos ADRs [0003](docs/adr/0003-regras-de-negocio-no-banco-via-rpc.md), [0007](docs/adr/0007-privacidade-por-minimizacao-de-dados.md) e [0010](docs/adr/0010-webhook-autenticado-por-segredo-no-vault.md).
+Detalhes em [ARCHITECTURE §8](../docs/ARCHITECTURE.md#8-modelo-de-segurança) e nos ADRs [0003](../docs/adr/0003-regras-de-negocio-no-banco-via-rpc.md), [0007](../docs/adr/0007-privacidade-por-minimizacao-de-dados.md) e [0010](../docs/adr/0010-webhook-autenticado-por-segredo-no-vault.md).
 
 | Domínio | Controle |
 | :-- | :-- |
@@ -106,7 +106,7 @@ Detalhes em [ARCHITECTURE §8](ARCHITECTURE.md#8-modelo-de-segurança) e nos ADR
 
 | Item | Situação |
 | :-- | :-- |
-| Pagamento e repasses | **Simulados** (sem gateway) — ver [ADR-0006](docs/adr/0006-pagamento-mock-com-custodia-e-pin.md) |
+| Pagamento e repasses | **Simulados** (sem gateway) — ver [ADR-0006](../docs/adr/0006-pagamento-mock-com-custodia-e-pin.md) |
 | Aprovação de KYC | **Automática (mock)** habilitada por `app_settings.kyc_auto_approve`; desativar em produção e adotar revisão administrativa |
 | Ambientes | Único projeto (sem *staging*) |
 | Testes de intrusão | Ainda **não realizados** por terceiros; revisão interna + teste automatizado de RLS |

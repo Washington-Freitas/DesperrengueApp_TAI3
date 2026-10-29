@@ -1,6 +1,6 @@
 # ARCHITECTURE — Desperrengue
 
-> **Escopo.** Descrição macro da arquitetura do sistema Desperrengue (marketplace de serviços residenciais), seus componentes, fluxos de dados, invariantes de segurança e decisões estruturais. Decisões individuais, com contexto e alternativas, estão registradas nos [ADRs](docs/adr/README.md).
+> **Escopo.** Descrição macro da arquitetura do sistema Desperrengue (marketplace de serviços residenciais), seus componentes, fluxos de dados, invariantes de segurança e decisões estruturais. Decisões individuais, com contexto e alternativas, estão registradas nos [ADRs](adr/README.md).
 > **Estado do documento.** Reflete o código da branch `fix/foundation-hardening` (migrations `20261009120000` a `20261019160000`). Onde a implementação difere do alvo arquitetural, a lacuna é declarada explicitamente na seção [12](#12-lacunas-conhecidas-e-dívida-técnica).
 
 ## Sumário
@@ -27,7 +27,7 @@ O Desperrengue é um sistema **cliente–servidor de duas camadas lógicas** sob
 * **Cliente:** um único aplicativo móvel Flutter (Android e iOS) que hospeda **dois modos de uso** — *Cliente* e *Profissional* — sobre a mesma conta de usuário.
 * **Servidor:** o projeto Supabase `eisfkemgooqbgqljvwvs` (região `sa-east-1`, PostgreSQL 17), que concentra autenticação, banco relacional, armazenamento de objetos, canais de tempo real, funções de borda e agendamento (`pg_cron`).
 
-Não existe servidor de aplicação próprio. O estilo é, portanto, **"banco como núcleo de domínio"** (*database-centric architecture*): as **invariantes de negócio** — limite de três orçamentos, custódia de pagamento, transições de estado, privacidade de endereço e do PIN — são impostas por **políticas RLS (*Row Level Security*), *triggers* e funções `SECURITY DEFINER`**, e não pelo cliente. O aplicativo é tratado como **componente não confiável** (zero-trust no cliente): qualquer verificação feita na UI é apenas ergonomia, nunca controle de acesso ([ADR-0003](docs/adr/0003-regras-de-negocio-no-banco-via-rpc.md)).
+Não existe servidor de aplicação próprio. O estilo é, portanto, **"banco como núcleo de domínio"** (*database-centric architecture*): as **invariantes de negócio** — limite de três orçamentos, custódia de pagamento, transições de estado, privacidade de endereço e do PIN — são impostas por **políticas RLS (*Row Level Security*), *triggers* e funções `SECURITY DEFINER`**, e não pelo cliente. O aplicativo é tratado como **componente não confiável** (zero-trust no cliente): qualquer verificação feita na UI é apenas ergonomia, nunca controle de acesso ([ADR-0003](adr/0003-regras-de-negocio-no-banco-via-rpc.md)).
 
 | Princípio | Materialização |
 | :-- | :-- |
@@ -36,7 +36,7 @@ Não existe servidor de aplicação próprio. O estilo é, portanto, **"banco co
 | Transições de estado atômicas | RPCs com `SELECT … FOR UPDATE` e *advisory locks* |
 | Minimização de dados | Views públicas mínimas; endereço em tabela separada; PIN em tabela com política de dono |
 | Observabilidade do domínio | Notificações geradas no servidor; `notifications` + Realtime |
-| Verificabilidade | Teste de fumaça transacional com 62 asserções ([TESTING](TESTING.md)) |
+| Verificabilidade | Testes SQL transacionais com 114 asserções (segurança 62, avaliações 30, conquistas 22) ([TESTING](TESTING.md)) |
 
 ---
 
@@ -64,7 +64,7 @@ flowchart LR
     D -- "HTTPS GET" --> AB
 ```
 
-**Observação de fronteira.** O gateway de pagamento é **simulado** (MVP acadêmico): nenhum dado de cartão trafega e nenhuma cobrança real ocorre ([ADR-0006](docs/adr/0006-pagamento-mock-com-custodia-e-pin.md)).
+**Observação de fronteira.** O gateway de pagamento é **simulado** (MVP acadêmico): nenhum dado de cartão trafega e nenhuma cobrança real ocorre ([ADR-0006](adr/0006-pagamento-mock-com-custodia-e-pin.md)).
 
 ---
 
@@ -121,7 +121,7 @@ flowchart TB
 | Banco | PostgreSQL 17 | Persistência, invariantes, regras de negócio, agendamento |
 | Realtime | Supabase Realtime | Difusão de mudanças (`jobs`, `quotes`, `job_invites`, `messages`, `notifications`) |
 | Storage | S3-compatível | Documentos de KYC, fotos de pedido/evidência, mídia pública |
-| Edge Function | Deno | Envio do e-mail de aprovação do KYC (autenticada por segredo compartilhado, [ADR-0010](docs/adr/0010-webhook-autenticado-por-segredo-no-vault.md)) |
+| Edge Function | Deno | Envio do e-mail de aprovação do KYC (autenticada por segredo compartilhado, [ADR-0010](adr/0010-webhook-autenticado-por-segredo-no-vault.md)) |
 
 ---
 
@@ -245,9 +245,9 @@ erDiagram
 
 | Tema | Decisão | Justificativa |
 | :-- | :-- | :-- |
-| Multi-modo | Flags `is_client` / `is_provider` em vez de `role` único | Uma pessoa exerce os dois papéis; evita duplicar contas ([ADR-0005](docs/adr/0005-modelo-multi-modo-por-flags.md)) |
-| Perfil | Tabela única `profiles` (nomes em inglês) | Havia duas tabelas divergentes (`perfis`/`profiles`) ([ADR-0004](docs/adr/0004-unificacao-de-perfis-e-nomes-em-ingles.md)) |
-| Endereço | `job_addresses` separada de `jobs` | RLS por *linha* não oculta *coluna*; separar aplica privacidade por contratação ([ADR-0007](docs/adr/0007-privacidade-por-minimizacao-de-dados.md)) |
+| Multi-modo | Flags `is_client` / `is_provider` em vez de `role` único | Uma pessoa exerce os dois papéis; evita duplicar contas ([ADR-0005](adr/0005-modelo-multi-modo-por-flags.md)) |
+| Perfil | Tabela única `profiles` (nomes em inglês) | Havia duas tabelas divergentes (`perfis`/`profiles`) ([ADR-0004](adr/0004-unificacao-de-perfis-e-nomes-em-ingles.md)) |
+| Endereço | `job_addresses` separada de `jobs` | RLS por *linha* não oculta *coluna*; separar aplica privacidade por contratação ([ADR-0007](adr/0007-privacidade-por-minimizacao-de-dados.md)) |
 | PIN | `job_secrets` com política "só dono" | O profissional valida via RPC e nunca lê o segredo |
 | Reputação | `rating_avg`, `rating_count`, `jobs_done` protegidos por *trigger* | Impede inflar a própria nota |
 | Valores monetários | `numeric` (exato), comissão fixa de 12 % calculada no servidor | Evita erros de ponto flutuante; regra única |
@@ -325,7 +325,7 @@ sequenceDiagram
     DB-->>DB: valida PIN, libera escrow, jobs_done++
     DB-->>C: notifications (concluído) via RT
     C->>A: avalia; P avalia o cliente
-    A->>DB: RPC submit_review (atualiza rating_avg)
+    A->>DB: RPC submit_review (avaliação cega: revela com as 2 partes ou em 48 h; recalcula reputação e conquistas)
 ```
 
 ### 7.2 Aprovação do KYC e e-mail
@@ -404,7 +404,7 @@ flowchart LR
 | **E**levation: função `SECURITY DEFINER` | `SET search_path = public`; `REVOKE ALL … FROM public, anon`; `GRANT` explícito a `authenticated` |
 | Força bruta no PIN | 5 tentativas **persistidas** (a tentativa não é desfeita por rollback) |
 
-Política de divulgação de vulnerabilidades: [SECURITY.md](SECURITY.md).
+Política de divulgação de vulnerabilidades: [SECURITY.md](../.github/SECURITY.md).
 
 ---
 
@@ -430,8 +430,8 @@ Política de divulgação de vulnerabilidades: [SECURITY.md](SECURITY.md).
 | Aplicação de migrations | `supabase db query --linked -f <arquivo>` (sem Docker) + registro manual em `supabase_migrations.schema_migrations`; *dry-run* em transação com `ROLLBACK` antes de aplicar |
 | Edge Function | `supabase functions deploy enviar-email-aprovacao --use-api --no-verify-jwt` |
 | App | Builds locais (`flutter run`); sem pipeline de distribuição |
-| CI | GitHub Actions: `flutter analyze` + `flutter test` ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) |
-| Segredos | Fora do repositório; ver [SETUP](SETUP.md) e [SECURITY](SECURITY.md) |
+| CI | GitHub Actions: `flutter analyze` + `flutter test` ([`.github/workflows/ci.yml`](../.github/workflows/ci.yml)) |
+| Segredos | Fora do repositório; ver [SETUP](SETUP.md) e [SECURITY](../.github/SECURITY.md) |
 
 Configuração remota de Auth relevante (verificada): confirmação de e-mail **ligada**, OTP de 6 dígitos com validade de 10 min, SMTP via Resend, Google habilitado, *redirect URLs* `br.com.desperrengue.app://login-callback` e `desperrengue://onboarding/ativar`. Observação: `supabase/config.toml` local mantém `enable_confirmations = false` (somente para o ambiente local do CLI).
 
@@ -445,7 +445,7 @@ Mapeamento aos atributos da ISO/IEC 25010:
 | :-- | :-- |
 | **Segurança** (confidencialidade, integridade, não repúdio) | RLS, `GRANT` por coluna, RPCs, Vault, URLs assinadas, evidências (§8) |
 | **Confiabilidade** (maturidade, recuperabilidade) | Invariantes atômicas; estorno automático; `pg_cron`; *backup* manual antes de migrações destrutivas |
-| **Adequação funcional** | Telas derivadas de protótipos hi-fi; spec em [`docs/specs`](docs/specs) |
+| **Adequação funcional** | Telas derivadas de protótipos hi-fi; spec em [`docs/specs`](specs) |
 | **Manutenibilidade** (modularidade, testabilidade) | Camadas `core/features`, modelos puros, serviços isolados, migrations versionadas |
 | **Usabilidade** | Design system por modo, estados de carregamento/erro/vazio padronizados, textos em pt-BR |
 | **Eficiência de desempenho** | Índices parciais (`jobs_open_idx`), `quote_count` desnormalizado, URLs assinadas com cache |

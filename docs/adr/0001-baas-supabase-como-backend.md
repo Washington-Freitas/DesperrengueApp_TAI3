@@ -33,4 +33,4 @@ Nenhuma lógica de negócio fora do banco, exceto UI e orquestração; revisão 
 
 ## Referências
 
-[`ARCHITECTURE.md`](../../ARCHITECTURE.md) · [`supabase/README.md`](../../supabase/README.md) · `docs/Especificação do Projeto.md`
+[`ARCHITECTURE.md`](../ARCHITECTURE.md) · [`supabase/README.md`](../../supabase/README.md) · `docs/Especificação do Projeto.md`

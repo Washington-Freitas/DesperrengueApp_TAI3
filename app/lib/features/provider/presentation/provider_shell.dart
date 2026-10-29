@@ -13,6 +13,7 @@ import '../../../core/ui/job_labels.dart';
 import '../../../core/ui/media_widgets.dart';
 import '../../../core/ui/widgets.dart';
 import '../../../core/utils/format.dart';
+import '../../shared/presentation/achievement_widgets.dart';
 import '../../shared/presentation/notifications_screen.dart';
 import '../../shared/presentation/support_screens.dart';
 import 'provider_job_screen.dart';
@@ -506,6 +507,8 @@ class ProviderProfileTab extends StatelessWidget {
         tile(Icons.edit_rounded, 'Editar perfil', 'Foto, bio, especialidades e preços', () => push(const EditProviderProfileScreen())),
         tile(Icons.photo_library_rounded, 'Meu portfólio', 'Fotos dos seus trabalhos', () => push(const PortfolioScreen())),
         tile(Icons.workspace_premium_rounded, 'Meus certificados', 'Cofre de qualificações', () => push(const CertificatesScreen())),
+        tile(Icons.reviews_rounded, 'Minhas avaliações', 'Nota, selos e respostas aos clientes', () => push(MyReviewsScreen(profile: profile))),
+        tile(Icons.emoji_events_rounded, 'Minhas conquistas', 'Troféus por serviços, avaliações e mais', () => push(AchievementsScreen(providerId: profile.id, providerName: profile.fullName, isOwner: true))),
         tile(Icons.support_agent_rounded, 'Ajuda e suporte', 'Central e chamados', () => push(const SupportCenterScreen())),
         const Divider(height: 32),
         InfoBanner(

@@ -37,4 +37,4 @@ O fluxo padrão do Supabase CLI para *migrations* (`db pull`, `db diff`, `db pus
 
 ## Referências
 
-[`supabase/README.md`](../../supabase/README.md) · [TESTING](../../TESTING.md) · [CONTRIBUTING](../../CONTRIBUTING.md)
+[`supabase/README.md`](../../supabase/README.md) · [TESTING](../TESTING.md) · [CONTRIBUTING](../../.github/CONTRIBUTING.md)

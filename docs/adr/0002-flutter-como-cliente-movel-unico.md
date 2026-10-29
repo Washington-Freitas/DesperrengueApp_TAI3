@@ -29,7 +29,7 @@ Adotar **Flutter (Dart ≥ 3.13)** com uma única base de código para Android e
 
 ## Verificação
 
-`flutter analyze` sem avisos e `flutter test` verde em CI ([TESTING](../../TESTING.md)).
+`flutter analyze` sem avisos e `flutter test` verde em CI ([TESTING](../TESTING.md)).
 
 ## Referências
 

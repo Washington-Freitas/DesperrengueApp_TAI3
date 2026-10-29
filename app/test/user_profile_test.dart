@@ -188,18 +188,27 @@ void main() {
       expect(JobStatus.inProgress.isActive, isTrue);
     });
 
-    test('ProviderCard: título, selo super e distância', () {
+    test('ProviderCard: título, selo super (vem do banco) e distância', () {
       final p = ProviderCard.fromMap({
         'id': 'p1',
         'full_name': 'Marcos Silva',
         'specialties': ['Elétrica'],
         'rating_avg': 4.9,
         'rating_count': 84,
+        'badges': ['super', 'pontual'],
+        'rank_score': 4.81,
       });
       expect(p.title, 'Elétrica');
       expect(p.isSuper, isTrue);
+      expect(p.badges, ['super', 'pontual']);
+      expect(p.rankingValue, 4.81);
       expect(p.visitFee, 30);
       expect(p.withDistance(2.5).distanceKm, 2.5);
+      expect(p.withDistance(2.5).badges, ['super', 'pontual']);
+      // Sem o selo do banco, nota alta sozinha não vira "Super".
+      final novato = ProviderCard.fromMap({'id': 'p2', 'rating_avg': 5, 'rating_count': 1});
+      expect(novato.isSuper, isFalse);
+      expect(novato.rankingValue, 5);
     });
   });
 }

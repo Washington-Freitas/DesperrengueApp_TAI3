@@ -78,10 +78,50 @@ class ProviderService {
     return rows.map(PublicReview.fromMap).toList();
   }
 
+  /// Direito de resposta: o profissional responde UMA vez a cada avaliação revelada.
+  Future<void> replyToReview(String reviewId, String text) =>
+      _client.rpc('reply_to_review', params: {'p_review': reviewId, 'p_text': text});
+
+  /// Reputação do cliente (nota média e quantidade), só para profissionais envolvidos.
+  Future<({double avg, int count})?> clientReputation(String clientId) async {
+    try {
+      final rows = await _client.rpc('client_reputation', params: {'p_client': clientId});
+      if (rows is List && rows.isNotEmpty) {
+        final m = rows.first as Map<String, dynamic>;
+        return (avg: (m['avg_rating'] as num?)?.toDouble() ?? 0, count: (m['rating_count'] as num?)?.toInt() ?? 0);
+      }
+    } catch (_) {}
+    return null;
+  }
+
   /// Horários já ocupados do profissional (para desabilitar no agendamento).
   Future<List<DateTime>> busySlots(String providerId) async {
     final rows = await _client.from('provider_busy_slots').select('scheduled_for').eq('provider_id', providerId);
     return [for (final r in rows) DateTime.parse(r['scheduled_for'] as String).toLocal()];
+  }
+
+  // ------------------------------------------------------------- conquistas
+
+  /// Conquistas desbloqueadas de um profissional (vitrine pública ou as próprias).
+  Future<List<({String code, DateTime unlockedAt})>> achievements(String providerId) async {
+    final rows = await _client
+        .from('provider_achievements')
+        .select('code, unlocked_at')
+        .eq('provider_id', providerId)
+        .order('unlocked_at', ascending: false);
+    return [
+      for (final r in rows)
+        (code: r['code'] as String, unlockedAt: DateTime.tryParse('${r['unlocked_at']}')?.toLocal() ?? DateTime.now()),
+    ];
+  }
+
+  /// Contadores do PRÓPRIO profissional por categoria (para as barras de progresso).
+  Future<Map<String, int>> myAchievementCounts() async {
+    final rows = await _client.rpc('my_achievement_counts');
+    return {
+      if (rows is List)
+        for (final r in rows) (r as Map<String, dynamic>)['category'] as String: ((r['n'] as num?) ?? 0).toInt(),
+    };
   }
 
   // ---------------------------------------------------------- próprio perfil
