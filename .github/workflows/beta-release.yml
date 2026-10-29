@@ -64,7 +64,8 @@ jobs:
             echo "::error::Faltam os segredos BETA_KEYSTORE_B64 / BETA_KEYSTORE_PASSWORD (Settings > Secrets and variables > Actions)."
             exit 1
           fi
-          echo "$KS_B64" | base64 -d > "$RUNNER_TEMP/beta.jks"
+          KS_PASS=$(printf '%s' "$KS_PASS" | tr -d '\r\n')
+          printf '%s' "$KS_B64" | tr -d '\r\n ' | base64 -d > "$RUNNER_TEMP/beta.jks"
           printf 'storePassword=%s\nkeyPassword=%s\nkeyAlias=beta\nstoreFile=%s\n' "$KS_PASS" "$KS_PASS" "$RUNNER_TEMP/beta.jks" > app/android/key.properties
 
       - name: Compilar o APK (versionCode = minutos desde 1970, sempre crescente)
