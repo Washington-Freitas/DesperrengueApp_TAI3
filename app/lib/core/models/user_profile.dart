@@ -1,4 +1,4 @@
-﻿/// Modelos puros (sem dependência de Flutter/Supabase) do perfil do usuário e
+/// Modelos puros (sem dependência de Flutter/Supabase) do perfil do usuário e
 /// da regra de roteamento pós-login. Mantidos isolados para serem testáveis.
 library;
 
@@ -122,6 +122,16 @@ class UserProfile {
   /// o cadastro dele já foi concluído (ou está em análise). Se o usuário nunca
   /// se cadastrou, ou deixou um cadastro pela metade, ele vê a seleção para
   /// escolher/terminar ("Termine o seu cadastro").
+  /// [preferred] = último perfil usado neste aparelho (cache local). Com os DOIS
+  /// perfis prontos, abre direto nele (sem repetir a seleção a cada abertura);
+  /// a seleção continua a um toque em "Trocar de modo".
+  UserMode? autoModeWith(UserMode? preferred) {
+    final auto = autoMode;
+    if (auto != null || preferred == null) return auto;
+    final stage = stageOf(preferred);
+    return (stage == ModeStage.ready || stage == ModeStage.awaitingReview) ? preferred : null;
+  }
+
   UserMode? get autoMode {
     final only = (isClient && !isProvider)
         ? UserMode.client
@@ -168,15 +178,18 @@ enum AppDestination {
 ///
 /// [mode] é o modo escolhido na sessão atual (null = ainda não escolheu).
 /// [forceSelection] reabre a seleção mesmo com um único modo ("Trocar de modo").
+///
+/// [preferred] é o último perfil usado (cache local) — ver [UserProfile.autoModeWith].
 AppDestination destinationFor(
   UserProfile profile, {
   UserMode? mode,
   bool forceSelection = false,
+  UserMode? preferred,
 }) {
   if (profile.isAdmin) return AppDestination.adminHome;
 
   var current = mode;
-  if (current == null && !forceSelection) current = profile.autoMode;
+  if (current == null && !forceSelection) current = profile.autoModeWith(preferred);
   if (current == null) return AppDestination.modeSelection;
 
   switch (current) {
