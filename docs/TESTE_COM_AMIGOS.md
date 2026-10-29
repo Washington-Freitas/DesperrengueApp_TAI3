@@ -2,23 +2,34 @@
 
 Guia para **você (desenvolvedor)** e para **quem vai testar**. Serve enquanto a verificação da conta de desenvolvedor da Google Play não é resolvida. Quando for resolvida, o caminho da Play continua em [PLAY_STORE.md](PLAY_STORE.md).
 
+> **Em uma frase:** a cada `git push`, o GitHub compila o app sozinho, publica o instalador num **link fixo** e os celulares dos testadores **avisam dentro do app** que há versão nova.
+
 ---
 
-## 1. Como funciona (em 30 segundos)
+## 1. Como funciona
 
 ```mermaid
 flowchart LR
-    DEV["Seu computador<br/>gera o instalador (.apk)"] -->|"1 comando"| GH["GitHub Releases<br/>(nuvem, gratuito)"]
-    GH -->|"link"| T1["Celular do testador 1"]
-    GH -->|"link"| T2["Celular do testador 2"]
-    GH -->|"link"| ME["Seu celular"]
-    T1 & T2 & ME <-->|"tempo real"| SB[("Supabase<br/>mesmo banco para todos")]
+    DEV["Você (ou um colega)<br/>git push"] --> CI["GitHub Actions<br/>analisa, testa e compila o APK assinado"]
+    CI -->|"substitui o arquivo"| REL["Release 'beta-latest'<br/>LINK FIXO do instalador"]
+    REL -->|"1ª instalação"| T["Celulares dos testadores"]
+    T -->|"a cada ~2 min consulta<br/>'saiu versão nova?'"| REL
+    T <-->|"tempo real"| SB[("Supabase<br/>mesmo banco para todos")]
 ```
 
-* O **APK** é o "instalador" do app Android (como um `.exe` no Windows).
-* Ele fica hospedado no **GitHub Releases** (a página de downloads do repositório). Ninguém precisa de conta: basta abrir o link.
-* **Tempo real:** todos os celulares usam o **mesmo banco (Supabase)**. Quando um testador faz um pedido, você vê aparecer **na hora** no seu celular (e vice-versa): pedidos, orçamentos, chat e notificações.
-* **iPhone:** este caminho é só **Android**. Para iPhone seria preciso conta paga da Apple (TestFlight).
+| Peça | O que faz |
+| :-- | :-- |
+| **APK** | O "instalador" do app Android (como um `.exe` no Windows). |
+| **Link fixo** | <https://github.com/Washington-Freitas/DesperrengueApp_TAI3/releases/download/beta-latest/desperrengue.apk> — **sempre** entrega a versão mais nova. Mande este link uma vez e pronto. |
+| **Página do release** | <https://github.com/Washington-Freitas/DesperrengueApp_TAI3/releases/tag/beta-latest> — mostra a versão, o que mudou e o botão de baixar. |
+| **Aviso no app** | Um cartão no topo: *"Nova versão disponível — Atualizar"*. Aparece poucos minutos depois da publicação e quando o app volta ao primeiro plano. |
+| **Tempo real dos dados** | Todos usam o mesmo banco (Supabase): pedidos, orçamentos, chat e notificações aparecem na hora nos dois celulares. |
+
+### O que é e o que NÃO é "automático"
+
+* ✅ **Automático:** compilar, publicar e **avisar** os celulares (em ~2 minutos depois de a publicação terminar; a compilação leva ~8–10 min após o push).
+* ⚠️ **Não é 100 % silencioso:** o Android **não permite** que um app se instale sozinho fora da Play Store (segurança do sistema). O testador confirma com **2 toques** (*Atualizar* → *Instalar*). Atualização totalmente silenciosa só existe pela Play Store.
+* ⚠️ **iPhone:** este caminho é só **Android** (iPhone exige conta paga da Apple).
 
 ---
 
@@ -26,31 +37,37 @@ flowchart LR
 
 > **Você precisa de:** um celular Android e o link que o Wagner enviou.
 
-1. **Abra o link no celular** (pelo WhatsApp mesmo). Abre uma página do GitHub chamada *"Desperrengue beta"*.
-2. Role até **Assets** (no fim da página) e toque em **`desperrengue-X.Y.Z.apk`**. O download começa (≈ 50 MB; use Wi‑Fi).
-3. Quando terminar, toque em **Abrir** na notificação (ou abra o app **Arquivos → Downloads** e toque no `.apk`).
-4. O Android vai avisar **"Por segurança, seu telefone não está autorizado a instalar apps desta fonte"**:
+### 2.1 Instalar (primeira vez)
+
+1. **Abra o link no celular** (pelo WhatsApp mesmo). O download do arquivo `desperrengue.apk` (≈ 60 MB; use Wi‑Fi) começa sozinho.
+2. Quando terminar, toque em **Abrir** na notificação (ou abra **Arquivos → Downloads** e toque no `.apk`).
+3. O Android vai avisar *"Por segurança, seu telefone não está autorizado a instalar apps desta fonte"*:
    * toque em **Configurações**;
    * ligue **Permitir desta fonte**;
    * volte (seta `<`) e toque em **Instalar**.
-5. Se aparecer **"Play Protect: app não verificado / bloqueado"**:
-   * toque em **Mais detalhes**;
-   * toque em **Instalar mesmo assim**.
-   (Isso acontece porque o app ainda não está na Play Store. É esperado.)
-6. Toque em **Abrir**. Na primeira vez, **permita** localização e câmera quando o app pedir (são usadas para endereço e verificação).
-7. **Entre com Google** ou crie uma conta e escolha **"Preciso de um serviço"** ou **"Quero trabalhar"**.
+4. Se aparecer **"Play Protect: app não verificado"**: toque em **Mais detalhes** → **Instalar mesmo assim**. (Esperado: o app ainda não está na Play Store.)
+5. Toque em **Abrir**. Permita **localização** e **câmera** quando o app pedir.
+6. **Entre com Google** ou crie uma conta e escolha **"Preciso de um serviço"** ou **"Quero trabalhar"**.
 
-### Se algo der errado
+### 2.2 Atualizar (quando sair versão nova)
+
+1. Ao abrir o app (ou voltar a ele), aparece no topo o cartão **"Nova versão disponível"**.
+2. Toque em **Atualizar**. O navegador baixa o novo `desperrengue.apk`.
+3. Toque na notificação de download → **Instalar** → **Abrir**.
+Você **não perde** conta nem dados. Se tocar em **Depois**, o aviso volta na próxima vez que abrir o app.
+
+### 2.3 Se algo der errado
 
 | O que aparece | O que fazer |
 | :-- | :-- |
-| "App não instalado" | Falta espaço, ou já existe uma versão de outra origem. Apague o Desperrengue antigo e instale de novo. |
+| "App não instalado" | Falta espaço, ou a versão instalada veio de outra chave. Apague o Desperrengue e instale de novo (você só perde o login). |
 | Não acha o arquivo baixado | Abra **Arquivos → Downloads**. |
-| Botão "Instalar" cinza (Xiaomi/Samsung) | Desative temporariamente o *Bloqueador automático* (Samsung) ou a *Otimização MIUI* (Xiaomi) nas configurações de segurança. |
+| Botão "Instalar" cinza (Xiaomi/Samsung) | Desative temporariamente o *Bloqueador automático* (Samsung) ou a *Otimização MIUI* (Xiaomi). |
 | O Google bloqueou o login | Use **e-mail e senha** (cadastro dentro do app). |
+| O aviso de atualização não aparece | Feche e abra o app; confira a internet; aguarde 2–3 minutos. Ou abra o link fixo e instale por cima. |
 | App fecha ao abrir | Mande um print e o modelo do celular ao Wagner. |
 
-### Regras do teste (importante)
+### 2.4 Regras do teste (importante)
 
 * O app ainda é **teste**: **pagamentos e saques são simulados** (nenhum dinheiro real se move).
 * **Não use documentos reais** na verificação (KYC): tire foto de qualquer papel/cartão fictício.
@@ -58,52 +75,48 @@ flowchart LR
 
 ---
 
-## 3. Passo a passo para VOCÊ publicar (e atualizar) o instalador
+## 3. Passo a passo para VOCÊ (desenvolvedor)
 
-### 3.1 Primeira vez (já feito nesta máquina)
-
-Pré-requisitos já prontos: Flutter, GitHub CLI logado (`gh auth status`) e a chave de upload em `app/android/key.properties`.
-
-Abra o **PowerShell** na pasta do projeto e rode:
+### 3.1 No dia a dia: só faça o push
 
 ```powershell
-cd C:\00_Desperrengue
-powershell -ExecutionPolicy Bypass -File scripts\publicar-beta.ps1
+git push origin <sua-branch>
 ```
 
-O script faz tudo sozinho (leva ~5 min): compila o APK **assinado**, calcula o SHA‑256, cria o *Release* `beta-vX.Y.Z` no GitHub e **imprime o link** no final. Copie o link e mande aos testadores.
+* Branches que disparam o beta: **`main`** e **`fix/foundation-hardening`** (lista em [`beta-release.yml`](../.github/workflows/beta-release.yml)). Mudanças **só de documentação** (`*.md`, `docs/`, `supabase/`, `scripts/`) **não** disparam compilação.
+* Acompanhe em **GitHub → aba Actions → "Beta (APK automático)"**. Verde = publicado. Vermelho = `flutter analyze`/`flutter test` falhou **e nada foi publicado** (os testadores continuam com a versão anterior, que funciona).
 
-### 3.2 Enviar uma versão nova (correções)
+### 3.2 Publicar sem fazer push (botão manual)
 
-1. Edite `app/pubspec.yaml` e **aumente** a versão: `version: 0.2.0+2` → `version: 0.2.1+3`. (O número depois do `+` **sempre** sobe; senão o Android recusa a atualização.)
-2. Rode de novo `scripts\publicar-beta.ps1`.
-3. Mande o novo link. O testador instala **por cima**: **não perde** conta nem dados.
+GitHub → **Actions** → **Beta (APK automático)** → **Run workflow** → escolha a branch → **Run workflow**.
+Ou pelo terminal: `gh workflow run beta-release.yml --ref main`.
 
-> **Nunca troque a chave de upload** (`desperrengue-upload.jks`). Com outra chave o Android não deixa atualizar por cima (o testador teria de desinstalar). Faça o backup descrito em [PLAY_STORE.md](PLAY_STORE.md#1-faça-backup-da-chave-de-upload-faça-hoje).
+### 3.3 Mudar a versão exibida
 
-### 3.3 Ver tudo acontecendo em tempo real
+Em `app/pubspec.yaml`, altere só a parte antes do `+` (ex.: `0.2.0+2` → `0.3.0+2`). **Você não precisa mexer no número depois do `+`:** a CI usa os *minutos desde 1970* como `versionCode`, que **sempre cresce** (é o que o Android exige para aceitar a atualização).
 
-* **Dois celulares, dois papéis:** você entra como **Profissional** e o testador como **Cliente** (ou o contrário). Ele cria um pedido; no seu celular aparece **"Solicitações para você"** em segundos. O chat e as notificações também são ao vivo.
-* **Ver a tela dele:** peça para compartilhar a tela numa **chamada de vídeo do WhatsApp/Meet**. Assim você vê o celular dele e o seu ao mesmo tempo.
-* **Conferir os dados:** no painel do Supabase (*Table Editor*) você vê `jobs`, `quotes`, `payments` mudando em tempo real.
+### 3.4 Ver tudo acontecendo em tempo real
 
-### 3.4 Encerrar o teste
+* **Dois celulares, dois papéis:** você entra como **Profissional** e o testador como **Cliente** (ou o contrário). Ele cria um pedido; no seu celular aparece **"Solicitações para você"** em segundos. Chat e notificações também são ao vivo.
+* **Ver a tela dele:** peça para compartilhar a tela numa chamada de vídeo (WhatsApp/Meet).
+* **Conferir os dados:** painel do Supabase → *Table Editor* → `jobs`, `quotes`, `payments`.
 
-Para tirar o instalador do ar: GitHub → **Releases** → abra o release → **Delete**. (O link deixa de funcionar; quem já instalou continua com o app.)
+### 3.5 Encerrar o teste
+
+GitHub → **Releases** → `beta-latest` → **Delete**, e **desative** o workflow (Actions → Beta → ⋯ → *Disable workflow*). O link deixa de funcionar; quem já instalou continua com o app.
 
 ---
 
-## 4. Segurança e limites (leia uma vez)
+## 4. Segurança e limites
 
 | Tema | Situação |
 | :-- | :-- |
-| Quem pode baixar | **Qualquer pessoa com o link** (o repositório é público). O app em si exige login e o banco é protegido por RLS. Não publique o link em locais abertos. |
-| Segredos no APK | Só a URL e a chave **pública** (`sb_publishable_…`) do Supabase, que é pública por design. A chave de upload **nunca** vai ao GitHub. |
-| Autenticidade | O release mostra o **SHA‑256** do arquivo; quem quiser conferir compara. |
-| Custo | **Zero** (GitHub Releases e Supabase no plano atual). |
-| Limite de testadores | Sem limite técnico. Cuidado com o plano gratuito do Supabase (usuários ativos/armazenamento). |
-| Quando voltar à Play | Faça o teste interno ([PLAY_STORE.md](PLAY_STORE.md)): ele dá atualizações automáticas e até 100 testadores por convite. |
+| **Chave de assinatura do beta** | É uma chave **só do beta** (`desperrengue-beta.jks`), **diferente** da chave de upload da Play. Fica nos *Secrets* do repositório (`BETA_KEYSTORE_B64`, `BETA_KEYSTORE_PASSWORD`) e em `%USERPROFILE%\.desperrengue\keys\`. Se vazar, o prejuízo é só do beta; a chave da Play continua intacta. **Faça backup** da pasta `keys\`. |
+| Quem enxerga os *Secrets* | Quem tem permissão de escrita no repositório pode alterar um *workflow* e ler segredos. Dê escrita só a pessoas de confiança. Pull requests de *forks* **não** recebem segredos. |
+| Quem pode baixar | **Qualquer pessoa com o link** (repositório público). O app exige login e o banco é protegido por RLS. Não divulgue o link em locais abertos. |
+| Segredos dentro do APK | Só a URL e a chave **pública** (`sb_publishable_…`) do Supabase. |
+| Autenticidade | O release mostra o **SHA‑256** do APK. |
+| Beta ≠ Play Store | O APK beta e o app da Play têm assinaturas diferentes: quem passar para a versão da Play terá de **desinstalar** o beta antes. |
+| Custo | **Zero** (GitHub Actions/Releases e Supabase no plano atual). |
 
-## 5. Alternativa futura: Firebase App Distribution
-
-Também gratuito: convida testadores **por e-mail**, avisa quando sai versão nova e mostra quem instalou. Exige criar um projeto no Firebase; fica como evolução se o grupo de testadores crescer.
+Decisões e alternativas: [ADR-0017](adr/0017-distribuicao-beta-e-atualizacao-no-app.md). Alternativa futura: **Firebase App Distribution** (convite por e-mail e painel de quem instalou).

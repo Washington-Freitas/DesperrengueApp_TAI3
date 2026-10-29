@@ -21,11 +21,11 @@
 | :-- | :-- |
 | [ARCHITECTURE](ARCHITECTURE.md) | Visão técnica viva: C4, dados, estados, segurança |
 | [Arquitetura do Sistema](Arquitetura%20do%20Sistema.md) | Documento acadêmico (Etapa 3): planejamento da stack, C4, modelo relacional |
-| [Decisões de arquitetura (ADRs)](adr/README.md) | Registro imutável das decisões (0001–0016) |
+| [Decisões de arquitetura (ADRs)](adr/README.md) | Registro imutável das decisões (0001–0017) |
 | [Telas analisadas dos protótipos](specs/cliente_telas.md) | [cliente](specs/cliente_telas.md) · [profissional](specs/profissional_telas.md) · [comuns](specs/comum_telas.md) |
 | [App Flutter](../app/README.md) · [Backend Supabase](../supabase/README.md) | READMEs dos módulos |
 | [Publicação na Play Store](PLAY_STORE.md) | Teste interno, assinatura e declarações |
-| [Testar com outras pessoas (sem Play Console)](TESTE_COM_AMIGOS.md) | Instalador APK no GitHub Releases: passo a passo para testadores e para publicar versões |
+| [Testar com outras pessoas (sem Play Console)](TESTE_COM_AMIGOS.md) | Beta automático: a cada push a CI publica o APK num link fixo e o app avisa os testadores ([ADR-0017](adr/0017-distribuicao-beta-e-atualizacao-no-app.md)) |
 
 ## 3. Produto, reputação e gamificação
 

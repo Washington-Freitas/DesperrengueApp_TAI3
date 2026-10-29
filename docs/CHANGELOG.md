@@ -14,6 +14,11 @@ Categorias: **Adicionado** · **Alterado** · **Descontinuado** · **Removido** 
 
 ### Adicionado
 
+**Distribuição beta e atualização automática (ADR-0017)**
+- **CI de beta** (`beta-release.yml`): a cada push em `main`/`fix/foundation-hardening` (e por botão manual) roda análise + testes, compila o APK **assinado com a chave beta** e publica no release rolante `beta-latest` (link fixo de download). Falhou na análise/teste = nada é publicado.
+- **Aviso de versão nova dentro do app** (`UpdateGate`/`UpdateService`): consulta o release com ETag a cada ~2 min, ao abrir e ao voltar ao app; cartão "Nova versão disponível → Atualizar". Ativo só em builds `BETA_UPDATES=true`.
+- Guia para testadores e para o desenvolvedor: [TESTE_COM_AMIGOS.md](TESTE_COM_AMIGOS.md).
+
 **Conta, carteira e privacidade (ADR-0013)**
 - **Excluir conta (LGPD)** com **trava financeira**: saldo > 0 abre o aviso "Você possui fundos retidos… transfira via Pix"; custódia/serviço em andamento também bloqueiam. Confirmação por digitação ("EXCLUIR").
 - **Edge Function `excluir-conta`**: gera o **Dossiê de Despedida (PDF, `pdf-lib`)** em memória, envia pelo Resend e **só então** apaga os dados, os arquivos e a conta de autenticação. Dossiê com histórico, orçamentos, avaliações, **total gasto, total economizado e total de lucro**.

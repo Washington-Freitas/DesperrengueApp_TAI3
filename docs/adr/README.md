@@ -31,3 +31,4 @@ Registro histórico das decisões arquiteturalmente significativas do Desperreng
 | [0014](0014-design-tokens-e-modo-escuro.md) | Design tokens semânticos, tema tri-state e modo escuro (elevação tonal) | Aceito | 2026-10-29 |
 | [0015](0015-abertura-do-app-splash-init-e-sessao-segura.md) | Abertura do app: splash nativa + animada, init paralela, sessão no Keystore e último perfil | Aceito | 2026-10-29 |
 | [0016](0016-vitrine-de-cases-lifo.md) | Vitrine de cases (portfólio LIFO) e Case de Sucesso | Aceito | 2026-10-29 |
+| [0017](0017-distribuicao-beta-e-atualizacao-no-app.md) | Distribuição beta por GitHub Actions/Releases e atualização dentro do app | Aceito | 2026-10-29 |

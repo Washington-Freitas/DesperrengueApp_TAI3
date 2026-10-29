@@ -5,7 +5,7 @@
 ![Estágio](https://img.shields.io/badge/est%C3%A1gio-MVP%20acad%C3%AAmico-orange)
 ![Flutter](https://img.shields.io/badge/Flutter-3.47-02569B?logo=flutter&logoColor=white)
 ![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL%2017-3ECF8E?logo=supabase&logoColor=white)
-![Testes](https://img.shields.io/badge/testes-111%20unit%20%C2%B7%20162%20SQL%20%C2%B7%207%20PDF-brightgreen)
+![Testes](https://img.shields.io/badge/testes-121%20unit%20%C2%B7%20162%20SQL%20%C2%B7%207%20PDF-brightgreen)
 ![Licença](https://img.shields.io/badge/licen%C3%A7a-todos%20os%20direitos%20reservados-lightgrey)
 
 > **Cobertura de testes:** a cobertura global ainda é baixa (somente camadas puras e banco estão cobertas); números medidos, metas e plano em [TESTING.md](./docs/TESTING.md#2-estado-atual-medido). O selo de CI refere-se ao *workflow* [`ci.yml`](./.github/workflows/ci.yml).

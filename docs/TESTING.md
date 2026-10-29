@@ -27,7 +27,7 @@ flowchart TB
     E2E["E2E / integração em dispositivo<br/>poucos · lentos · alto valor<br/>(integration_test — planejado)"]
     WID["Widget tests<br/>telas críticas com serviços falsos<br/>(planejado)"]
     DBT["Testes de banco (SQL transacional)<br/>162 asserções · RLS, RPCs, estados, LGPD"]
-    UNIT["Unitários (Dart puro)<br/>111 testes · rápidos · determinísticos"]
+    UNIT["Unitários (Dart puro)<br/>121 testes · rápidos · determinísticos"]
     UNIT --> DBT --> WID --> E2E
 ```
 
@@ -49,7 +49,7 @@ flowchart TB
 
 | Indicador | Valor |
 | :-- | :-- |
-| Testes unitários e de *widget* | **111**, todos aprovados |
+| Testes unitários e de *widget* | **121**, todos aprovados (inclui o atualizador beta: parse do release, ETag, falhas de rede e o cartão de aviso) |
 | Asserções SQL | **162** (`security_smoke` 62 + `review_system_smoke` 30 + `achievements_smoke` 22 + `offboarding_showcase_smoke` 48), `FALHAS = 0` |
 | Teste do Dossiê PDF (Node) | **7**, aprovados (`node scripts/test-dossie.mjs`) |
 | E2E da Edge Function `excluir-conta` | 401 sem sessão · 400 sem confirmação · 409 com saldo · 200 após o saque (e-mail aceito pelo Resend, dados e conta removidos) — executado manualmente com usuário de teste |

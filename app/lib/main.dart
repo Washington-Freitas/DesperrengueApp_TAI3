@@ -7,6 +7,7 @@ import 'core/services/app_session.dart';
 import 'core/state/theme_controller.dart';
 import 'core/ui/app_theme.dart';
 import 'features/boot/boot_gate.dart';
+import 'features/boot/update_gate.dart';
 
 Future<void> main() async {
   // Garante que os widgets do Flutter estão prontos antes de chamar o código assíncrono
@@ -42,6 +43,8 @@ class DesperrengueApp extends ConsumerWidget {
         theme: AppTheme.resolve(mode, Brightness.light),
         darkTheme: AppTheme.resolve(mode, Brightness.dark),
         themeMode: themeMode.material,
+        // Aviso de versão beta nova, sobre qualquer tela (só em builds BETA_UPDATES).
+        builder: (context, child) => UpdateGate(child: child ?? const SizedBox.shrink()),
         // A BootGate (splash + init paralela) decide, via AuthGate, entre Login,
         // Seleção de perfil e o painel do último perfil usado.
         home: const BootGate(),
