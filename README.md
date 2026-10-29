@@ -128,6 +128,6 @@ Verificação de qualidade: `flutter analyze` e `flutter test` devem passar sem 
 
 Leia o [CONTRIBUTING.md](.github/CONTRIBUTING.md) (fluxo Git, Conventional Commits, revisão, DoD) e o [Código de Conduta](.github/CODE_OF_CONDUCT.md). Use os *templates* de [bug](./.github/ISSUE_TEMPLATE/bug_report.md), [funcionalidade](./.github/ISSUE_TEMPLATE/feature_request.md) e [pull request](./.github/PULL_REQUEST_TEMPLATE.md).
 
-## ⚖️ Licença
+###⚖️ Licença
 
 **Todos os direitos reservados** — ver [LICENSE.md](./LICENSE.md). Uso para avaliação acadêmica permitido; uso comercial e redistribuição dependem de autorização.
