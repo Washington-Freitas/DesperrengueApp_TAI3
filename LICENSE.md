@@ -53,3 +53,5 @@ Para licença comercial, parcerias, uso diverso do previsto ou esclarecimentos: 
 ---
 
 > **Observação aos mantenedores.** A escolha de licença é uma **decisão jurídica e estratégica** dos titulares (equipe e eventualmente a instituição de ensino, conforme o regulamento do trabalho acadêmico). Este texto adota o **padrão mais conservador** (todos os direitos reservados), que preserva todas as opções futuras. Caso se decida por **código aberto**, substitua-o por uma licença **SPDX** padronizada (por exemplo, **MIT** ou **Apache-2.0**, ou **AGPL-3.0** para impedir uso em serviços de rede sem contribuição de volta) e registre a decisão em um novo ADR. Recomenda-se validação por assessoria jurídica antes de qualquer comercialização.
+>
+> 
