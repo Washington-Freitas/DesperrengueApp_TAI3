@@ -431,3 +431,10 @@ verify_jwt = false
 import_map = "./functions/excluir-conta/deno.json"
 entrypoint = "./functions/excluir-conta/index.ts"
 
+
+[functions.pix-webhook]
+# Chamado pelo gateway (sem JWT de usuario): autenticado pelo header x-webhook-secret.
+verify_jwt = false
+import_map = "./functions/pix-webhook/deno.json"
+entrypoint = "./functions/pix-webhook/index.ts"
+

@@ -10,6 +10,8 @@ import '../../../core/ui/widgets.dart';
 import '../../../core/utils/format.dart';
 import 'order_tracking_screen.dart';
 import 'completion_screens.dart';
+import '../../../core/models/wallet_models.dart';
+import 'insufficient_funds_sheet.dart';
 import 'payment_widgets.dart';
 import 'provider_public_profile_screen.dart';
 import 'provider_search_screen.dart';
@@ -488,14 +490,25 @@ class PaymentScreen extends StatefulWidget {
 
 class _PaymentScreenState extends State<PaymentScreen> {
   final _jobs = JobService();
-  String _method = 'pix';
   bool _busy = false;
 
+  /// Trava de saldo: confere ANTES (sem saldo, abre a recarga) e o servidor confere de novo
+  /// dentro da transação (INSUFFICIENT_FUNDS).
   Future<void> _pay() async {
+    if (_busy) return;
+    final cents = Money.fromReais(widget.job.agreedPrice ?? 0);
     setState(() => _busy = true);
     try {
-      await _jobs.payJob(widget.job.id, _method, scheduledFor: widget.job.scheduledFor);
-      if (mounted) showSnack(context, 'Pagamento aprovado! O valor está em custódia.');
+      if (!await ensureFunds(context, cents)) return;
+      try {
+        await _jobs.payJob(widget.job.id, 'wallet', scheduledFor: widget.job.scheduledFor);
+      } catch (e) {
+        final low = InsufficientFunds.from(e);
+        if (low == null || !mounted) rethrow;
+        if (!await showInsufficientFundsSheet(context, requiredCents: low.requiredCents, availableCents: low.availableCents)) return;
+        await _jobs.payJob(widget.job.id, 'wallet', scheduledFor: widget.job.scheduledFor);
+      }
+      if (mounted) showSnack(context, 'Pagamento aprovado! O valor está protegido em garantia.');
     } catch (e) {
       if (mounted) showSnack(context, friendlyError(e), error: true);
     } finally {
@@ -550,11 +563,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
           if (job.scheduledFor != null)
             Text('Agendado para ${dateLong(job.scheduledFor!)}', style: TextStyle(color: context.tk.textMuted)),
           const SizedBox(height: 16),
-          PaymentMethodPicker(value: _method, onChanged: (m) => setState(() => _method = m)),
-          if (_method == 'pix') ...[
-            const SizedBox(height: 12),
-            MockPixCard(seed: job.id, amountLabel: brl(price)),
-          ],
+          WalletPayCard(priceCents: Money.fromReais(price)),
           const SizedBox(height: 14),
           const InfoBanner(
             'Pague agora para reservar. O dinheiro só vai para o profissional quando o serviço estiver concluído e você confirmar com o código.',

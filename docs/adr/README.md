@@ -32,3 +32,4 @@ Registro histórico das decisões arquiteturalmente significativas do Desperreng
 | [0015](0015-abertura-do-app-splash-init-e-sessao-segura.md) | Abertura do app: splash nativa + animada, init paralela, sessão no Keystore e último perfil | Aceito | 2026-10-29 |
 | [0016](0016-vitrine-de-cases-lifo.md) | Vitrine de cases (portfólio LIFO) e Case de Sucesso | Aceito | 2026-10-29 |
 | [0017](0017-distribuicao-beta-e-atualizacao-no-app.md) | Distribuição beta por GitHub Actions/Releases e atualização dentro do app | Aceito | 2026-10-29 |
+| [0018](0018-carteira-ledger-e-pix-sandbox.md) | Carteira do cliente, ledger de partida dobrada, custódia por gatilhos e Pix sandbox | Aceito | 2026-10-29 |

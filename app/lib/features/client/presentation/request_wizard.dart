@@ -12,6 +12,7 @@ import '../../../core/utils/format.dart';
 import 'client_job_screen.dart';
 import 'address_form.dart';
 import 'client_setup_screen.dart';
+import '../../../core/models/wallet_models.dart';
 import 'payment_widgets.dart';
 import '../../../core/ui/app_tokens.dart';
 
@@ -41,7 +42,6 @@ class _RequestWizardScreenState extends State<RequestWizardScreen> {
   bool _ackEmergency = false;
   DateTime _date = DateTime.now();
   int? _hour;
-  String _method = 'pix';
   bool _submitting = false;
   List<DateTime> _busy = const [];
 
@@ -121,6 +121,14 @@ class _RequestWizardScreenState extends State<RequestWizardScreen> {
       showSnack(context, 'Informe o endereço do atendimento.', error: true);
       return;
     }
+    // Emergência = reserva a taxa de visita na hora: trava de saldo ANTES de criar o pedido.
+    if (_emergency && _provider != null) {
+      setState(() => _submitting = true);
+      final enough = await ensureFunds(context, Money.fromReais(_provider!.visitFee));
+      if (!mounted) return;
+      setState(() => _submitting = false);
+      if (!enough) return;
+    }
     setState(() => _submitting = true);
     String? jobId;
     try {
@@ -152,7 +160,7 @@ class _RequestWizardScreenState extends State<RequestWizardScreen> {
         final n = await _jobs.invite(jobId, [_provider!.id]);
         if (n == 0) throw 'Não foi possível convidar o profissional. Tente outro.';
       }
-      if (_emergency) await _jobs.requestEmergency(jobId, _method);
+      if (_emergency) await _jobs.requestEmergency(jobId, 'wallet');
 
       if (!mounted) return;
       // Volta à home e abre o acompanhamento por cima: o "voltar" do pedido
@@ -522,7 +530,7 @@ class _RequestWizardScreenState extends State<RequestWizardScreen> {
           const SizedBox(height: 14),
           const Text('Forma de pagamento', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
           const SizedBox(height: 8),
-          PaymentMethodPicker(value: _method, onChanged: (m) => setState(() => _method = m)),
+          WalletPayCard(priceCents: Money.fromReais(p.visitFee)),
         ],
       ],
     );

@@ -64,7 +64,7 @@ flowchart LR
     D -- "HTTPS GET" --> AB
 ```
 
-**Observação de fronteira.** O gateway de pagamento é **simulado** (MVP acadêmico): nenhum dado de cartão trafega e nenhuma cobrança real ocorre ([ADR-0006](adr/0006-pagamento-mock-com-custodia-e-pin.md)).
+**Observação de fronteira.** O gateway de pagamento é **simulado** (MVP acadêmico): nenhum dado de cartão trafega e nenhuma cobrança real ocorre ([ADR-0006](adr/0006-pagamento-mock-com-custodia-e-pin.md)). O dinheiro vive numa **carteira com ledger de partida dobrada** e a recarga usa um **Pix sandbox** com webhook normalizado ([ADR-0018](adr/0018-carteira-ledger-e-pix-sandbox.md)).
 
 ---
 
@@ -122,6 +122,7 @@ flowchart TB
 | Realtime | Supabase Realtime | Difusão de mudanças (`jobs`, `quotes`, `job_invites`, `messages`, `notifications`) |
 | Storage | S3-compatível | Documentos de KYC, fotos de pedido/evidência, mídia pública |
 | Edge Function | Deno | Envio do e-mail de aprovação do KYC (autenticada por segredo compartilhado, [ADR-0010](adr/0010-webhook-autenticado-por-segredo-no-vault.md)) |
+| Edge Function `pix-webhook` | Deno | Recebe a confirmação do Pix (payload normalizado, header `x-webhook-secret`) e chama `confirm_topup` (idempotente) com `service_role` ([ADR-0018](adr/0018-carteira-ledger-e-pix-sandbox.md)) |
 | Edge Function `excluir-conta` | Deno + `pdf-lib` | Offboarding LGPD: valida o JWT do usuário, gera o Dossiê PDF, envia (Resend) e só então apaga dados e conta ([ADR-0013](adr/0013-exclusao-de-conta-lgpd-e-dossie.md)) |
 | Abertura do app | Flutter | Splash nativa + animada, init paralela, sessão no Keystore, último perfil ([ADR-0015](adr/0015-abertura-do-app-splash-init-e-sessao-segura.md)) |
 | Tema | Flutter + Riverpod | Tokens semânticos, tri-state claro/escuro/automático ([ADR-0014](adr/0014-design-tokens-e-modo-escuro.md)) |
@@ -286,7 +287,7 @@ stateDiagram-v2
 | Evento | `pending` | `escrow` | `released` | `refunded` |
 | :-- | :-: | :-: | :-: | :-: |
 | Pedido criado | ● | | | |
-| `pay_job_mock` / `request_emergency_mock` | | ● | | |
+| `pay_job_mock` / `request_emergency_mock` (método `wallet`: gatilho reserva o saldo; sem saldo → `INSUFFICIENT_FUNDS`) | | ● | | |
 | `complete_job_with_pin` | | | ● | |
 | Cancelamento/expiração com reserva; disputa resolvida a favor do cliente | | | | ● |
 
@@ -464,7 +465,7 @@ Mapeamento aos atributos da ISO/IEC 25010:
 | DT-01 | Ambiente único (sem *staging*) | Risco ao aplicar migrations | Criar projeto de *staging* e pipeline de migrations ([ROADMAP](ROADMAP.md)) |
 | DT-02 | Navegação com `Navigator` + `AuthGate`; `go_router` e `flutter_riverpod` declarados, pouco usados | Deep links por rota e *state management* limitados | Migrar para `go_router` + Riverpod |
 | DT-03 | Cobertura de testes restrita às camadas puras e ao banco | Regressões de UI não detectadas | Testes de *widget* e `integration_test` |
-| DT-04 | Pagamento simulado | Sem fluxo financeiro real | Integrar gateway (Pix/cartão) com *webhooks* assinados |
+| DT-04 | Pagamento simulado (carteira e Pix em sandbox; crédito inicial fictício) | Sem dinheiro real | Adaptador de PSP sobre o `pix-webhook` com *webhooks* assinados (ROADMAP E-19); incluir o saldo do cliente na trava de exclusão de conta |
 | DT-05 | Aprovação de KYC automática (mock) | Verificação não efetiva em produção | Fila de revisão administrativa |
 | DT-06 | Bucket legado `kyc_documentos` (privado, 19 objetos de teste) | Resíduo | Remoção após confirmação |
 | DT-07 | Sem *push notifications* | Avisos só dentro do app | FCM/APNs |

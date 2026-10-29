@@ -27,7 +27,7 @@ flowchart TB
     E2E["E2E / integração em dispositivo<br/>poucos · lentos · alto valor<br/>(integration_test — planejado)"]
     WID["Widget tests<br/>telas críticas com serviços falsos<br/>(planejado)"]
     DBT["Testes de banco (SQL transacional)<br/>162 asserções · RLS, RPCs, estados, LGPD"]
-    UNIT["Unitários (Dart puro)<br/>121 testes · rápidos · determinísticos"]
+    UNIT["Unitários (Dart puro)<br/>143 testes · rápidos · determinísticos"]
     UNIT --> DBT --> WID --> E2E
 ```
 
@@ -49,10 +49,11 @@ flowchart TB
 
 | Indicador | Valor |
 | :-- | :-- |
-| Testes unitários e de *widget* | **121**, todos aprovados (inclui o atualizador beta: parse do release, ETag, falhas de rede e o cartão de aviso) |
-| Asserções SQL | **162** (`security_smoke` 62 + `review_system_smoke` 30 + `achievements_smoke` 22 + `offboarding_showcase_smoke` 48), `FALHAS = 0` |
+| Testes unitários e de *widget* | **143**, todos aprovados (inclui o atualizador beta e a **carteira**: `Money`, máscara BRL, trava de saldo, bottom sheet, recarga Pix, extrato e tema escuro) |
+| Asserções SQL | **214** (`security_smoke` 62 + `review_system_smoke` 30 + `achievements_smoke` 22 + `offboarding_showcase_smoke` 48 + `client_wallet_smoke` 52), `FALHAS = 0` |
 | Teste do Dossiê PDF (Node) | **7**, aprovados (`node scripts/test-dossie.mjs`) |
 | E2E da Edge Function `excluir-conta` | 401 sem sessão · 400 sem confirmação · 409 com saldo · 200 após o saque (e-mail aceito pelo Resend, dados e conta removidos) — executado manualmente com usuário de teste |
+| E2E da Edge Function `pix-webhook` | 401 sem segredo · 400 payload inválido · 409 valor divergente · *pending* ignorado · 200 pago (saldo creditado **uma vez**) · reenvio idempotente (`already: true`) — executado manualmente |
 | `flutter analyze` | **0** avisos |
 | Cobertura de linhas nos 19 arquivos com teste dedicado (≥ 40 % de linhas cobertas: modelos, tokens/tema, boot, sessão segura, `LocalPrefs`, `PrivacyMode`, seleção de perfil, tela de Pix, splash…) | **978 / 1197 = 81,7 %** |
 | Tamanho do código do app | 76 arquivos Dart, ≈ 19,7 mil linhas |
@@ -114,7 +115,8 @@ Cobertos hoje (`app/test/user_profile_test.dart`):
 supabase db query --linked -f supabase/tests/security_smoke.sql
 supabase db query --linked -f supabase/tests/review_system_smoke.sql   # avaliações cegas, Bayes, selos e respostas (30 asserções)
 supabase db query --linked -f supabase/tests/achievements_smoke.sql      # conquistas: desbloqueio, escala e privacidade (22 asserções)
-supabase db query --linked -f supabase/tests/offboarding_showcase_smoke.sql  # carteira/Pix, exclusão LGPD e vitrine LIFO (48 asserções)
+supabase db query --linked -f supabase/tests/offboarding_showcase_smoke.sql  # saque Pix, exclusão LGPD e vitrine LIFO (48 asserções)
+supabase db query --linked -f supabase/tests/client_wallet_smoke.sql         # carteira do cliente: ledger, custódia, trava de saldo, Pix e webhook (52 asserções)
 # A saída é uma "falha" proposital contendo o relatório; o critério é "FALHAS=0".
 ```
 
@@ -285,7 +287,8 @@ cd ..
 supabase db query --linked -f supabase/tests/security_smoke.sql
 supabase db query --linked -f supabase/tests/review_system_smoke.sql   # avaliações cegas, Bayes, selos e respostas (30 asserções)
 supabase db query --linked -f supabase/tests/achievements_smoke.sql      # conquistas: desbloqueio, escala e privacidade (22 asserções)
-supabase db query --linked -f supabase/tests/offboarding_showcase_smoke.sql  # carteira/Pix, exclusão LGPD e vitrine LIFO (48 asserções)
+supabase db query --linked -f supabase/tests/offboarding_showcase_smoke.sql  # saque Pix, exclusão LGPD e vitrine LIFO (48 asserções)
+supabase db query --linked -f supabase/tests/client_wallet_smoke.sql         # carteira do cliente: ledger, custódia, trava de saldo, Pix e webhook (52 asserções)
 
 # Dossiê de Despedida (PDF) — roda em Node, sem Deno
 node scripts/test-dossie.mjs

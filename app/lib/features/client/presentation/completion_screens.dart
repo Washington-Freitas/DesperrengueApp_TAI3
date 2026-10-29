@@ -55,6 +55,7 @@ class _CompletionScreenState extends State<CompletionScreen> {
   }
 
   String _method(String? m) => switch (m) {
+        'wallet' => 'Saldo da carteira',
     'pix' => 'Pix (pelo app)',
     'credit_card' => 'Cartão de crédito (simulado)',
     'debit_card' => 'Cartão de débito (simulado)',

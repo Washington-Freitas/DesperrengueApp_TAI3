@@ -18,7 +18,9 @@ Uma **mesma conta pode ser cliente e profissional** (`profiles.is_client` / `is_
 | `quotes` | Orçamentos (máx. 3 ativos por demanda, 1 por profissional). Cada profissional só vê o próprio. |
 | `job_secrets` | PIN de 4 dígitos da conclusão. **Só o cliente lê**; o profissional só valida pela RPC. |
 | `job_evidence` | 4 fotos obrigatórias do serviço (`overview`, `detail`, `angle`, `clean`). |
-| `payments` | Pagamento **MOCK** em custódia (`escrow` → `released`/`refunded`), comissão de 12 %. |
+| `payments` | Pagamento em custódia (`escrow` → `released`/`refunded`), comissão de 12 %; método `wallet` debita a carteira por gatilho ([ADR-0018](../docs/adr/0018-carteira-ledger-e-pix-sandbox.md)). |
+| `client_wallets` · `ledger_txns` · `ledger_lines` | Carteira do cliente (`available_balance`/`escrow_balance`, em **centavos**) e **ledger de partida dobrada** (cada transação soma zero; `idempotency_key` única). Só leitura para o dono; o ledger não é legível pelo app. |
+| `wallet_statement` · `pix_topups` | Extrato do cliente (Realtime) e recargas Pix (BR Code de sandbox, expira em 30 min, até 5 pendentes). |
 | `reviews` | Avaliação dos dois lados, **cega** (`revealed_at`: revelada com as duas partes ou 48 h depois), com pílulas (`tags`), fotos (`photo_paths`) e resposta pública única (`reply`). A nota do profissional só considera avaliações reveladas. |
 | `withdrawals` | Saques Pix (MVP simulado): valor, tipo da chave e chave **mascarada**; saldo = liberado − saques ([ADR-0013](../docs/adr/0013-exclusao-de-conta-lgpd-e-dossie.md)) |
 | `provider_case_pins` | Serviços fixados (máx. 3, só 5★) na vitrine do profissional ([ADR-0016](../docs/adr/0016-vitrine-de-cases-lifo.md)) |
@@ -62,6 +64,8 @@ open ──(cliente aceita orçamento)──▶ awaiting_payment ──(checkout
 | `review_status(job)` / `client_reputation(cliente)` | autenticado | Estado da avaliação / nota do cliente (só profissionais envolvidos) |
 | `my_achievement_counts()` | profissional | Contadores por categoria (progresso das conquistas) |
 | `my_wallet()` · `request_withdrawal(valor, tipo, chave, titular)` | profissional | Saldo no servidor e saque Pix simulado (trava anti-corrida) |
+| `my_client_wallet()` · `create_topup(centavos, chave)` · `simulate_pix_payment(topup)` | cliente | Saldo e custódia, recarga Pix idempotente e **simulação de 1 toque** (só com `app_settings.pix_sandbox = 'true'`) |
+| `confirm_topup(txid, centavos, ref)` | **só `service_role`** | Núcleo do webhook Pix (idempotente; valida o valor) |
 | `account_deletion_status()` | autenticado | Trava da exclusão: saldo, custódia, serviços em andamento |
 | `account_dossier(uid)` · `purge_account(uid)` | **só `service_role`** | Dados do Dossiê PDF e limpeza LGPD (chamadas pela Edge Function) |
 | `provider_showcase(p)` · `provider_case_detail(job)` · `provider_case_history()` | autenticado | Vitrine LIFO (4 vagas), Case de Sucesso e histórico |
@@ -88,7 +92,7 @@ O link **não carrega credencial**: o app apenas reconsulta o status no servidor
 
 ## Migrations
 
-Em `migrations/`, aplicadas em ordem (7 até aqui). Sem Docker, aplique com a Management API do CLI:
+Em `migrations/`, aplicadas em ordem (13 até aqui). Sem Docker, aplique com a Management API do CLI:
 
 ```bash
 supabase db query --linked -f supabase/migrations/<arquivo>.sql
@@ -108,7 +112,7 @@ Roda numa transação **sempre abortada** (nada é gravado) e imprime o relatór
 
 | Onde | Nome |
 | :-- | :-- |
-| Secrets da Edge Function | `RESEND_API_KEY`, `WEBHOOK_SECRET` (+ `SUPABASE_*` padrão) |
+| Secrets da Edge Function | `RESEND_API_KEY`, `WEBHOOK_SECRET`, `PIX_WEBHOOK_SECRET` (função `pix-webhook`) (+ `SUPABASE_*` padrão) |
 | Vault do banco | `kyc_webhook_secret` (mesmo valor de `WEBHOOK_SECRET`) |
 | Opcionais da função | `EMAIL_FROM`, `ONBOARDING_DEEP_LINK` |
 
@@ -119,4 +123,5 @@ Para rotacionar o segredo do webhook, gere um novo valor, atualize o Vault (`vau
 ```bash
 supabase functions deploy enviar-email-aprovacao --use-api --no-verify-jwt
 supabase functions deploy excluir-conta --no-verify-jwt   # o JWT do usuário é validado dentro da função
+supabase functions deploy pix-webhook --no-verify-jwt     # autenticada pelo header x-webhook-secret (PIX_WEBHOOK_SECRET)
 ```

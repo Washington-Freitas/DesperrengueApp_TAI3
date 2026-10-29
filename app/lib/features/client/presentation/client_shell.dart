@@ -11,6 +11,7 @@ import 'client_orders_tab.dart';
 import 'client_setup_screen.dart';
 import 'provider_search_screen.dart';
 import 'request_wizard.dart';
+import 'wallet_chip.dart';
 import '../../../core/ui/app_theme.dart';
 import '../../../core/ui/app_tokens.dart';
 
@@ -113,6 +114,8 @@ class _ClientHomeTabState extends State<ClientHomeTab> {
           children: [
             const BrandLogo(size: 22),
             const Spacer(),
+            const WalletChip(),
+            const SizedBox(width: 4),
             UnreadBell(onOpenJob: (c, id) => openClientJob(c, id)),
           ],
         ),

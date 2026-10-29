@@ -12,6 +12,7 @@ import '../../../core/utils/format.dart';
 import '../../shared/presentation/delete_account_screen.dart';
 import '../../shared/presentation/support_screens.dart';
 import '../../shared/presentation/theme_picker.dart';
+import 'carteira_cliente_screen.dart';
 import 'client_setup_screen.dart';
 import 'client_shell.dart';
 import '../../../core/ui/app_theme.dart';
@@ -149,6 +150,12 @@ class ClientProfileTab extends StatelessWidget {
           onTap: () => Navigator.of(context).push(
             MaterialPageRoute(builder: (_) => EditAddressScreen(currentLine: profile.addressLine)),
           ),
+        ),
+        _Tile(
+          icon: Icons.account_balance_wallet_rounded,
+          title: 'Minha carteira',
+          subtitle: 'Saldo, valor em garantia e extrato',
+          onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CarteiraClienteScreen())),
         ),
         _Tile(
           icon: Icons.support_agent_rounded,

@@ -5,7 +5,7 @@
 ![Estágio](https://img.shields.io/badge/est%C3%A1gio-MVP%20acad%C3%AAmico-orange)
 ![Flutter](https://img.shields.io/badge/Flutter-3.47-02569B?logo=flutter&logoColor=white)
 ![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL%2017-3ECF8E?logo=supabase&logoColor=white)
-![Testes](https://img.shields.io/badge/testes-121%20unit%20%C2%B7%20162%20SQL%20%C2%B7%207%20PDF-brightgreen)
+![Testes](https://img.shields.io/badge/testes-143%20unit%20%C2%B7%20214%20SQL%20%C2%B7%207%20PDF-brightgreen)
 ![Licença](https://img.shields.io/badge/licen%C3%A7a-todos%20os%20direitos%20reservados-lightgrey)
 
 > **Cobertura de testes:** a cobertura global ainda é baixa (somente camadas puras e banco estão cobertas); números medidos, metas e plano em [TESTING.md](./docs/TESTING.md#2-estado-atual-medido). O selo de CI refere-se ao *workflow* [`ci.yml`](./.github/workflows/ci.yml).
@@ -68,7 +68,7 @@ Uma **mesma conta** pode atuar como **cliente** ("Preciso de um serviço") e com
   - **Edge Functions:** Deno (e-mail de aprovação via Resend)
 - **Integrações:** Resend (e-mail), ViaCEP (CEP), Google OAuth; Abstract API opcional.
 
-> **Estado atual da implementação:** autenticação, **KYC**, **multi-modo (cliente/profissional)** e o **ciclo completo do serviço** (pedido → convites → orçamentos → aceite → custódia simulada → execução → PIN → avaliação, com emergência, chat, notificações, carteira e suporte) estão implementados, junto com **avaliações cegas guiadas por pílulas, ranqueamento Bayesiano, selos e conquistas do profissional** ([GAMIFICACAO.md](./docs/GAMIFICACAO.md)). Também estão prontos: **splash coreografada**, **tema Automático/Claro/Escuro** com *design tokens*, **sessão no armazenamento seguro**, **seleção de perfil** em vidro, **modo privacidade** (👁️), **vitrine de cases LIFO** com Case de Sucesso, **saque Pix (simulado)** e **exclusão de conta LGPD** com Dossiê de Despedida em PDF ([ADR-0013](./docs/adr/0013-exclusao-de-conta-lgpd-e-dossie.md) a [ADR-0016](./docs/adr/0016-vitrine-de-cases-lifo.md)). A navegação ainda usa `Navigator` + `AuthGate` ([ADR-0009](./docs/adr/0009-roteamento-por-funcao-pura-e-authgate.md)); `go_router`/Riverpod amplo, gateway real, mapa e push estão no [ROADMAP](./docs/ROADMAP.md).
+> **Estado atual da implementação:** autenticação, **KYC**, **multi-modo (cliente/profissional)** e o **ciclo completo do serviço** (pedido → convites → orçamentos → aceite → custódia com saldo de carteira → execução → PIN → avaliação, com emergência, chat, notificações, carteira e suporte) estão implementados, junto com **avaliações cegas guiadas por pílulas, ranqueamento Bayesiano, selos e conquistas do profissional** ([GAMIFICACAO.md](./docs/GAMIFICACAO.md)). Também estão prontos: **splash coreografada**, **tema Automático/Claro/Escuro** com *design tokens*, **sessão no armazenamento seguro**, **seleção de perfil** em vidro, **modo privacidade** (👁️), **vitrine de cases LIFO** com Case de Sucesso, **carteira do cliente** (ledger de partida dobrada, trava de saldo, recarga por **Pix sandbox** com webhook e simulação de 1 toque — [ADR-0018](./docs/adr/0018-carteira-ledger-e-pix-sandbox.md)), **saque Pix (simulado)** e **exclusão de conta LGPD** com Dossiê de Despedida em PDF ([ADR-0013](./docs/adr/0013-exclusao-de-conta-lgpd-e-dossie.md) a [ADR-0016](./docs/adr/0016-vitrine-de-cases-lifo.md)). A navegação ainda usa `Navigator` + `AuthGate` ([ADR-0009](./docs/adr/0009-roteamento-por-funcao-pura-e-authgate.md)); `go_router`/Riverpod amplo, gateway real, mapa e push estão no [ROADMAP](./docs/ROADMAP.md).
 
 ## ✅ Pré-requisitos (resumo)
 
@@ -89,7 +89,7 @@ Guia passo a passo: **[SETUP.md](./docs/SETUP.md)**.
 | `app/` | Aplicativo Flutter (`lib/`, `test/`, plataformas Android/iOS) |
 | `supabase/migrations/` | **Fonte da verdade do banco** (schema, RLS, funções, storage) |
 | `supabase/functions/` | Edge Functions (`enviar-email-aprovacao`) |
-| `supabase/tests/` | Testes SQL transacionais: segurança e fluxo (62), avaliações (30), conquistas (22) e carteira/exclusão/vitrine (48) |
+| `supabase/tests/` | Testes SQL transacionais: segurança e fluxo (62), avaliações (30), conquistas (22), exclusão/vitrine (48) e carteira do cliente/ledger (52) |
 | `supabase/functions/` | Edge Functions: `enviar-email-aprovacao` (KYC) e `excluir-conta` (offboarding LGPD + Dossiê PDF) |
 | `docs/` | **Toda a documentação**: arquitetura, SETUP, TESTING, ROADMAP, CHANGELOG, ADRs, gamificação, negócio, design e protótipos (índice em [docs/README.md](./docs/README.md)) |
 | `.github/` | Políticas da comunidade ([CONTRIBUTING](.github/CONTRIBUTING.md), [SECURITY](.github/SECURITY.md), [CODE_OF_CONDUCT](.github/CODE_OF_CONDUCT.md)), templates de PR/issue e CI |
