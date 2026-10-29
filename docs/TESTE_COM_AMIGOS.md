@@ -69,9 +69,20 @@ Você **não perde** conta nem dados. Se tocar em **Depois**, o aviso volta na p
 
 ### 2.4 Regras do teste (importante)
 
-* O app ainda é **teste**: **pagamentos e saques são simulados** (nenhum dinheiro real se move).
+* O app ainda é **teste**: o dinheiro é **fictício**. Cada cliente começa com **R$ 1.200,00 de crédito de teste** e recarrega por um **Pix de teste** (botão **"Simular pagamento Pix agora"**); os saques também são simulados. **Não pague o QR Code com o seu banco.**
 * **Não use documentos reais** na verificação (KYC): tire foto de qualquer papel/cartão fictício.
 * Os dados vão para o banco de teste do projeto. Evite informações sensíveis reais.
+
+### 2.5 Roteiro de 5 minutos: carteira e pagamento (cliente)
+
+1. Toque no **saldo** (chip no topo da tela inicial) → **Minha carteira**: saldo disponível, "Valor protegido em custódia" e extrato. O **👁️** esconde os valores.
+2. Peça um serviço e aceite um orçamento. Em **Forma de pagamento**, o cartão **"Pagar com saldo da carteira"** mostra seu saldo, o valor e o **saldo depois** (ou quanto **falta**).
+3. Se faltar, ao confirmar aparece **"Saldo insuficiente para este serviço"**. Toque em **"Adicionar R$ X agora ➔"**.
+4. Toque em **Gerar Pix de Recarga** (aparecem o QR Code e o "copia e cola") e depois em **"Simular pagamento Pix agora"**.
+5. Veja o **"Pix confirmado!"** e a volta ao pedido: o pagamento é aprovado sozinho e o valor fica **em custódia**.
+6. Quando o profissional informar o **PIN** e concluir, o extrato mostra **"Pagamento liberado"**. Se cancelar antes, o valor **volta** ao saldo.
+
+> Se algo parecer errado (saldo que não bate, Pix que não confirma), mande um print do extrato ao Wagner.
 
 ---
 
@@ -99,7 +110,7 @@ Em `app/pubspec.yaml`, altere só a parte antes do `+` (ex.: `0.2.0+2` → `0.3.
 
 * **Dois celulares, dois papéis:** você entra como **Profissional** e o testador como **Cliente** (ou o contrário). Ele cria um pedido; no seu celular aparece **"Solicitações para você"** em segundos. Chat e notificações também são ao vivo.
 * **Ver a tela dele:** peça para compartilhar a tela numa chamada de vídeo (WhatsApp/Meet).
-* **Conferir os dados:** painel do Supabase → *Table Editor* → `jobs`, `quotes`, `payments`.
+* **Conferir os dados:** painel do Supabase → *Table Editor* → `jobs`, `quotes`, `payments`, `client_wallets`, `wallet_statement`.
 
 ### 3.5 Encerrar o teste
 

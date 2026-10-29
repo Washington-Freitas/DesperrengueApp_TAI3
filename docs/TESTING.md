@@ -55,11 +55,11 @@ flowchart TB
 | E2E da Edge Function `excluir-conta` | 401 sem sessão · 400 sem confirmação · 409 com saldo · 200 após o saque (e-mail aceito pelo Resend, dados e conta removidos) — executado manualmente com usuário de teste |
 | E2E da Edge Function `pix-webhook` | 401 sem segredo · 400 payload inválido · 409 valor divergente · *pending* ignorado · 200 pago (saldo creditado **uma vez**) · reenvio idempotente (`already: true`) — executado manualmente |
 | `flutter analyze` | **0** avisos |
-| Cobertura de linhas nos 19 arquivos com teste dedicado (≥ 40 % de linhas cobertas: modelos, tokens/tema, boot, sessão segura, `LocalPrefs`, `PrivacyMode`, seleção de perfil, tela de Pix, splash…) | **978 / 1197 = 81,7 %** |
-| Tamanho do código do app | 76 arquivos Dart, ≈ 19,7 mil linhas |
-| Cobertura **global** (todas as linhas dos 73 arquivos que o `lcov` enxerga) | **14,4 % (1117 / 7770)** — subiu, mas ainda é baixa: a maioria das telas e serviços não tem teste; meta e plano em §8 |
+| Cobertura de linhas nos 28 arquivos com teste dedicado (≥ 40 % de linhas cobertas: modelos, tokens/tema, boot, sessão segura, `LocalPrefs`, `PrivacyMode`, seleção de perfil, tela de Pix, carteira do cliente, splash…) | **1475 / 1704 = 86,6 %** |
+| Tamanho do código do app | 86 arquivos Dart, ≈ 21,0 mil linhas |
+| Cobertura **global** (todas as linhas dos 83 arquivos que o `lcov` enxerga) | **19,5 % (1620 / 8291)** — subiu, mas ainda é baixa: a maioria das telas e serviços não tem teste; meta e plano em §8 |
 
-> Declaramos explicitamente que a cobertura global é **inferior** à da camada testada: o número de 81,7 % **não** representa o projeto inteiro (apenas 19 dos 76 arquivos têm teste dedicado; o global é 14,4 %).
+> Declaramos explicitamente que a cobertura global é **inferior** à da camada testada: o número de 86,6 % **não** representa o projeto inteiro (apenas 28 dos 86 arquivos têm teste dedicado; o global é 19,5 %).
 
 ---
 
@@ -74,6 +74,7 @@ Cobertos hoje (`app/test/user_profile_test.dart`):
 * **`destinationFor`**: usuário novo, dois modos, "trocar de modo", cadastro de cliente, máquina de estados do KYC, cliente que vira profissional, admin.
 * Formatação: `brl`, `parseBrl`, `clock`, `relativeTime`, `distanceKm`.
 * Modelos de domínio: `Job.fromMap`, `JobStatus`, `ProviderCard`.
+* **Carteira** (`app/test/wallet_test.dart`, 22 testes): `Money` e máscara BRL, `FundsCheck`/`InsufficientFunds`, `WalletPayCard`, *bottom sheet* de saldo insuficiente, recarga Pix (QR, estados, anti toque duplo), extrato e tema escuro — com `FakeWalletService`, sem rede.
 
 **Convenções**
 

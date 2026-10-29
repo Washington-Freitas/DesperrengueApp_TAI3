@@ -1,6 +1,6 @@
 # ADR-0006 — Pagamento simulado com custódia (*escrow*) e PIN de conclusão
 
-* **Status:** Aceito (o aspecto "simulado" é provisório; ver Revisão)
+* **Status:** Aceito — **complementado pelo [ADR-0018](0018-carteira-ledger-e-pix-sandbox.md)** (custódia e PIN permanecem; o dinheiro passou a vir de uma carteira com ledger). O aspecto "simulado" segue provisório; ver Revisão
 * **Data:** 2026-10-19
 * **Decisores:** Desenvolvedor e Product Owner
 * **Tags:** financeiro, confiança, MVP
@@ -41,6 +41,8 @@ Itens 21–39 e 52–61 do teste de fumaça (custódia, PIN com tentativas persi
 ## Revisão
 
 Reavaliar quando houver contrato com gateway. O gateway deve **assinar *webhooks*** e a liberação deve ocorrer por evento verificado, mantendo o PIN como prova de conclusão.
+
+**Atualização (2026-10-29):** a escolha "Pix/cartão simulado" foi substituída por pagamento com **saldo da carteira** (método `wallet`), com ledger de partida dobrada e custódia por gatilhos em `payments` — ver [ADR-0018](0018-carteira-ledger-e-pix-sandbox.md). A máquina de estados (`escrow → released/refunded`), a comissão de 12 % e o PIN desta decisão **não mudaram**.
 
 ## Referências
 

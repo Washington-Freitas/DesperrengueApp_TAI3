@@ -20,7 +20,7 @@ Registro histórico das decisões arquiteturalmente significativas do Desperreng
 | [0003](0003-regras-de-negocio-no-banco-via-rpc.md) | Regras de negócio no banco via RLS, *triggers* e RPCs `SECURITY DEFINER` | Aceito | 2026-10-09 |
 | [0004](0004-unificacao-de-perfis-e-nomes-em-ingles.md) | Unificação de perfis e identificadores em inglês | Aceito | 2026-10-09 |
 | [0005](0005-modelo-multi-modo-por-flags.md) | Modelo multi-modo (cliente e profissional) por *flags* | Aceito | 2026-10-19 |
-| [0006](0006-pagamento-mock-com-custodia-e-pin.md) | Pagamento simulado com custódia (*escrow*) e PIN de conclusão | Aceito | 2026-10-19 |
+| [0006](0006-pagamento-mock-com-custodia-e-pin.md) | Pagamento simulado com custódia (*escrow*) e PIN de conclusão | Aceito (complementado pelo 0018) | 2026-10-19 |
 | [0007](0007-privacidade-por-minimizacao-de-dados.md) | Privacidade por minimização: tabelas e *views* de dados mínimos | Aceito | 2026-10-19 |
 | [0008](0008-migrations-sem-docker-e-teste-transacional.md) | *Migrations* sem Docker e teste de fumaça transacional | Aceito | 2026-10-09 |
 | [0009](0009-roteamento-por-funcao-pura-e-authgate.md) | Roteamento por função pura (`destinationFor`) e `AuthGate`; adiamento do `go_router` | Aceito | 2026-10-09 |

@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../../core/models/wallet_models.dart';
+import '../../../core/ui/currency_input_formatter.dart';
 import '../../../core/state/wallet_providers.dart';
 import '../../../core/ui/app_tokens.dart';
 import '../../../core/ui/widgets.dart';

@@ -4,6 +4,7 @@
 * **Data:** 2026-10-29
 * **Decisores:** Desenvolvedor
 * **Tags:** fintech, escrow, ledger, Pix, Realtime, segurança
+* **Relacionado:** complementa o [ADR-0006](0006-pagamento-mock-com-custodia-e-pin.md) (custódia + PIN) e segue o [ADR-0003](0003-regras-de-negocio-no-banco-via-rpc.md) (regras no banco)
 
 ## Contexto
 
@@ -38,8 +39,10 @@ O pagamento era 100 % simulado: o cliente "escolhia" Pix/cartão e o dinheiro nu
 * (−) **Gateway real ainda não integrado** (sem credenciais sandbox); o caminho está pronto (ver [ROADMAP](../ROADMAP.md) E-19).
 * (−) O crédito de R$ 1.200 e as recargas sandbox são fictícios: ao integrar dinheiro real, é preciso (a) remover o seed, (b) desligar `pix_sandbox`, (c) incluir saldo do cliente na trava de exclusão de conta (reembolso à origem).
 * (−) `ledger_lines` do profissional só cobre fluxos a partir desta migration (sem *backfill*).
+* (±) **Exclusão de conta:** `client_wallets`, `wallet_statement` e `pix_topups` são apagados com a conta (cascata), mas `ledger_txns`/`ledger_lines` **permanecem**: usam UUID pseudonimizado, sem dado pessoal, para preservar a trilha contábil (retenção legal). Por isso a exclusão de dados de teste exige limpar o ledger à parte.
+* (+) **Organização do código:** `core/models/wallet_models.dart` é Dart puro (a máscara `CurrencyInputFormatter`, que depende do Flutter, vive em `core/ui/`), preservando a regra de dependência do [ARCHITECTURE](../ARCHITECTURE.md).
 
 ## Referências
 
 * Migration `20261030100000_client_wallet_ledger.sql`; teste `supabase/tests/client_wallet_smoke.sql` (52); `supabase/functions/pix-webhook/`.
-* `app/lib/core/models/wallet_models.dart`, `core/services/wallet_service.dart`, `core/state/wallet_providers.dart`, `features/client/presentation/{carteira_cliente,adicionar_saldo}_screen.dart`, `insufficient_funds_sheet.dart`, `payment_widgets.dart`; `app/test/wallet_test.dart`.
+* `app/lib/core/models/wallet_models.dart`, `core/services/wallet_service.dart`, `core/state/wallet_providers.dart`, `core/ui/currency_input_formatter.dart`, `features/client/presentation/{carteira_cliente,adicionar_saldo}_screen.dart`, `insufficient_funds_sheet.dart`, `payment_widgets.dart`; `app/test/wallet_test.dart`.

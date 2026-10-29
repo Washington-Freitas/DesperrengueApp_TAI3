@@ -44,7 +44,7 @@ flowchart LR
     R[("Resend SMTP/API<br/>E-mails @desperrengue.tech")]
     GEO[("ViaCEP / BrasilAPI / OSM<br/>Geocodificação e CEP")]
 
-    C -- "Publica demandas, paga em custódia (mock), informa PIN, avalia" --> D
+    C -- "Publica demandas, paga em custódia (saldo da carteira), informa PIN, avalia" --> D
     P -- "Submete KYC, envia orçamentos grátis, anexa 4 evidências, valida PIN" --> D
     A -- "Audita KYC e resolve disputas (via RPC)" --> D
     D -- "Autenticação Social" --> G
@@ -146,6 +146,7 @@ erDiagram
 | **`profiles`** | Perfil unificado do usuário (`is_client`, `is_provider`, `verification_status`). Colunas sensíveis são protegidas contra `UPDATE` direto pelo cliente via *trigger* `profiles_protect_columns`. |
 | **`provider_profiles`** | Bio, especialidades, taxa de visita, valor/hora, raio de atendimento e métricas agregadas (`rating_avg`, `jobs_done` — alteráveis apenas por *trigger* do servidor). |
 | **`jobs` e `job_addresses`** | Para proteger a segurança residencial do cliente, a tabela `jobs` contém apenas bairro/cidade e coordenadas aproximadas. O logradouro, número e complemento ficam isolados em **`job_addresses`**, cuja política RLS só permite leitura ao cliente dono e ao **profissional efetivamente contratado** (`provider_id`). |
+| **`client_wallets`, `ledger_txns`/`ledger_lines`, `wallet_statement`, `pix_topups`** | Carteira do cliente (centavos) e ledger de partida dobrada (cada transação soma zero). O dono só **lê** a própria carteira, extrato e recargas; o ledger não é legível pelo app; toda escrita passa por RPC/gatilho. Detalhes: [ADR-0018](./adr/0018-carteira-ledger-e-pix-sandbox.md). |
 | **`job_secrets`** | Armazena o **PIN de 4 dígitos** gerado no momento do pagamento em custódia. A RLS permite leitura **exclusivamente ao cliente dono**. O profissional nunca lê essa tabela; ele submete o código à RPC `complete_job_with_pin`, que valida o valor no servidor e persiste o contador de tentativas (`pin_attempts`, bloqueando após 5 falhas). |
 | **`quotes`** | Propostas enviadas pelos profissionais. Um *trigger* com *advisory lock* garante que uma demanda receba no máximo **3 orçamentos ativos** (RF-04) e que cada prestador veja apenas a sua própria proposta (RNF-04). |
 | **`payments`** | Registro financeiro da custódia (*escrow*). Calcula no servidor o valor total (`amount`), a **comissão de 12% da plataforma (`fee_amount`)** e o valor líquido de 88% do profissional (`net_amount`). |
@@ -159,8 +160,8 @@ Toda transição de estado crítica ocorre dentro de transações atômicas via 
 1. **Criação e Convite (`invite_providers`):** O cliente publica a demanda (`status = 'open'`) e pode convidar até 3 profissionais (janela de resposta de 2 horas).
 2. **Orçamento (`quotes`):** Apenas profissionais com `verification_status = 'ACTIVE'` podem enviar orçamento (RF-07) e **não podem orçar no próprio pedido** (`self_service_guards`).
 3. **Aceite (`accept_quote`):** Trava a linha do pedido (`SELECT ... FOR UPDATE`), marca a proposta escolhida como `accepted`, rejeita automaticamente as demais e move o chamado para `awaiting_payment`.
-4. **Pagamento em Custódia (`pay_job_mock` / `request_emergency_mock`):** Registra o depósito simulado (`payments.status = 'escrow'`), gera o PIN aleatório de 4 dígitos em `job_secrets` e inicia a execução (`jobs.status = 'in_progress'`).
-5. **Conclusão Presencial (`complete_job_with_pin`):** Exige que o profissional contratado informe o PIN do cliente. Quando válido, o pedido vai para `completed`, o pagamento muda de `escrow` para `released` e o contador `jobs_done` do profissional é incrementado.
+4. **Pagamento em Custódia (`pay_job_mock` / `request_emergency_mock`):** Reserva o valor da carteira do cliente (gatilho em `payments`: disponível → custódia; sem saldo, erro `INSUFFICIENT_FUNDS`), registra `payments.status = 'escrow'`, gera o PIN aleatório de 4 dígitos em `job_secrets` e inicia a execução (`jobs.status = 'in_progress'`).
+5. **Conclusão Presencial (`complete_job_with_pin`):** Exige que o profissional contratado informe o PIN do cliente. Quando válido, o pedido vai para `completed`, o pagamento muda de `escrow` para `released` (líquido ao profissional e comissão de 12 % à plataforma, registrados no ledger) e o contador `jobs_done` do profissional é incrementado.
 6. **Mediação e Estorno (`create_support_ticket` / `cancel_job` / `expire_invites`):** Se houver disputa, o chamado vai para `disputed` e congela o repasse até decisão administrativa (`admin_resolve_dispute`). Em emergências não respondidas em 5 minutos, o `pg_cron` cancela o pedido e estorna o pagamento (`refunded`).
 
 ---

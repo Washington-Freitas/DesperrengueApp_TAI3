@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:desperrengue_app/core/models/wallet_models.dart';
+import 'package:desperrengue_app/core/ui/currency_input_formatter.dart';
 import 'package:desperrengue_app/core/services/wallet_service.dart';
 import 'package:desperrengue_app/core/state/privacy_mode.dart';
 import 'package:desperrengue_app/core/state/wallet_providers.dart';

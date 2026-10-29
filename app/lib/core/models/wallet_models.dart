@@ -1,6 +1,3 @@
-import 'package:flutter/services.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-
 /// Dinheiro em CENTAVOS (int). Regra do projeto: nunca `double` para cálculo financeiro;
 /// só se converte para texto na hora de mostrar.
 class Money {
@@ -25,21 +22,6 @@ class Money {
 
   /// "R$ 1.234,56" / "1234,5" -> 123456 (só dígitos, estilo máscara de caixa eletrônico).
   static int parseMasked(String text) => int.tryParse(text.replaceAll(RegExp(r'\D'), '')) ?? 0;
-}
-
-/// Máscara monetária em tempo real (R$ 0,00): cada dígito digitado entra pelos centavos.
-class CurrencyInputFormatter extends TextInputFormatter {
-  const CurrencyInputFormatter({this.maxCents = 99999999});
-
-  final int maxCents;
-
-  @override
-  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
-    var cents = Money.parseMasked(newValue.text);
-    if (cents > maxCents) cents = Money.parseMasked(oldValue.text);
-    final text = Money.brl(cents);
-    return TextEditingValue(text: text, selection: TextSelection.collapsed(offset: text.length));
-  }
 }
 
 /// Resultado da trava de saldo.
@@ -67,7 +49,8 @@ class InsufficientFunds implements Exception {
   int get missingCents => requiredCents - availableCents;
 
   static InsufficientFunds? from(Object e) {
-    final msg = e is PostgrestException ? e.message : e.toString();
+    // O `toString()` de PostgrestException já traz a mensagem; assim o modelo segue em Dart puro.
+    final msg = e.toString();
     final m = RegExp(r'INSUFFICIENT_FUNDS\|(\d+)\|(\d+)').firstMatch(msg);
     return m == null ? null : InsufficientFunds(int.parse(m.group(1)!), int.parse(m.group(2)!));
   }

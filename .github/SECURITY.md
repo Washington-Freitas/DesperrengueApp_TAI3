@@ -1,6 +1,6 @@
 # Política de Segurança
 
-A segurança do Desperrengue — que trata **identidade, documentos, endereços residenciais e fluxo financeiro (simulado no MVP)** — é prioridade. Este documento informa **quais versões recebem correções**, **como reportar vulnerabilidades de forma confidencial** e **o que esperar do processo**. Alinha-se às práticas da ISO/IEC 27001 (Anexo A: gestão de vulnerabilidades técnicas, A.8.8) e à ISO/IEC 29147 (divulgação de vulnerabilidades).
+A segurança do Desperrengue — que trata **identidade, documentos, endereços residenciais e fluxo financeiro (carteira, ledger e custódia; **dinheiro simulado** no MVP)** — é prioridade. Este documento informa **quais versões recebem correções**, **como reportar vulnerabilidades de forma confidencial** e **o que esperar do processo**. Alinha-se às práticas da ISO/IEC 27001 (Anexo A: gestão de vulnerabilidades técnicas, A.8.8) e à ISO/IEC 29147 (divulgação de vulnerabilidades).
 
 ## 1. Versões suportadas
 
@@ -52,7 +52,8 @@ Manteremos você informado(a) do andamento e, com sua autorização, creditaremo
 
 * Aplicativo Flutter (Android/iOS) deste repositório.
 * Esquema do banco, **políticas RLS**, *grants*, funções RPC e *triggers* em `supabase/migrations/`.
-* Edge Function `enviar-email-aprovacao`.
+* Edge Functions `enviar-email-aprovacao`, `excluir-conta` e `pix-webhook`.
+* **Carteira, ledger e custódia** (`client_wallets`, `ledger_*`, `wallet_statement`, `pix_topups`, gatilhos de `payments`): integridade contábil, idempotência e autenticação do webhook.
 * Configuração de Storage (*buckets* e políticas) e de Auth documentada.
 
 **Fora do escopo**
@@ -61,7 +62,7 @@ Manteremos você informado(a) do andamento e, com sua autorização, creditaremo
 * Engenharia social, *phishing* contra a equipe ou usuários, ataques físicos.
 * **Negação de serviço** volumétrica e testes de carga contra o ambiente compartilhado.
 * Achados puramente teóricos sem impacto demonstrável; ausência de cabeçalhos/boas práticas sem exploração.
-* O **pagamento é simulado**: não há fluxo financeiro real a atacar; relatos sobre o *mock* só interessam se afetarem a integridade do domínio (ex.: liberar custódia sem PIN).
+* O **dinheiro é simulado** (crédito inicial e Pix de sandbox fictícios): não há fundos reais a atacar. Mas a **integridade contábil está no escopo** — gerar saldo sem Pix confirmado, gastar o mesmo saldo duas vezes, forjar ou repetir a confirmação do webhook, alterar o extrato ou liberar custódia sem PIN são vulnerabilidades válidas.
 
 ## 5. Regras de engajamento e *safe harbor*
 
@@ -97,7 +98,7 @@ Detalhes em [ARCHITECTURE §8](../docs/ARCHITECTURE.md#8-modelo-de-segurança) e
 
 ## 8. Gestão de segredos e credenciais
 
-* **Nunca** versionar `service_role`, senha do banco, `RESEND_API_KEY`, tokens pessoais (PAT) ou `.env`.
+* **Nunca** versionar `service_role`, senha do banco, `RESEND_API_KEY`, `PIX_WEBHOOK_SECRET`, tokens pessoais (PAT) ou `.env`.
 * Tokens de operação são **temporários, de escopo mínimo e revogados** ao final.
 * **Suspeita de vazamento:** (1) revogue/rotacione imediatamente; (2) avalie o histórico do Git (segredos removidos de arquivos continuam no histórico); (3) registre o incidente.
 * **Ação pendente conhecida:** uma chave de API de terceiros (validação de e-mail) esteve versionada em *commits* antigos e **deve ser rotacionada** — o código atual a recebe por `--dart-define`.
@@ -106,7 +107,7 @@ Detalhes em [ARCHITECTURE §8](../docs/ARCHITECTURE.md#8-modelo-de-segurança) e
 
 | Item | Situação |
 | :-- | :-- |
-| Pagamento e repasses | **Simulados** (sem gateway) — ver [ADR-0006](../docs/adr/0006-pagamento-mock-com-custodia-e-pin.md) |
+| Pagamento, carteira e repasses | **Dinheiro simulado** (sem gateway): carteira com ledger de partida dobrada e Pix **sandbox** com webhook; crédito inicial fictício — ver [ADR-0006](../docs/adr/0006-pagamento-mock-com-custodia-e-pin.md) e [ADR-0018](../docs/adr/0018-carteira-ledger-e-pix-sandbox.md). Antes de usar dinheiro real: remover o crédito inicial, desligar `app_settings.pix_sandbox`, integrar PSP com *webhooks* assinados e incluir o saldo na trava de exclusão |
 | Aprovação de KYC | **Automática (mock)** habilitada por `app_settings.kyc_auto_approve`; desativar em produção e adotar revisão administrativa |
 | Ambientes | Único projeto (sem *staging*) |
 | Testes de intrusão | Ainda **não realizados** por terceiros; revisão interna + teste automatizado de RLS |

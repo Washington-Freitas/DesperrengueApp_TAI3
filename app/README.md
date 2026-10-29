@@ -24,15 +24,17 @@ lib/
 │   ├── constants/env.dart                 # config (--dart-define)
 │   ├── models/                            # puros e testáveis
 │   │   ├── user_profile.dart              # perfil + regra de roteamento destinationFor(...)
-│   │   └── marketplace_models.dart        # Job, Quote, ProviderCard, Payment, ...
+│   │   ├── marketplace_models.dart        # Job, Quote, ProviderCard, Payment, ...
+│   │   └── wallet_models.dart             # Money (centavos), FundsCheck, ClientWallet, WalletEntry, PixTopup (Dart puro)
 │   ├── services/                          # ÚNICA camada que conhece tabelas/RPCs
 │   │   ├── profile_service.dart  job_service.dart  provider_service.dart
-│   │   ├── social_service.dart   media_service.dart  app_session.dart
-│   ├── ui/                                # design system (tema por modo, widgets, mídia)
+│   │   ├── social_service.dart   media_service.dart  app_session.dart  wallet_service.dart
+│   ├── state/                             # Riverpod: modo privacidade, carteira e extrato em tempo real
+│   ├── ui/                                # design system (tema por modo, widgets, mídia, máscara monetária)
 │   └── utils/format.dart                  # R$, datas, contagem regressiva, distância
 └── features/
     ├── auth/        # login, cadastro+OTP, seleção de modo, KYC (etapas 1–7), AuthGate/PostAuthRouter
-    ├── client/      # home, busca, perfil público, wizard de pedido, orçamentos, pagamento, acompanhamento, avaliação
+    ├── client/      # home, busca, perfil público, wizard de pedido, orçamentos, pagamento com saldo, carteira e recarga Pix, acompanhamento, avaliação
     ├── provider/    # painel, oportunidades, orçamento, execução, evidências, PIN, carteira, perfil/portfólio/certificados
     ├── shared/      # chat, notificações, suporte/disputa
     └── home/        # painel do administrador (placeholder)
@@ -47,7 +49,7 @@ lib/
 | Busca/categorias → perfil público (portfólio, reviews) | Painel (online/offline, ganhos, solicitações) |
 | Wizard: descrição + fotos → data/hora (ou emergência) → revisão | Oportunidades: convites diretos e pedidos abertos da sua especialidade |
 | Espera (2 h / radar de 5 min) · até 3 profissionais | Detalhes do chamado → orçamento (comissão de 12 % exibida) |
-| Comparar orçamentos → aceitar → pagamento **simulado** (Pix/cartão) | Aguardando resposta (anel de contagem) · emergência: aceitar/recusar |
+| Comparar orçamentos → aceitar → pagamento com **saldo da carteira** (sem saldo: "Adicionar saldo" por Pix de teste) | Aguardando resposta (anel de contagem) · emergência: aceitar/recusar |
 | Acompanhamento: timeline, endereço, **PIN de confirmação**, fotos do serviço, chat | Execução → 4 fotos obrigatórias → **PIN do cliente** → pago |
 | Resumo → avaliação (estrelas, tags, gorjeta simulada) | Carteira (saldo, custódia, semana, últimos serviços) · avaliar cliente |
 | Relatar problema → protocolo e SLA de 24 h | "Tive um problema" → garantia e mediação |

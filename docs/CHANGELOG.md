@@ -21,6 +21,8 @@ Categorias: **Adicionado** · **Alterado** · **Descontinuado** · **Removido** 
 - **Trava de saldo**: `InsufficientFundsBottomSheet` ("Saldo insuficiente para este serviço", Valor | Seu saldo | Faltam) com CTA "Adicionar R$ X agora ➔" que abre a recarga já com o valor que falta.
 - **Telas** `CarteiraClienteScreen` (saldo, 👁️ privacidade, pílula "Valor protegido em custódia", extrato com ícones semânticos) e `AdicionarSaldoScreen` (máscara BRL, atalhos +50/+100/+200/+500, QR + copia-e-cola, "aguardando confirmação", **"Simular pagamento Pix agora"** e animação de sucesso). Chip de saldo no cabeçalho do cliente.
 - **Pix (sandbox)**: BR Code EMV com chave fictícia (nenhum banco consegue pagar), `create_topup`/`confirm_topup` idempotentes e Edge Function **`pix-webhook`** (`x-webhook-secret`, payload normalizado) — pronta para um adaptador de PSP real (ROADMAP E-19).
+- **Alterado:** checkout e emergência pagam com saldo (`WalletPayCard`); `PaymentMethodPicker`/`MockPixCard` foram removidos e `payments.method` passou a aceitar `wallet`. A máscara monetária foi para `core/ui/` para manter `core/models/` em Dart puro.
+- **Documentação:** ADR-0018 (complementa o ADR-0006), modelo de dados/fluxos/ameaças no ARCHITECTURE, escopo e limites no SECURITY, roteiro da carteira para testadores, especificação das novas telas e dívidas DT-09/DT-10.
 
 **Distribuição beta e atualização automática (ADR-0017)**
 - **CI de beta** (`beta-release.yml`): a cada push em `main`/`fix/foundation-hardening` (e por botão manual) roda análise + testes, compila o APK **assinado com a chave beta** e publica no release rolante `beta-latest` (link fixo de download). Falhou na análise/teste = nada é publicado.

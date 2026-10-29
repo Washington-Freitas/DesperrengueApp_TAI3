@@ -54,7 +54,7 @@ flowchart TD
     Wizard3 -- "Emergência" --> RadarEmerg["Pagamento Reserva + Radar (5 min)<br/>Alerta 'Temos um Match!'"]
     
     WaitQuotes --> AcceptQuote["Aceite de Orçamento"]
-    AcceptQuote --> CheckoutMock["Checkout Custódia (Mock Pix/Cartão)<br/>Geração do PIN de 4 dígitos"]
+    AcceptQuote --> CheckoutMock["Checkout Custódia (saldo da carteira)<br/>Sem saldo: Adicionar saldo via Pix<br/>Geração do PIN de 4 dígitos"]
     CheckoutMock --> ClientActiveJob["Acompanhamento em Tempo Real<br/>Timeline · Chat · Exibição do PIN"]
     RadarEmerg --> ClientActiveJob
     
@@ -146,7 +146,8 @@ Atende às histórias **US-01, US-02 e US-03** e aos requisitos **RF-02, RF-04 e
    * **Passo 3 (Revisão):** Resumo completo do chamado e envio para até 3 profissionais convidados ou abertura pública.
 3. **Orçamentos, Checkout em Custódia e Acompanhamento (`9.jpg` a `16.jpg` — `client_job_screen.dart`, `payment_widgets.dart`, `order_tracking_screen.dart`, `completion_screens.dart`):**
    * **Espera e Comparação:** Anel regressivo de 2 horas para pedidos agendados (ou Radar de 5 minutos para emergências). O banco impõe o limite estrito de **no máximo 3 orçamentos** por demanda (RF-04).
-   * **Aceite e Checkout Simulado (`pay_job_mock`):** Exibe transparência total do modelo *Escrow* (pagamento via Pix ou Cartão simulado). Ao confirmar o pagamento, o banco gera o **PIN secreto de 4 dígitos** na tabela protegida `job_secrets`.
+   * **Aceite e Checkout com Carteira (`pay_job_mock`, método `wallet`):** Exibe transparência total do modelo *Escrow* (`WalletPayCard`: saldo, valor do serviço e saldo depois; sem saldo, o `InsufficientFundsBottomSheet` leva à recarga Pix, [ADR-0018](./adr/0018-carteira-ledger-e-pix-sandbox.md)). Ao confirmar o pagamento, o banco gera o **PIN secreto de 4 dígitos** na tabela protegida `job_secrets`.
+   * **Carteira do Cliente (`carteira_cliente_screen.dart`, `adicionar_saldo_screen.dart`, `wallet_chip.dart`):** chip de saldo no cabeçalho; cartão de saldo com 👁️ (modo privacidade), pílula **"Valor protegido em custódia"** (explica ao toque) e extrato em tempo real com ícones semânticos (🟢 recarga Pix, 🔒 retido, ✅ liberado ao profissional, 🔄 estorno). A recarga tem máscara BRL, atalhos +50/+100/+200/+500, QR + copia-e-cola, "aguardando confirmação", cartão de **modo de teste** ("Simular pagamento Pix agora") e animação de sucesso (check + confete).
    * **Execução, Conclusão e Avaliação:** O cliente acompanha a linha do tempo em tempo real, fornece o PIN presencialmente ao prestador somente após inspecionar o serviço e, em seguida, realiza a avaliação por estrelas, tags de elogio e gorjeta opcional (ou abre disputa com SLA de 24h).
 
 ```carousel
