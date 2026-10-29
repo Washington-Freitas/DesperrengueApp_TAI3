@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
-import 'auth_gate.dart';
+import 'auth_gate.dart';
+import '../../../core/ui/light_island.dart';
 
 class CadastroSucessoRoutingScreen extends StatefulWidget {
   const CadastroSucessoRoutingScreen({super.key});
@@ -41,7 +42,7 @@ class _CadastroSucessoRoutingScreenState
   @override
   Widget build(BuildContext context) {
     // PopScope bloqueia o gesto de voltar (swipe ou botão nativo do Android) durante o carregamento
-    return PopScope(
+    return LightIsland(child: PopScope(
       canPop: false,
       child: Scaffold(
         backgroundColor: Colors.white,
@@ -89,6 +90,6 @@ class _CadastroSucessoRoutingScreenState
           ),
         ),
       ),
-    );
+    ));
   }
 }

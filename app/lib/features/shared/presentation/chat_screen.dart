@@ -4,9 +4,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/models/marketplace_models.dart';
 import '../../../core/services/social_service.dart';
-import '../../../core/ui/app_theme.dart';
 import '../../../core/ui/widgets.dart';
 import '../../../core/utils/format.dart';
+import '../../../core/ui/app_tokens.dart';
 
 /// Chat seguro por demanda entre cliente e profissional.
 /// [providerId] identifica a conversa (cada profissional que orçou tem a sua).
@@ -86,7 +86,7 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget build(BuildContext context) {
     final accent = Theme.of(context).colorScheme.primary;
     return Scaffold(
-      backgroundColor: const Color(0xFFF1F2F6),
+      backgroundColor: context.tk.surface,
       appBar: AppBar(
         title: Row(
           mainAxisSize: MainAxisSize.min,
@@ -108,7 +108,7 @@ class _ChatScreenState extends State<ChatScreen> {
         children: [
           Container(
             width: double.infinity,
-            color: Colors.white,
+            color: context.tk.card,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             child: Row(
               children: [
@@ -117,12 +117,12 @@ class _ChatScreenState extends State<ChatScreen> {
                 Expanded(
                   child: Text.rich(
                     TextSpan(children: [
-                      const TextSpan(text: 'Serviço: ', style: TextStyle(color: AppColors.muted)),
+                      TextSpan(text: 'Serviço: ', style: TextStyle(color: context.tk.textMuted)),
                       TextSpan(text: widget.job.title, style: const TextStyle(fontWeight: FontWeight.w700)),
                       if (widget.job.scheduledFor != null)
                         TextSpan(
                           text: '  |  ${dateShort(widget.job.scheduledFor!)}',
-                          style: const TextStyle(color: AppColors.muted),
+                          style: TextStyle(color: context.tk.textMuted),
                         ),
                     ]),
                     maxLines: 2,
@@ -146,9 +146,9 @@ class _ChatScreenState extends State<ChatScreen> {
                   children: [
                     const _SystemNote('Conversa segura da Desperrengue. Combine os detalhes aqui; o pagamento permanece protegido no app.'),
                     if (msgs.isEmpty)
-                      const Padding(
+                      Padding(
                         padding: EdgeInsets.only(top: 40),
-                        child: Center(child: Text('Diga olá 👋', style: TextStyle(color: AppColors.muted))),
+                        child: Center(child: Text('Diga olá 👋', style: TextStyle(color: context.tk.textMuted))),
                       ),
                     for (final m in msgs) _Bubble(message: m, mine: m.senderId == _me, accent: accent),
                   ],
@@ -159,7 +159,7 @@ class _ChatScreenState extends State<ChatScreen> {
           SafeArea(
             top: false,
             child: Container(
-              color: Colors.white,
+              color: context.tk.card,
               padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
               child: Row(
                 children: [
@@ -179,7 +179,7 @@ class _ChatScreenState extends State<ChatScreen> {
                         hintText: 'Digitar mensagem...',
                         counterText: '',
                         filled: true,
-                        fillColor: AppColors.surface,
+                        fillColor: context.tk.surface,
                         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(24),
@@ -219,12 +219,12 @@ class _SystemNote extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     margin: const EdgeInsets.only(bottom: 12),
     padding: const EdgeInsets.all(12),
-    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
+    decoration: BoxDecoration(color: context.tk.card, borderRadius: BorderRadius.circular(12)),
     child: Row(
       children: [
-        const Icon(Icons.shield_outlined, size: 18, color: AppColors.security),
+        Icon(Icons.shield_outlined, size: 18, color: context.tk.security),
         const SizedBox(width: 8),
-        Expanded(child: Text(text, style: const TextStyle(fontSize: 12.5, color: AppColors.muted))),
+        Expanded(child: Text(text, style: TextStyle(fontSize: 12.5, color: context.tk.textMuted))),
       ],
     ),
   );
@@ -246,7 +246,7 @@ class _Bubble extends StatelessWidget {
         constraints: BoxConstraints(maxWidth: MediaQuery.sizeOf(context).width * 0.78),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color: mine ? accent : const Color(0xFFD9D8DF),
+          color: mine ? accent : context.tk.border,
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(18),
             topRight: const Radius.circular(18),
@@ -257,11 +257,11 @@ class _Bubble extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            Text(message.body, style: TextStyle(color: mine ? Colors.white : AppColors.ink, height: 1.3)),
+            Text(message.body, style: TextStyle(color: mine ? Colors.white : context.tk.text, height: 1.3)),
             const SizedBox(height: 3),
             Text(
               hhmm(message.createdAt.toLocal()),
-              style: TextStyle(fontSize: 10, color: mine ? Colors.white70 : AppColors.muted),
+              style: TextStyle(fontSize: 10, color: mine ? Colors.white70 : context.tk.textMuted),
             ),
           ],
         ),

@@ -36,7 +36,7 @@ Não existe servidor de aplicação próprio. O estilo é, portanto, **"banco co
 | Transições de estado atômicas | RPCs com `SELECT … FOR UPDATE` e *advisory locks* |
 | Minimização de dados | Views públicas mínimas; endereço em tabela separada; PIN em tabela com política de dono |
 | Observabilidade do domínio | Notificações geradas no servidor; `notifications` + Realtime |
-| Verificabilidade | Testes SQL transacionais com 114 asserções (segurança 62, avaliações 30, conquistas 22) ([TESTING](TESTING.md)) |
+| Verificabilidade | Testes SQL transacionais com 162 asserções (segurança 62, avaliações 30, conquistas 22, carteira/exclusão/vitrine 48) ([TESTING](TESTING.md)) |
 
 ---
 
@@ -122,6 +122,9 @@ flowchart TB
 | Realtime | Supabase Realtime | Difusão de mudanças (`jobs`, `quotes`, `job_invites`, `messages`, `notifications`) |
 | Storage | S3-compatível | Documentos de KYC, fotos de pedido/evidência, mídia pública |
 | Edge Function | Deno | Envio do e-mail de aprovação do KYC (autenticada por segredo compartilhado, [ADR-0010](adr/0010-webhook-autenticado-por-segredo-no-vault.md)) |
+| Edge Function `excluir-conta` | Deno + `pdf-lib` | Offboarding LGPD: valida o JWT do usuário, gera o Dossiê PDF, envia (Resend) e só então apaga dados e conta ([ADR-0013](adr/0013-exclusao-de-conta-lgpd-e-dossie.md)) |
+| Abertura do app | Flutter | Splash nativa + animada, init paralela, sessão no Keystore, último perfil ([ADR-0015](adr/0015-abertura-do-app-splash-init-e-sessao-segura.md)) |
+| Tema | Flutter + Riverpod | Tokens semânticos, tri-state claro/escuro/automático ([ADR-0014](adr/0014-design-tokens-e-modo-escuro.md)) |
 
 ---
 

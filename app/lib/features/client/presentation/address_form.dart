@@ -4,8 +4,8 @@ import 'package:geolocator/geolocator.dart';
 
 import '../../../core/models/address_data.dart';
 import '../../../core/services/address_lookup.dart';
-import '../../../core/ui/app_theme.dart';
 import '../../../core/ui/widgets.dart';
+import '../../../core/ui/app_tokens.dart';
 
 export '../../../core/models/address_data.dart';
 
@@ -184,14 +184,14 @@ class _AddressFormState extends State<AddressForm> {
       case _Auto.idle:
         return const SizedBox.shrink();
       case _Auto.loading:
-        return const _StatusLine(icon: null, text: 'Buscando endereço...', color: AppColors.muted);
+        return _StatusLine(icon: null, text: 'Buscando endereço...', color: context.tk.textMuted);
       case _Auto.done:
-        return const _StatusLine(icon: Icons.check_circle_rounded, text: 'Endereço preenchido. Informe o número.', color: AppColors.success);
+        return _StatusLine(icon: Icons.check_circle_rounded, text: 'Endereço preenchido. Informe o número.', color: context.tk.success);
       case _Auto.notFound:
-        return const _StatusLine(
+        return _StatusLine(
           icon: Icons.info_outline_rounded,
           text: 'CEP não encontrado. Preencha o endereço manualmente.',
-          color: AppColors.danger,
+          color: context.tk.danger,
         );
     }
   }
@@ -211,7 +211,7 @@ class _AddressFormState extends State<AddressForm> {
           label: Text(_loadingGps ? 'Buscando seu endereço...' : 'Usar minha localização atual'),
         ),
         const SizedBox(height: 18),
-        const Center(child: Text('Ou digite o CEP e o resto é por nossa conta', style: TextStyle(color: AppColors.muted))),
+        Center(child: Text('Ou digite o CEP e o resto é por nossa conta', style: TextStyle(color: context.tk.textMuted))),
         const SizedBox(height: 14),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,

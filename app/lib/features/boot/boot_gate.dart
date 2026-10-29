@@ -22,12 +22,10 @@ class _BootGateState extends ConsumerState<BootGate> {
   int _attempt = 0;
   bool _failed = false;
 
-  /// Pré-carrega as imagens das telas de entrada no cache (evita pop-in).
+  /// Warm-up do engine durante a splash: decodifica o símbolo no cache de imagens
+  /// (a fonte de ícones é aquecida pela própria splash, ver `AnimatedSplashScreen`).
   Future<void> _warmUp() async {
-    await Future.wait([
-      precacheImage(const AssetImage('assets/images/casa_lupa.png'), context),
-      precacheImage(const AssetImage('assets/images/caixa_ferramentas.png'), context),
-    ]);
+    await precacheImage(const AssetImage('assets/splash/logo.png'), context);
   }
 
   void _start() {

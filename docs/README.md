@@ -21,7 +21,7 @@
 | :-- | :-- |
 | [ARCHITECTURE](ARCHITECTURE.md) | Visão técnica viva: C4, dados, estados, segurança |
 | [Arquitetura do Sistema](Arquitetura%20do%20Sistema.md) | Documento acadêmico (Etapa 3): planejamento da stack, C4, modelo relacional |
-| [Decisões de arquitetura (ADRs)](adr/README.md) | Registro imutável das decisões (0001–0012) |
+| [Decisões de arquitetura (ADRs)](adr/README.md) | Registro imutável das decisões (0001–0016) |
 | [Telas analisadas dos protótipos](specs/cliente_telas.md) | [cliente](specs/cliente_telas.md) · [profissional](specs/profissional_telas.md) · [comuns](specs/comum_telas.md) |
 | [App Flutter](../app/README.md) · [Backend Supabase](../supabase/README.md) | READMEs dos módulos |
 | [Publicação na Play Store](PLAY_STORE.md) | Teste interno, assinatura e declarações |
@@ -33,6 +33,7 @@
 | [ROADMAP](ROADMAP.md) | Visão de curto, médio e longo prazo; épicos |
 | [GAMIFICACAO](GAMIFICACAO.md) | Conquistas (implementadas), modelagem do ranking, *unit economics* das recompensas, riscos e plano de experimentos |
 | [ADR-0011](adr/0011-avaliacoes-cegas-bayes-e-selos.md) · [ADR-0012](adr/0012-conquistas-do-profissional.md) | Avaliações cegas/Bayes/selos e conquistas |
+| [ADR-0013](adr/0013-exclusao-de-conta-lgpd-e-dossie.md) · [ADR-0014](adr/0014-design-tokens-e-modo-escuro.md) · [ADR-0015](adr/0015-abertura-do-app-splash-init-e-sessao-segura.md) · [ADR-0016](adr/0016-vitrine-de-cases-lifo.md) | Exclusão de conta (LGPD) e dossiê, tokens/modo escuro, abertura do app e vitrine de cases |
 | [CHANGELOG](CHANGELOG.md) | Histórico de mudanças (Keep a Changelog + SemVer) |
 
 ## 4. Negócio, gestão e finanças (acadêmico)

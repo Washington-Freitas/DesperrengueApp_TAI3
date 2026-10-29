@@ -1,6 +1,8 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../models/account_models.dart';
 import '../models/marketplace_models.dart';
+import '../models/showcase_models.dart';
 import '../models/user_profile.dart';
 
 /// Diretório público de profissionais (cliente) e dados do próprio
@@ -174,6 +176,76 @@ class ProviderService {
 
   Future<void> deleteCertificate(String id) => _client.from('provider_certificates').delete().eq('id', id);
 
+  // ------------------------------------------------------- vitrine de cases
+
+  /// Vitrine pública (até 4): fixados primeiro, depois os mais recentes (LIFO).
+  Future<List<ShowcaseCase>> showcase(String providerId) async {
+    final rows = await _client.rpc('provider_showcase', params: {'p_provider': providerId});
+    return [for (final r in (rows as List)) ShowcaseCase.fromMap(Map<String, dynamic>.from(r as Map))];
+  }
+
+  /// Dossiê técnico de um case (null se não for público/inexistente).
+  Future<CaseDetail?> caseDetail(String jobId) async {
+    final r = await _client.rpc('provider_case_detail', params: {'p_job': jobId});
+    return r == null ? null : CaseDetail.fromMap(Map<String, dynamic>.from(r as Map));
+  }
+
+  /// Histórico geral do próprio profissional (curadoria).
+  Future<List<CaseHistoryItem>> caseHistory() async {
+    final rows = await _client.rpc('provider_case_history');
+    return [for (final r in (rows as List)) CaseHistoryItem.fromMap(Map<String, dynamic>.from(r as Map))];
+  }
+
+  Future<void> pinCase(String jobId) => _client.rpc('pin_case', params: {'p_job': jobId});
+  Future<void> unpinCase(String jobId) => _client.rpc('unpin_case', params: {'p_job': jobId});
+
+  /// Relatório técnico do serviço (aparece no Case de Sucesso).
+  Future<void> setJobReport(String jobId, String text) =>
+      _client.rpc('set_job_report', params: {'p_job': jobId, 'p_text': text});
+
+  // ------------------------------------------------------ saque / exclusão
+
+  /// Soma dos saques já feitos (desconta do saldo disponível).
+  Future<double> myWithdrawnTotal() async {
+    final rows = await _client.from('withdrawals').select('amount, status').eq('provider_id', uid);
+    var total = 0.0;
+    for (final r in rows) {
+      if (r['status'] != 'failed') total += (r['amount'] as num).toDouble();
+    }
+    return total;
+  }
+
+  /// Saque Pix (MVP simulado). O servidor revalida saldo, titularidade e chave.
+  Future<void> requestWithdrawal({
+    required double amount,
+    required PixKeyType keyType,
+    required String key,
+    required bool ownerConfirmed,
+  }) =>
+      _client.rpc('request_withdrawal', params: {
+        'p_amount': amount,
+        'p_key_type': keyType.wire,
+        'p_key': key.trim(),
+        'p_owner_confirmed': ownerConfirmed,
+      });
+
+  Future<DeletionStatus> deletionStatus() async {
+    final r = await _client.rpc('account_deletion_status');
+    return DeletionStatus.fromMap(Map<String, dynamic>.from(r as Map));
+  }
+
+  /// Offboarding: a Edge Function envia o Dossiê de Despedida por e-mail e só então
+  /// apaga os dados e a conta. Lança [DeletionBlocked] se o servidor recusar (409).
+  Future<void> deleteAccount() async {
+    try {
+      await _client.functions.invoke('excluir-conta', body: {'confirm': 'EXCLUIR'});
+    } on FunctionException catch (e) {
+      if (e.status == 409) throw const DeletionBlocked();
+      final d = e.details;
+      throw Exception(d is Map && d['error'] is String ? d['error'] : 'Não foi possível excluir a conta. Tente novamente.');
+    }
+  }
+
   // ----------------------------------------------------------------- carteira
 
   Future<List<Payment>> myPayments() async {
@@ -186,7 +258,9 @@ class ProviderService {
   }
 
   /// Resumo financeiro do profissional a partir dos pagamentos.
-  static WalletSummary summarize(List<Payment> payments, {DateTime? now}) {
+  ///
+  /// [withdrawn] = soma dos saques Pix já feitos: sai do saldo disponível.
+  static WalletSummary summarize(List<Payment> payments, {DateTime? now, double withdrawn = 0}) {
     final today = now ?? DateTime.now();
     final startOfWeek = DateTime(today.year, today.month, today.day).subtract(Duration(days: today.weekday - 1));
     var available = 0.0;
@@ -205,7 +279,7 @@ class ProviderService {
         held += p.netAmount;
       }
     }
-    return WalletSummary(available: available, held: held, week: week, perDay: perDay);
+    return WalletSummary(available: (available - withdrawn).clamp(0.0, double.infinity), held: held, week: week, perDay: perDay);
   }
 
   Future<String?> myFullName() async {
@@ -217,6 +291,13 @@ class ProviderService {
     final row = await _client.from('profiles').select('verification_status').eq('id', uid).maybeSingle();
     return VerificationStatus.parse(row?['verification_status'] as String?);
   }
+}
+
+/// O servidor recusou a exclusão (saldo, custódia ou serviço em andamento).
+class DeletionBlocked implements Exception {
+  const DeletionBlocked();
+  @override
+  String toString() => 'Há saldo, valores em custódia ou serviços em andamento.';
 }
 
 class WalletSummary {

@@ -3,7 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../utils/format.dart';
-import 'app_theme.dart';
+import './app_tokens.dart';
 
 /// Botão principal (pílula, largura total, com estado de carregamento).
 class PrimaryButton extends StatelessWidget {
@@ -27,10 +27,10 @@ class PrimaryButton extends StatelessWidget {
     return FilledButton(
       onPressed: loading ? null : onPressed,
       child: loading
-          ? const SizedBox(
+          ? SizedBox(
               width: 22,
               height: 22,
-              child: CircularProgressIndicator(strokeWidth: 2.4, color: Colors.white),
+              child: CircularProgressIndicator(strokeWidth: 2.4, color: Theme.of(context).colorScheme.onPrimary),
             )
           : Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -103,9 +103,9 @@ class BottomBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: AppColors.line)),
+      decoration: BoxDecoration(
+        color: context.tk.card,
+        border: Border(top: BorderSide(color: context.tk.border)),
       ),
       child: SafeArea(
         top: false,
@@ -120,7 +120,7 @@ class BottomBar extends StatelessWidget {
                 Text(
                   footnote!,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 12, color: AppColors.muted),
+                  style: TextStyle(fontSize: 12, color: context.tk.textMuted),
                 ),
               ],
             ],
@@ -135,8 +135,8 @@ class AppCard extends StatelessWidget {
   const AppCard({
     super.key,
     required this.child,
-    this.color = Colors.white,
-    this.borderColor = AppColors.line,
+    this.color,
+    this.borderColor,
     this.padding = const EdgeInsets.all(16),
     this.radius = 16,
     this.onTap,
@@ -144,8 +144,10 @@ class AppCard extends StatelessWidget {
   });
 
   final Widget child;
-  final Color color;
-  final Color borderColor;
+
+  /// Fundo do cartão (padrão: token `card`, que clareia no tema escuro).
+  final Color? color;
+  final Color? borderColor;
   final EdgeInsetsGeometry padding;
   final double radius;
   final VoidCallback? onTap;
@@ -153,6 +155,8 @@ class AppCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final color = this.color ?? context.tk.card;
+    final borderColor = this.borderColor ?? context.tk.border;
     final box = Container(
       margin: margin,
       decoration: BoxDecoration(
@@ -185,15 +189,16 @@ class AppCard extends StatelessWidget {
 }
 
 class StatusChip extends StatelessWidget {
-  const StatusChip(this.label, {super.key, this.color = AppColors.info, this.background, this.icon});
+  const StatusChip(this.label, {super.key, this.color, this.background, this.icon});
 
   final String label;
-  final Color color;
+  final Color? color;
   final Color? background;
   final IconData? icon;
 
   @override
   Widget build(BuildContext context) {
+    final color = this.color ?? context.tk.info;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
@@ -226,18 +231,18 @@ class InfoBanner extends StatelessWidget {
   final BannerTone tone;
   final IconData? icon;
 
-  (Color, Color, Color, IconData) get _style => switch (tone) {
-    BannerTone.info => (AppColors.infoSoft, const Color(0xFF1B5FA8), AppColors.info, Icons.info_outline),
-    BannerTone.success => (AppColors.successSoft, AppColors.successInk, AppColors.success, Icons.check_circle_outline),
-    BannerTone.warning => (AppColors.warningSoft, AppColors.warningInk, AppColors.warning, Icons.warning_amber_rounded),
-    BannerTone.danger => (AppColors.dangerSoft, AppColors.danger, AppColors.danger, Icons.error_outline),
-    BannerTone.security => (AppColors.securitySoft, const Color(0xFF14565B), AppColors.security, Icons.lock_outline),
-    BannerTone.promo => (AppColors.clientSoft, const Color(0xFF9A4A0A), AppColors.clientAccent, Icons.local_offer_outlined),
+  (Color, Color, Color, IconData) _style(BuildContext context) => switch (tone) {
+    BannerTone.info => (context.tk.infoSoft, context.tk.info, context.tk.info, Icons.info_outline),
+    BannerTone.success => (context.tk.successSoft, context.tk.successInk, context.tk.success, Icons.check_circle_outline),
+    BannerTone.warning => (context.tk.warningSoft, context.tk.warningInk, context.tk.warning, Icons.warning_amber_rounded),
+    BannerTone.danger => (context.tk.dangerSoft, context.tk.danger, context.tk.danger, Icons.error_outline),
+    BannerTone.security => (context.tk.securitySoft, context.tk.security, context.tk.security, Icons.lock_outline),
+    BannerTone.promo => (context.tk.clientSoft, context.tk.warningInk, context.tk.clientAccent, Icons.local_offer_outlined),
   };
 
   @override
   Widget build(BuildContext context) {
-    final (bg, fg, accent, defaultIcon) = _style;
+    final (bg, fg, accent, defaultIcon) = _style(context);
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(14)),
@@ -278,7 +283,7 @@ class SectionTitle extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: Text(text, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.ink)),
+            child: Text(text, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: context.tk.text)),
           ),
           ?trailing,
         ],
@@ -304,7 +309,7 @@ class StepperBar extends StatelessWidget {
             child: Container(
               height: 5,
               decoration: BoxDecoration(
-                color: i <= current ? color : AppColors.line,
+                color: i <= current ? color : context.tk.border,
                 borderRadius: BorderRadius.circular(4),
               ),
             ),
@@ -336,7 +341,7 @@ class RatingStars extends StatelessWidget {
               child: Icon(
                 value >= i ? Icons.star_rounded : (value >= i - 0.5 ? Icons.star_half_rounded : Icons.star_outline_rounded),
                 size: size,
-                color: value >= i - 0.5 ? AppColors.star : const Color(0xFFB8BCC6),
+                color: value >= i - 0.5 ? context.tk.star : context.tk.border,
               ),
             ),
           ),
@@ -387,12 +392,12 @@ class CountdownRing extends StatelessWidget {
                 style: TextStyle(
                   fontSize: size * 0.2,
                   fontWeight: FontWeight.w800,
-                  color: AppColors.ink,
+                  color: context.tk.text,
                   fontFeatures: const [FontFeature.tabularFigures()],
                 ),
               ),
               if (caption != null)
-                Text(caption!, style: const TextStyle(color: AppColors.muted, fontSize: 12)),
+                Text(caption!, style: TextStyle(color: context.tk.textMuted, fontSize: 12)),
             ],
           ),
         ],
@@ -521,8 +526,8 @@ class UserAvatar extends StatelessWidget {
           bottom: -2,
           child: Container(
             padding: const EdgeInsets.all(2),
-            decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-            child: Icon(Icons.verified_rounded, color: AppColors.info, size: radius * 0.6),
+            decoration: BoxDecoration(color: context.tk.card, shape: BoxShape.circle),
+            child: Icon(Icons.verified_rounded, color: context.tk.info, size: radius * 0.6),
           ),
         ),
       ],
@@ -544,7 +549,7 @@ class LoadingView extends StatelessWidget {
           const CircularProgressIndicator(),
           if (message != null) ...[
             const SizedBox(height: 16),
-            Text(message!, style: const TextStyle(color: AppColors.muted)),
+            Text(message!, style: TextStyle(color: context.tk.textMuted)),
           ],
         ],
       ),
@@ -566,9 +571,9 @@ class ErrorView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.cloud_off_rounded, size: 56, color: AppColors.muted),
+            Icon(Icons.cloud_off_rounded, size: 56, color: context.tk.textMuted),
             const SizedBox(height: 12),
-            Text(message, textAlign: TextAlign.center, style: const TextStyle(color: AppColors.muted)),
+            Text(message, textAlign: TextAlign.center, style: TextStyle(color: context.tk.textMuted)),
             if (onRetry != null) ...[
               const SizedBox(height: 16),
               OutlinedButton(
@@ -609,7 +614,7 @@ class EmptyView extends StatelessWidget {
             Text(title, textAlign: TextAlign.center, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
             if (subtitle != null) ...[
               const SizedBox(height: 6),
-              Text(subtitle!, textAlign: TextAlign.center, style: const TextStyle(color: AppColors.muted, height: 1.4)),
+              Text(subtitle!, textAlign: TextAlign.center, style: TextStyle(color: context.tk.textMuted, height: 1.4)),
             ],
             if (action != null) ...[const SizedBox(height: 18), action!],
           ],
@@ -696,7 +701,7 @@ Future<bool> confirmDialog(
           onPressed: () => Navigator.pop(ctx, true),
           style: FilledButton.styleFrom(
             minimumSize: const Size(110, 44),
-            backgroundColor: destructive ? AppColors.danger : null,
+            backgroundColor: destructive ? context.tk.danger : null,
           ),
           child: Text(confirmLabel),
         ),
@@ -712,7 +717,7 @@ void showSnack(BuildContext context, String message, {bool error = false}) {
   messenger.showSnackBar(
     SnackBar(
       content: Text(message),
-      backgroundColor: error ? AppColors.danger : AppColors.ink,
+      backgroundColor: error ? context.tk.danger : context.tk.text,
     ),
   );
 }

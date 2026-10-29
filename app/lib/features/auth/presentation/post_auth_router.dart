@@ -89,7 +89,10 @@ class _PostAuthRouterState extends State<PostAuthRouter> {
           },
         ),
         bottomNavigationBar: SafeArea(
-          child: TextButton(onPressed: _signOut, child: const Text('Sair da conta')),
+          child: TextButton(
+            onPressed: _signOut,
+            child: const Text('Sair da conta'),
+          ),
         ),
       );
     }
@@ -107,23 +110,34 @@ class _PostAuthRouterState extends State<PostAuthRouter> {
       },
     );
   }
+
   Widget _screenFor(AppDestination dest, UserProfile profile) {
     // Sincroniza o tema do MaterialApp com o modo da tela atual.
     final wanted = switch (dest) {
-      AppDestination.clientSetup || AppDestination.clientHome => UserMode.client,
-      AppDestination.providerSetup || AppDestination.providerHome => UserMode.provider,
+      AppDestination.clientSetup ||
+      AppDestination.clientHome => UserMode.client,
+      AppDestination.providerSetup ||
+      AppDestination.providerHome => UserMode.provider,
       _ => null,
     };
     if (_session.theme.value != wanted) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _session.theme.value = wanted);
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _session.theme.value = wanted,
+      );
     }
     switch (dest) {
       case AppDestination.modeSelection:
         return RoleSelectionScreen(profile: profile);
       case AppDestination.clientEnroll:
-        return _EnrollRunner(mode: UserMode.client, key: const ValueKey('enroll-client'));
+        return _EnrollRunner(
+          mode: UserMode.client,
+          key: const ValueKey('enroll-client'),
+        );
       case AppDestination.providerEnroll:
-        return _EnrollRunner(mode: UserMode.provider, key: const ValueKey('enroll-provider'));
+        return _EnrollRunner(
+          mode: UserMode.provider,
+          key: const ValueKey('enroll-provider'),
+        );
       case AppDestination.clientSetup:
         return _themed(UserMode.client, ClientSetupScreen(profile: profile));
       case AppDestination.clientHome:
@@ -133,7 +147,9 @@ class _PostAuthRouterState extends State<PostAuthRouter> {
       case AppDestination.kycInReview:
         return const VerificacaoStep6FeedbackScreen();
       case AppDestination.kycApproved:
-        return VerificacaoStep7AprovadoScreen(nomeProfissional: profile.firstName);
+        return VerificacaoStep7AprovadoScreen(
+          nomeProfissional: profile.firstName,
+        );
       case AppDestination.providerSetup:
         return _themed(UserMode.provider, ProviderSetupFlow(profile: profile));
       case AppDestination.providerHome:
@@ -143,8 +159,10 @@ class _PostAuthRouterState extends State<PostAuthRouter> {
     }
   }
 
-  Widget _themed(UserMode mode, Widget child) =>
-      Theme(data: AppTheme.resolve(mode, Theme.of(context).brightness), child: child);
+  Widget _themed(UserMode mode, Widget child) => Theme(
+    data: AppTheme.resolve(mode, Theme.of(context).brightness),
+    child: child,
+  );
 }
 
 /// Cadastra o usuário no modo escolhido e recarrega o perfil.
@@ -189,6 +207,8 @@ class _EnrollRunnerState extends State<_EnrollRunner> {
         ),
       );
     }
-    return const Scaffold(body: LoadingView(message: 'Preparando sua conta...'));
+    return const Scaffold(
+      body: LoadingView(message: 'Preparando sua conta...'),
+    );
   }
 }

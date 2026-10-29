@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
+import '../../../core/ui/light_island.dart';
 
 /// Tela informativa 6a: Como funciona a plataforma.
 /// Design de alta fidelidade 100% nativo e imutável de alta performance.
@@ -18,7 +19,7 @@ class VerificacaoStep6aComoFuncionaScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return LightIsland(child: Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
@@ -84,7 +85,7 @@ class VerificacaoStep6aComoFuncionaScreen extends StatelessWidget {
           ),
         ),
       ),
-    );
+    ));
   }
 
   /// Banner superior sobre a validação e expectativa de aprovação.

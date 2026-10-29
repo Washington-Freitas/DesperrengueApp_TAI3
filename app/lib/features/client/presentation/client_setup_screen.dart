@@ -8,6 +8,7 @@ import '../../../core/services/draft_store.dart';
 import '../../../core/services/profile_service.dart';
 import '../../../core/ui/widgets.dart';
 import 'address_form.dart';
+import '../../../core/ui/app_tokens.dart';
 
 /// Salva o endereço no perfil (colunas liberadas por GRANT) e sincroniza.
 Future<void> saveProfileAddress(AddressData a) async {
@@ -228,8 +229,8 @@ class _ClientSetupScreenState extends State<ClientSetupScreen> {
                 Text('Bem-vindo, ${widget.profile.firstName}!',
                     style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w900)),
                 const SizedBox(height: 6),
-                const Text('Vamos configurar sua conta de cliente para você pedir serviços em minutos.',
-                    style: TextStyle(color: Color(0xFF6B7280), height: 1.4)),
+                Text('Vamos configurar sua conta de cliente para você pedir serviços em minutos.',
+                    style: TextStyle(color: context.tk.textMuted, height: 1.4)),
                 const SizedBox(height: 24),
                 TextField(
                   controller: _name,
@@ -250,8 +251,8 @@ class _ClientSetupScreenState extends State<ClientSetupScreen> {
                 const Text('Onde você precisa do serviço?',
                     style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900)),
                 const SizedBox(height: 6),
-                const Text('O endereço completo só é compartilhado com o profissional contratado.',
-                    style: TextStyle(color: Color(0xFF6B7280), height: 1.4)),
+                Text('O endereço completo só é compartilhado com o profissional contratado.',
+                    style: TextStyle(color: context.tk.textMuted, height: 1.4)),
                 const SizedBox(height: 8),
                 AddressForm(
                   initial: _address.isEmpty ? null : _address,

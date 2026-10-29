@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
+import '../../../core/ui/light_island.dart';
 
 /// Tela informativa 6c: Termos de Prestação de Serviços.
 /// Design focado na legibilidade de textos jurídicos, utilizando
@@ -19,7 +20,7 @@ class VerificacaoStep6cTermosScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return LightIsland(child: Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
@@ -103,7 +104,7 @@ class VerificacaoStep6cTermosScreen extends StatelessWidget {
           ),
         ),
       ),
-    );
+    ));
   }
 
   /// Badge sutil que confere oficialidade e credibilidade ao documento jurídico

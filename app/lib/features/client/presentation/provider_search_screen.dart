@@ -3,12 +3,12 @@ import 'package:flutter/material.dart';
 import '../../../core/models/marketplace_models.dart';
 import '../../../core/models/user_profile.dart';
 import '../../../core/services/provider_service.dart';
-import '../../../core/ui/app_theme.dart';
 import '../../../core/ui/widgets.dart';
 import '../../../core/utils/format.dart';
 import '../../shared/presentation/review_widgets.dart';
 import 'provider_public_profile_screen.dart';
 import 'request_wizard.dart';
+import '../../../core/ui/app_tokens.dart';
 
 enum _Sort { nearest, rating, fee }
 
@@ -109,7 +109,7 @@ class _ProviderSearchScreenState extends State<ProviderSearchScreen> {
           decoration: InputDecoration(
             hintText: 'Buscar profissional ou serviço',
             filled: true,
-            fillColor: const Color(0xFFEEF1F5),
+            fillColor: context.tk.surface,
             contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
             enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
@@ -146,7 +146,7 @@ class _ProviderSearchScreenState extends State<ProviderSearchScreen> {
                           label: Text(label),
                           selected: _sort == s,
                           onSelected: (_) => setState(() => _sort = s),
-                          labelStyle: TextStyle(color: _sort == s ? Colors.white : AppColors.ink, fontWeight: FontWeight.w700),
+                          labelStyle: TextStyle(color: _sort == s ? Colors.white : context.tk.text, fontWeight: FontWeight.w700),
                           showCheckmark: false,
                         ),
                       ),
@@ -240,11 +240,11 @@ class _ProviderTile extends StatelessWidget {
                     Flexible(child: Text(p.fullName, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 17))),
                     if (isSelf) ...[
                       const SizedBox(width: 8),
-                      const StatusChip('Você', color: AppColors.providerAccent, icon: Icons.person_pin_rounded),
+                      StatusChip('Você', color: context.tk.providerAccent, icon: Icons.person_pin_rounded),
                     ],
                   ],
                 ),
-                Text(p.title, style: const TextStyle(color: AppColors.muted)),
+                Text(p.title, style: TextStyle(color: context.tk.textMuted)),
                 const SizedBox(height: 6),
                 Wrap(
                   spacing: 8,
@@ -253,18 +253,18 @@ class _ProviderTile extends StatelessWidget {
                   children: [
                     if (p.ratingCount > 0)
                       Text.rich(TextSpan(children: [
-                        const WidgetSpan(child: Icon(Icons.star_rounded, size: 16, color: AppColors.star)),
+                        WidgetSpan(child: Icon(Icons.star_rounded, size: 16, color: context.tk.star)),
                         TextSpan(
                           text: ' ${p.ratingAvg.toStringAsFixed(1).replaceAll('.', ',')} (${p.ratingCount})',
                           style: const TextStyle(fontWeight: FontWeight.w700),
                         ),
                       ]))
                     else
-                      const StatusChip('Novo na plataforma', color: AppColors.info),
+                      StatusChip('Novo na plataforma', color: context.tk.info),
                     if (p.isSuper)
-                      const StatusChip('Super Profissional', color: AppColors.clientAccent, icon: Icons.local_fire_department_rounded)
+                      StatusChip('Super Profissional', color: context.tk.clientAccent, icon: Icons.local_fire_department_rounded)
                     else
-                      const StatusChip('Perfil Verificado', color: AppColors.info, icon: Icons.verified_rounded),
+                      StatusChip('Perfil Verificado', color: context.tk.info, icon: Icons.verified_rounded),
                   ],
                 ),
                 if (p.badges.any((b) => b != ProviderBadge.superPro.code)) ...[
@@ -274,7 +274,7 @@ class _ProviderTile extends StatelessWidget {
                 const SizedBox(height: 6),
                 Text(
                   'Taxa de visita: ${brl(p.visitFee)}${p.distanceKm != null ? ' • ${distanceLabel(p.distanceKm)}' : ''}',
-                  style: const TextStyle(fontSize: 13, color: AppColors.muted),
+                  style: TextStyle(fontSize: 13, color: context.tk.textMuted),
                 ),
               ],
             ),

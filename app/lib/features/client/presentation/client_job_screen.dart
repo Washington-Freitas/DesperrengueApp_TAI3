@@ -6,7 +6,6 @@ import '../../../core/models/marketplace_models.dart';
 import '../../../core/services/job_service.dart';
 import '../../../core/services/profile_service.dart';
 import '../../../core/services/provider_service.dart';
-import '../../../core/ui/app_theme.dart';
 import '../../../core/ui/widgets.dart';
 import '../../../core/utils/format.dart';
 import 'order_tracking_screen.dart';
@@ -14,6 +13,7 @@ import 'completion_screens.dart';
 import 'payment_widgets.dart';
 import 'provider_public_profile_screen.dart';
 import 'provider_search_screen.dart';
+import '../../../core/ui/app_tokens.dart';
 
 /// Acompanha UM pedido do cliente em tempo real e mostra a tela certa para
 /// cada estado (aguardando orçamento, radar, pagamento, execução, conclusão).
@@ -196,13 +196,13 @@ class _WaitingQuotesScreenState extends State<WaitingQuotesScreen> {
                   if (job.isDirect && slotsLeft > 0 && job.status == JobStatus.open) ...[
                     const SizedBox(height: 6),
                     AppCard(
-                      color: const Color(0xFFFDE3CF),
-                      borderColor: const Color(0xFFF9B98A),
+                      color: context.tk.clientSoft,
+                      borderColor: context.tk.clientAccent.withValues(alpha: 0.5),
                       child: Column(
                         children: [
-                          const Row(
+                          Row(
                             children: [
-                              Icon(Icons.groups_rounded, color: AppColors.clientAccent),
+                              Icon(Icons.groups_rounded, color: context.tk.clientAccent),
                               SizedBox(width: 10),
                               Expanded(
                                 child: Text('Não quer esperar? Envie o mesmo pedido para mais profissionais e compare os preços.',
@@ -220,7 +220,7 @@ class _WaitingQuotesScreenState extends State<WaitingQuotesScreen> {
                     ),
                   ],
                   const SizedBox(height: 12),
-                  Center(child: LinkButton(label: 'Cancelar pedido', onPressed: _cancel, color: AppColors.muted)),
+                  Center(child: LinkButton(label: 'Cancelar pedido', onPressed: _cancel, color: context.tk.textMuted)),
                 ],
               );
             },
@@ -241,7 +241,7 @@ class _WaitingQuotesScreenState extends State<WaitingQuotesScreen> {
           child: CountdownRing(remaining: first.remaining, total: total, icon: Icons.hourglass_bottom_rounded, caption: 'para responder'),
         )
       else
-        const Center(child: Padding(padding: EdgeInsets.all(24), child: Icon(Icons.hourglass_top_rounded, size: 72, color: AppColors.clientAccent))),
+        Center(child: Padding(padding: EdgeInsets.all(24), child: Icon(Icons.hourglass_top_rounded, size: 72, color: context.tk.clientAccent))),
       const SizedBox(height: 18),
       Center(
         child: Text(
@@ -260,7 +260,7 @@ class _WaitingQuotesScreenState extends State<WaitingQuotesScreen> {
                   : 'Se o profissional não responder neste tempo, o convite expira automaticamente.')
             : 'Profissionais verificados da região já podem ver o seu pedido. Você receberá até 3 orçamentos e escolhe o melhor.',
         textAlign: TextAlign.center,
-        style: const TextStyle(color: AppColors.muted, height: 1.4),
+        style: TextStyle(color: context.tk.textMuted, height: 1.4),
       ),
     ];
   }
@@ -269,7 +269,7 @@ class _WaitingQuotesScreenState extends State<WaitingQuotesScreen> {
     Text('${quotes.length} ${quotes.length == 1 ? 'orçamento recebido' : 'orçamentos recebidos'}',
         style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
     const SizedBox(height: 4),
-    Text(job.title, style: const TextStyle(color: AppColors.muted)),
+    Text(job.title, style: TextStyle(color: context.tk.textMuted)),
     const SizedBox(height: 6),
     const InfoBanner(
       'Compare e aceite o melhor. O pagamento só acontece depois e fica retido até o serviço ser concluído.',
@@ -305,7 +305,7 @@ class _QuoteCard extends StatelessWidget {
                     if (p != null)
                       Text(
                         p.ratingCount > 0 ? '★ ${p.ratingAvg.toStringAsFixed(1).replaceAll('.', ',')} (${p.ratingCount}) • ${p.jobsDone} serviços' : 'Novo na plataforma',
-                        style: const TextStyle(color: AppColors.muted, fontSize: 13),
+                        style: TextStyle(color: context.tk.textMuted, fontSize: 13),
                       ),
                   ],
                 ),
@@ -315,7 +315,7 @@ class _QuoteCard extends StatelessWidget {
           ),
           if (quote.message != null && quote.message!.isNotEmpty) ...[
             const SizedBox(height: 10),
-            Text('"${quote.message}"', style: const TextStyle(height: 1.4, color: Color(0xFF374151))),
+            Text('"${quote.message}"', style: TextStyle(height: 1.4, color: context.tk.text)),
           ],
           const SizedBox(height: 12),
           Row(
@@ -407,7 +407,7 @@ class _QuoteReceivedScreenState extends State<QuoteReceivedScreen> {
     final p = widget.provider;
     final q = widget.quote;
     return Scaffold(
-      appBar: AppBar(title: const Text('Orçamento recebido', style: TextStyle(color: AppColors.clientAccent))),
+      appBar: AppBar(title: Text('Orçamento recebido', style: TextStyle(color: context.tk.clientAccent))),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
@@ -422,7 +422,7 @@ class _QuoteReceivedScreenState extends State<QuoteReceivedScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(p?.fullName ?? 'Profissional', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
-                    Text(p?.title ?? '', style: const TextStyle(color: AppColors.muted)),
+                    Text(p?.title ?? '', style: TextStyle(color: context.tk.textMuted)),
                     if (p != null && p.ratingCount > 0) Text('${p.ratingAvg.toStringAsFixed(1).replaceAll('.', ',')} ★'),
                   ],
                 ),
@@ -432,15 +432,15 @@ class _QuoteReceivedScreenState extends State<QuoteReceivedScreen> {
           const SizedBox(height: 18),
           Container(
             padding: const EdgeInsets.symmetric(vertical: 22),
-            decoration: BoxDecoration(color: const Color(0xFFEDEDED), borderRadius: BorderRadius.circular(16)),
+            decoration: BoxDecoration(color: context.tk.surface, borderRadius: BorderRadius.circular(16)),
             child: Column(
               children: [
-                const Text('Valor do orçamento', style: TextStyle(color: AppColors.muted)),
+                Text('Valor do orçamento', style: TextStyle(color: context.tk.textMuted)),
                 const SizedBox(height: 4),
                 Text(brl(q.price), style: const TextStyle(fontSize: 44, fontWeight: FontWeight.w900)),
                 if (q.estimatedHours != null)
                   Text('Previsão: ${q.estimatedHours!.toStringAsFixed(q.estimatedHours! % 1 == 0 ? 0 : 1)} h de serviço',
-                      style: const TextStyle(color: AppColors.muted)),
+                      style: TextStyle(color: context.tk.textMuted)),
               ],
             ),
           ),
@@ -448,7 +448,7 @@ class _QuoteReceivedScreenState extends State<QuoteReceivedScreen> {
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(color: const Color(0xFFEDEDED), borderRadius: BorderRadius.circular(14)),
+              decoration: BoxDecoration(color: context.tk.surface, borderRadius: BorderRadius.circular(14)),
               child: Text('"${q.message}"', style: const TextStyle(height: 1.4)),
             ),
           ],
@@ -466,7 +466,7 @@ class _QuoteReceivedScreenState extends State<QuoteReceivedScreen> {
           children: [
             PrimaryButton(label: 'Aceitar e pagar ${brl(q.price)}', loading: _busy, onPressed: _accept),
             const SizedBox(height: 8),
-            TextButton(onPressed: _busy ? null : _reject, child: const Text('Recusar orçamento', style: TextStyle(color: AppColors.muted))),
+            TextButton(onPressed: _busy ? null : _reject, child: Text('Recusar orçamento', style: TextStyle(color: context.tk.textMuted))),
           ],
         ),
       ),
@@ -537,7 +537,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
           const SizedBox(height: 12),
           Container(
             padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(color: const Color(0xFFEDEDED), borderRadius: BorderRadius.circular(14)),
+            decoration: BoxDecoration(color: context.tk.surface, borderRadius: BorderRadius.circular(14)),
             child: Row(
               children: [
                 const Expanded(child: Text('Total a pagar:', style: TextStyle(fontSize: 16))),
@@ -546,9 +546,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
             ),
           ),
           const SizedBox(height: 6),
-          Text(job.title, style: const TextStyle(color: AppColors.muted)),
+          Text(job.title, style: TextStyle(color: context.tk.textMuted)),
           if (job.scheduledFor != null)
-            Text('Agendado para ${dateLong(job.scheduledFor!)}', style: const TextStyle(color: AppColors.muted)),
+            Text('Agendado para ${dateLong(job.scheduledFor!)}', style: TextStyle(color: context.tk.textMuted)),
           const SizedBox(height: 16),
           PaymentMethodPicker(value: _method, onChanged: (m) => setState(() => _method = m)),
           if (_method == 'pix') ...[
@@ -562,7 +562,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
             icon: Icons.lock_outline_rounded,
           ),
           const SizedBox(height: 10),
-          Center(child: LinkButton(label: 'Cancelar pedido', onPressed: _busy ? null : _cancel, color: AppColors.muted)),
+          Center(child: LinkButton(label: 'Cancelar pedido', onPressed: _busy ? null : _cancel, color: context.tk.textMuted)),
         ],
       ),
       bottomNavigationBar: BottomBar(
@@ -635,9 +635,9 @@ class _EmergencyRadarScreenState extends State<EmergencyRadarScreen> {
         final live = (snap.data ?? const <JobInvite>[]).where((i) => i.isLive).toList();
         final remaining = live.isEmpty ? Duration.zero : live.first.remaining;
         return Scaffold(
-          backgroundColor: const Color(0xFFFFF0E6),
+          backgroundColor: context.tk.clientSoft,
           appBar: AppBar(
-            backgroundColor: const Color(0xFFFFF0E6),
+            backgroundColor: context.tk.clientSoft,
             leading: IconButton(icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 30), tooltip: 'Minimizar', onPressed: () => Navigator.maybePop(context)),
             title: const BrandLogo(),
           ),
@@ -656,15 +656,15 @@ class _EmergencyRadarScreenState extends State<EmergencyRadarScreen> {
                 style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
               ),
               const SizedBox(height: 6),
-              const Text('O profissional está analisando a sua emergência. Por favor, aguarde.',
-                  textAlign: TextAlign.center, style: TextStyle(color: AppColors.muted, height: 1.4)),
+              Text('O profissional está analisando a sua emergência. Por favor, aguarde.',
+                  textAlign: TextAlign.center, style: TextStyle(color: context.tk.textMuted, height: 1.4)),
               const SizedBox(height: 16),
               Center(
                 child: CountdownRing(remaining: remaining, total: const Duration(minutes: 5), size: 110, icon: null),
               ),
               const SizedBox(height: 14),
-              const Text('Pode sair do app se quiser, nós avisaremos assim que ele responder.',
-                  textAlign: TextAlign.center, style: TextStyle(color: AppColors.muted)),
+              Text('Pode sair do app se quiser, nós avisaremos assim que ele responder.',
+                  textAlign: TextAlign.center, style: TextStyle(color: context.tk.textMuted)),
               const SizedBox(height: 8),
               Center(
                 child: TextButton.icon(
@@ -700,12 +700,12 @@ class _MatchDialog extends StatelessWidget {
             Align(alignment: Alignment.topRight, child: IconButton(icon: const Icon(Icons.close_rounded), onPressed: () => Navigator.pop(context))),
             const Text('Temos um Match! 🎉', style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900), textAlign: TextAlign.center),
             const SizedBox(height: 8),
-            const StatusChip('Confirmado!', color: AppColors.successInk, background: Color(0xFFFDE8C8)),
+            StatusChip('Confirmado!', color: context.tk.successInk, background: context.tk.warningSoft),
             const SizedBox(height: 16),
             UserAvatar(url: provider.avatarUrl, name: provider.fullName, radius: 40, verified: true),
             const SizedBox(height: 8),
             Text(provider.fullName, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
-            Text(provider.title, style: const TextStyle(color: AppColors.muted)),
+            Text(provider.title, style: TextStyle(color: context.tk.textMuted)),
             const SizedBox(height: 12),
             Text(
               '${firstName(provider.fullName)} aceitou o seu pedido de emergência! Ele já está se preparando e a caminho do seu endereço.',

@@ -5,14 +5,17 @@ import '../../../core/models/user_profile.dart';
 import '../../../core/services/app_session.dart';
 import '../../../core/services/job_service.dart';
 import '../../../core/services/profile_service.dart';
-import '../../../core/ui/app_theme.dart';
 import '../../../core/ui/job_labels.dart';
 import '../../../core/ui/media_widgets.dart';
 import '../../../core/ui/widgets.dart';
 import '../../../core/utils/format.dart';
+import '../../shared/presentation/delete_account_screen.dart';
 import '../../shared/presentation/support_screens.dart';
+import '../../shared/presentation/theme_picker.dart';
 import 'client_setup_screen.dart';
 import 'client_shell.dart';
+import '../../../core/ui/app_theme.dart';
+import '../../../core/ui/app_tokens.dart';
 
 /// Aba "Meus Pedidos": em andamento / concluídos / cancelados.
 class ClientOrdersTab extends StatelessWidget {
@@ -31,9 +34,9 @@ class ClientOrdersTab extends StatelessWidget {
               child: Text('Meus Pedidos', style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900)),
             ),
           ),
-          const TabBar(
-            labelColor: AppColors.clientAccent,
-            indicatorColor: AppColors.clientAccent,
+          TabBar(
+            labelColor: context.tk.clientAccent,
+            indicatorColor: context.tk.clientAccent,
             tabs: [Tab(text: 'Em andamento'), Tab(text: 'Concluídos'), Tab(text: 'Cancelados')],
           ),
           Expanded(
@@ -92,7 +95,7 @@ class _List extends StatelessWidget {
                   children: [
                     Text(j.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
                     const SizedBox(height: 4),
-                    Text('${j.code} • ${relativeTime(j.createdAt)}', style: const TextStyle(color: AppColors.muted, fontSize: 12.5)),
+                    Text('${j.code} • ${relativeTime(j.createdAt)}', style: TextStyle(color: context.tk.textMuted, fontSize: 12.5)),
                     const SizedBox(height: 6),
                     JobStatusChip(j),
                   ],
@@ -100,7 +103,7 @@ class _List extends StatelessWidget {
               ),
               if (j.agreedPrice != null)
                 Text(brl(j.agreedPrice), style: const TextStyle(fontWeight: FontWeight.w900)),
-              const Icon(Icons.chevron_right_rounded, color: AppColors.muted),
+              Icon(Icons.chevron_right_rounded, color: context.tk.textMuted),
             ],
           ),
         );
@@ -132,7 +135,7 @@ class ClientProfileTab extends StatelessWidget {
                 children: [
                   Text(profile.fullName, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
                   const SizedBox(height: 4),
-                  const StatusChip('Cliente', color: AppColors.clientAccent),
+                  StatusChip('Cliente', color: context.tk.clientAccent),
                 ],
               ),
             ),
@@ -152,6 +155,13 @@ class ClientProfileTab extends StatelessWidget {
           title: 'Ajuda e suporte',
           subtitle: 'Fale com a central e acompanhe seus chamados',
           onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SupportCenterScreen())),
+        ),
+        AppearanceTile(accent: context.tk.clientAccent, soft: context.tk.clientSoft),
+        _Tile(
+          icon: Icons.delete_forever_rounded,
+          title: 'Excluir conta',
+          subtitle: 'Receba seu dossiê e apague seus dados',
+          onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const DeleteAccountScreen())),
         ),
         const Divider(height: 32),
         InfoBanner(
@@ -184,8 +194,8 @@ class ClientProfileTab extends StatelessWidget {
             );
             if (ok) await ProfileService().signOut();
           },
-          icon: const Icon(Icons.logout_rounded, color: AppColors.danger),
-          label: const Text('Sair da conta', style: TextStyle(color: AppColors.danger)),
+          icon: Icon(Icons.logout_rounded, color: context.tk.danger),
+          label: Text('Sair da conta', style: TextStyle(color: context.tk.danger)),
         ),
       ],
     );
@@ -205,8 +215,8 @@ class _Tile extends StatelessWidget {
     return ListTile(
       contentPadding: EdgeInsets.zero,
       leading: CircleAvatar(
-        backgroundColor: AppColors.clientSoft,
-        child: Icon(icon, color: AppColors.clientAccent),
+        backgroundColor: context.tk.clientSoft,
+        child: Icon(icon, color: context.tk.clientAccent),
       ),
       title: Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
       subtitle: Text(subtitle, maxLines: 1, overflow: TextOverflow.ellipsis),

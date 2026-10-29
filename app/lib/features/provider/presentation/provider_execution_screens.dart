@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/models/achievements.dart';
@@ -18,6 +19,7 @@ import '../../shared/presentation/achievement_widgets.dart';
 import '../../shared/presentation/chat_screen.dart';
 import '../../shared/presentation/review_widgets.dart';
 import '../../shared/presentation/support_screens.dart';
+import '../../../core/ui/app_tokens.dart';
 
 /// Volta até a tela raiz do serviço (ProviderJobScreen) que reage ao stream.
 void _backToJob(BuildContext context) {
@@ -87,18 +89,18 @@ class _ServiceExecutionScreenState extends State<ServiceExecutionScreen> {
         padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
         children: [
           AppCard(
-            color: AppColors.successSoft,
-            borderColor: AppColors.success,
+            color: context.tk.successSoft,
+            borderColor: context.tk.success,
             child: Row(
               children: [
-                const Icon(Icons.lock_rounded, color: AppColors.success),
+                Icon(Icons.lock_rounded, color: context.tk.success),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Pagamento retido e garantido: ${brl(price)}', style: const TextStyle(fontWeight: FontWeight.w900, color: AppColors.successInk)),
-                      Text('Você recebe ${brl(net)} após a confirmação.', style: const TextStyle(color: AppColors.successInk, fontSize: 13)),
+                      Text('Pagamento retido e garantido: ${brl(price)}', style: TextStyle(fontWeight: FontWeight.w900, color: context.tk.successInk)),
+                      Text('Você recebe ${brl(net)} após a confirmação.', style: TextStyle(color: context.tk.successInk, fontSize: 13)),
                     ],
                   ),
                 ),
@@ -109,7 +111,7 @@ class _ServiceExecutionScreenState extends State<ServiceExecutionScreen> {
           Center(
             child: Text(
               clockHms(_watch.elapsed),
-              style: const TextStyle(fontSize: 56, fontWeight: FontWeight.w900, color: AppColors.providerAccent, fontFeatures: [FontFeature.tabularFigures()]),
+              style: TextStyle(fontSize: 56, fontWeight: FontWeight.w900, color: context.tk.providerAccent, fontFeatures: [FontFeature.tabularFigures()]),
             ),
           ),
           Center(
@@ -136,7 +138,7 @@ class _ServiceExecutionScreenState extends State<ServiceExecutionScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text('Cliente: $clientName', style: const TextStyle(fontWeight: FontWeight.w900)),
-                          Text(job.title, style: const TextStyle(color: AppColors.muted)),
+                          Text(job.title, style: TextStyle(color: context.tk.textMuted)),
                         ],
                       ),
                     ),
@@ -146,11 +148,11 @@ class _ServiceExecutionScreenState extends State<ServiceExecutionScreen> {
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(color: const Color(0xFFF6F8FB), borderRadius: BorderRadius.circular(12)),
+                  decoration: BoxDecoration(color: context.tk.surface, borderRadius: BorderRadius.circular(12)),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(Icons.place_outlined, color: AppColors.providerAccent),
+                      Icon(Icons.place_outlined, color: context.tk.providerAccent),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Column(
@@ -158,7 +160,7 @@ class _ServiceExecutionScreenState extends State<ServiceExecutionScreen> {
                           children: [
                             Text(_address ?? 'Carregando endereço...', style: const TextStyle(fontWeight: FontWeight.w700, height: 1.3)),
                             if (_reference != null && _reference!.isNotEmpty)
-                              Padding(padding: const EdgeInsets.only(top: 4), child: Text('Ref: $_reference', style: const TextStyle(color: AppColors.muted, fontSize: 13))),
+                              Padding(padding: const EdgeInsets.only(top: 4), child: Text('Ref: $_reference', style: TextStyle(color: context.tk.textMuted, fontSize: 13))),
                           ],
                         ),
                       ),
@@ -167,7 +169,7 @@ class _ServiceExecutionScreenState extends State<ServiceExecutionScreen> {
                 ),
                 if (job.scheduledFor != null) ...[
                   const SizedBox(height: 10),
-                  Text('Agendado: ${dateLong(job.scheduledFor!)}', style: const TextStyle(color: AppColors.muted, fontSize: 13)),
+                  Text('Agendado: ${dateLong(job.scheduledFor!)}', style: TextStyle(color: context.tk.textMuted, fontSize: 13)),
                 ],
                 const SizedBox(height: 12),
                 OutlinedButton.icon(
@@ -208,14 +210,14 @@ class WarrantyIntroScreen extends StatelessWidget {
         padding: const EdgeInsets.all(24),
         children: [
           const SizedBox(height: 8),
-          const Center(child: CircleAvatar(radius: 70, backgroundColor: AppColors.providerSoft, child: Icon(Icons.emoji_events_rounded, size: 72, color: Color(0xFFE8B23A)))),
+          Center(child: CircleAvatar(radius: 70, backgroundColor: context.tk.providerSoft, child: Icon(Icons.emoji_events_rounded, size: 72, color: Color(0xFFE8B23A)))),
           const SizedBox(height: 22),
-          const Text('Mostre o seu talento para o mundo!', textAlign: TextAlign.center, style: TextStyle(fontSize: 30, fontWeight: FontWeight.w900, height: 1.15, color: AppColors.providerAccent)),
+          Text('Mostre o seu talento para o mundo!', textAlign: TextAlign.center, style: TextStyle(fontSize: 30, fontWeight: FontWeight.w900, height: 1.15, color: context.tk.providerAccent)),
           const SizedBox(height: 14),
-          const Text(
+          Text(
             'As próximas 4 fotos garantem a finalização do serviço e ficam salvas como prova para o cliente e para a sua proteção. Mostre o seu trabalho e feche ainda mais clientes!',
             textAlign: TextAlign.center,
-            style: TextStyle(height: 1.5, color: Color(0xFF374151)),
+            style: TextStyle(height: 1.5, color: context.tk.text),
           ),
           const SizedBox(height: 18),
           const InfoBanner('Acenda as luzes, limpe a lente e mostre o antes/depois.', tone: BannerTone.info, icon: Icons.lightbulb_outline_rounded, title: 'Dica'),
@@ -250,6 +252,18 @@ class _EvidenceChecklistScreenState extends State<EvidenceChecklistScreen> {
   String? _busySlot;
   bool _loading = true;
 
+  // Extras opcionais que alimentam o Case de Sucesso (vitrine pública).
+  final _report = TextEditingController();
+  String _savedReport = '';
+  bool _videoBusy = false;
+  bool _reportLoaded = false;
+
+  @override
+  void dispose() {
+    _report.dispose();
+    super.dispose();
+  }
+
   static const _slots = [
     ('overview', 'Visão Geral', 'Mostre todo o ambiente de trabalho.'),
     ('detail', 'Detalhes da Peça', 'Aproxime e mostre o que foi feito ou trocado.'),
@@ -266,9 +280,15 @@ class _EvidenceChecklistScreenState extends State<EvidenceChecklistScreen> {
   Future<void> _load() async {
     try {
       final ev = await _jobs.evidence(widget.job.id);
+      final saved = _reportLoaded ? null : await _jobs.jobReport(widget.job.id);
       if (!mounted) return;
       setState(() {
         _items = {for (final e in ev) e['slot'] as String: e};
+        if (!_reportLoaded) {
+          _reportLoaded = true;
+          _savedReport = saved ?? '';
+          _report.text = _savedReport;
+        }
         _loading = false;
       });
     } catch (e) {
@@ -288,6 +308,54 @@ class _EvidenceChecklistScreenState extends State<EvidenceChecklistScreen> {
     } finally {
       if (mounted) setState(() => _busySlot = null);
     }
+  }
+
+  /// Vídeo curto do serviço (opcional, até 30 s / 25 MB): aparece no Case de Sucesso.
+  Future<void> _pickVideo() async {
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) => SafeArea(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          ListTile(leading: const Icon(Icons.videocam_rounded), title: const Text('Gravar agora (até 30 s)'), onTap: () => Navigator.pop(ctx, ImageSource.camera)),
+          ListTile(leading: const Icon(Icons.video_library_rounded), title: const Text('Escolher da galeria'), onTap: () => Navigator.pop(ctx, ImageSource.gallery)),
+        ]),
+      ),
+    );
+    if (source == null || !mounted) return;
+    setState(() => _videoBusy = true);
+    try {
+      final x = await ImagePicker().pickVideo(source: source, maxDuration: const Duration(seconds: 30));
+      if (x == null) return;
+      if (await x.length() > 25 * 1024 * 1024) {
+        if (mounted) showSnack(context, 'O vídeo passa de 25 MB. Grave um trecho mais curto.', error: true);
+        return;
+      }
+      final name = x.name.toLowerCase();
+      final ext = name.endsWith('.mov') ? 'mov' : 'mp4';
+      await _jobs.addEvidence(jobId: widget.job.id, slot: 'video', bytes: await x.readAsBytes(), ext: ext);
+      await _load();
+    } catch (e) {
+      if (mounted) showSnack(context, friendlyError(e), error: true);
+    } finally {
+      if (mounted) setState(() => _videoBusy = false);
+    }
+  }
+
+  /// Salva o relatório técnico (se mudou) e segue para liberar o pagamento.
+  Future<void> _continue() async {
+    final text = _report.text.trim();
+    if (text != _savedReport.trim()) {
+      try {
+        await ProviderService().setJobReport(widget.job.id, text);
+        _savedReport = text;
+      } catch (e) {
+        if (mounted) showSnack(context, friendlyError(e), error: true);
+        return;
+      }
+    }
+    if (!mounted) return;
+    await Navigator.of(context).push(MaterialPageRoute(builder: (_) => ReleasePaymentScreen(job: widget.job)));
   }
 
   Future<void> _remove(String slot) async {
@@ -312,9 +380,9 @@ class _EvidenceChecklistScreenState extends State<EvidenceChecklistScreen> {
           : ListView(
               padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
               children: [
-                const Text('Capture as 4 fotos obrigatórias', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: AppColors.providerAccent)),
+                Text('Capture as 4 fotos obrigatórias', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: context.tk.providerAccent)),
                 const SizedBox(height: 8),
-                Text(done ? '✓ Fotos obrigatórias (4/4)' : 'Fotos obrigatórias ($count/4)', style: TextStyle(fontWeight: FontWeight.w800, color: done ? const Color(0xFF1E8E4E) : AppColors.muted)),
+                Text(done ? '✓ Fotos obrigatórias (4/4)' : 'Fotos obrigatórias ($count/4)', style: TextStyle(fontWeight: FontWeight.w800, color: done ? const Color(0xFF1E8E4E) : context.tk.textMuted)),
                 const SizedBox(height: 14),
                 GridView.count(
                   crossAxisCount: 2,
@@ -335,13 +403,41 @@ class _EvidenceChecklistScreenState extends State<EvidenceChecklistScreen> {
                 ),
                 const SizedBox(height: 14),
                 const InfoBanner('As fotos ficam salvas no pedido: protegem você e o cliente em caso de qualquer dúvida.', tone: BannerTone.security),
+                const SectionTitle('Vídeo do serviço (opcional)'),
+                AppCard(
+                  onTap: _videoBusy ? null : _pickVideo,
+                  child: Row(children: [
+                    Icon(_items.containsKey('video') ? Icons.check_circle_rounded : Icons.videocam_outlined, color: _items.containsKey('video') ? context.tk.success : context.tk.providerAccent),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        _items.containsKey('video') ? 'Vídeo anexado. Toque para trocar.' : 'Grave um vídeo curto do serviço pronto (até 30 s). Ele aparece no seu Case de Sucesso.',
+                        style: TextStyle(color: context.tk.text, height: 1.3),
+                      ),
+                    ),
+                    if (_videoBusy) const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.4))
+                    else if (_items.containsKey('video')) IconButton(onPressed: () => _remove('video'), icon: Icon(Icons.delete_outline_rounded, color: context.tk.danger)),
+                  ]),
+                ),
+                const SectionTitle('Relatório técnico (opcional)'),
+                TextField(
+                  controller: _report,
+                  minLines: 3,
+                  maxLines: 6,
+                  maxLength: 2000,
+                  textCapitalization: TextCapitalization.sentences,
+                  decoration: const InputDecoration(
+                    hintText: 'O que você encontrou, o que fez e o que foi trocado. Ex.: Troquei o disjuntor de 20A por um DR de 25A e reapertei o quadro.',
+                  ),
+                ),
+                Text('Aparece para os clientes no seu Case de Sucesso e ajuda a fechar mais serviços.', style: TextStyle(fontSize: 12.5, color: context.tk.textMuted)),
               ],
             ),
       bottomNavigationBar: BottomBar(
         child: PrimaryButton(
           label: 'Continuar para liberar pagamento',
           trailingArrow: true,
-          onPressed: done ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => ReleasePaymentScreen(job: widget.job))) : null,
+          onPressed: done ? _continue : null,
         ),
       ),
     );
@@ -364,17 +460,17 @@ class _SlotCard extends StatelessWidget {
         onTap: busy ? null : onTap,
         borderRadius: BorderRadius.circular(18),
         child: Container(
-          decoration: BoxDecoration(color: const Color(0xFFE5E5E8), borderRadius: BorderRadius.circular(18), border: Border.all(color: const Color(0xFFB8BCC6), width: 1.5)),
+          decoration: BoxDecoration(color: context.tk.border, borderRadius: BorderRadius.circular(18), border: Border.all(color: context.tk.border, width: 1.5)),
           child: Center(
             child: busy
                 ? const CircularProgressIndicator()
                 : Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.photo_camera_outlined, size: 34, color: Color(0xFF8A8F9C)),
+                      Icon(Icons.photo_camera_outlined, size: 34, color: context.tk.textMuted),
                       const SizedBox(height: 4),
                       Text(label, style: const TextStyle(fontWeight: FontWeight.w800)),
-                      const Text('+', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: AppColors.providerAccent)),
+                      Text('+', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: context.tk.providerAccent)),
                     ],
                   ),
           ),
@@ -398,7 +494,7 @@ class _SlotCard extends StatelessWidget {
             child: Material(
               color: Colors.white.withValues(alpha: 0.92),
               shape: const CircleBorder(),
-              child: InkWell(customBorder: const CircleBorder(), onTap: onDelete, child: const Padding(padding: EdgeInsets.all(7), child: Icon(Icons.delete_outline_rounded, size: 18, color: AppColors.danger))),
+              child: InkWell(customBorder: const CircleBorder(), onTap: onDelete, child: Padding(padding: EdgeInsets.all(7), child: Icon(Icons.delete_outline_rounded, size: 18, color: context.tk.danger))),
             ),
           ),
       ],
@@ -475,9 +571,9 @@ class _ReleasePaymentScreenState extends State<ReleasePaymentScreen> {
             child: ListView(
               padding: const EdgeInsets.fromLTRB(24, 8, 24, 8),
               children: [
-                const Text('Insira o código de liberação', textAlign: TextAlign.center, style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900, color: AppColors.providerAccent)),
+                Text('Insira o código de liberação', textAlign: TextAlign.center, style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900, color: context.tk.providerAccent)),
                 const SizedBox(height: 8),
-                Text('Peça a $_clientName o PIN de 4 dígitos para validar a transação.', textAlign: TextAlign.center, style: const TextStyle(color: AppColors.muted, height: 1.4)),
+                Text('Peça a $_clientName o PIN de 4 dígitos para validar a transação.', textAlign: TextAlign.center, style: TextStyle(color: context.tk.textMuted, height: 1.4)),
                 const SizedBox(height: 22),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -490,7 +586,7 @@ class _ReleasePaymentScreenState extends State<ReleasePaymentScreen> {
                         alignment: Alignment.center,
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: _error != null ? AppColors.danger : (i == _pin.length ? AppColors.providerAccent : const Color(0xFFB8BCC6)), width: i == _pin.length ? 2 : 1.2),
+                          border: Border.all(color: _error != null ? context.tk.danger : (i == _pin.length ? context.tk.providerAccent : context.tk.border), width: i == _pin.length ? 2 : 1.2),
                         ),
                         child: Text(i < _pin.length ? '•' : '', style: const TextStyle(fontSize: 34, fontWeight: FontWeight.w900)),
                       ),
@@ -502,20 +598,20 @@ class _ReleasePaymentScreenState extends State<ReleasePaymentScreen> {
                   child: Center(
                     child: _busy
                         ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.4))
-                        : Text(_error ?? '', textAlign: TextAlign.center, style: const TextStyle(color: AppColors.danger, fontWeight: FontWeight.w700)),
+                        : Text(_error ?? '', textAlign: TextAlign.center, style: TextStyle(color: context.tk.danger, fontWeight: FontWeight.w700)),
                   ),
                 ),
                 Center(
                   child: TextButton(
                     onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => SafetyScreen(job: widget.job))),
-                    child: const Text('Tive um problema / o cliente não tem o código', style: TextStyle(color: Color(0xFF9B1C1C), decoration: TextDecoration.underline, fontWeight: FontWeight.w700)),
+                    child: Text('Tive um problema / o cliente não tem o código', style: TextStyle(color: context.tk.danger, decoration: TextDecoration.underline, fontWeight: FontWeight.w700)),
                   ),
                 ),
               ],
             ),
           ),
           Container(
-            color: const Color(0xFFF1F2F5),
+            color: context.tk.surface,
             padding: const EdgeInsets.fromLTRB(24, 12, 24, 20),
             child: SafeArea(
               top: false,
@@ -531,12 +627,12 @@ class _ReleasePaymentScreenState extends State<ReleasePaymentScreen> {
                     k.isEmpty
                         ? const SizedBox.shrink()
                         : Material(
-                            color: const Color(0xFFE5E7EB),
+                            color: context.tk.border,
                             borderRadius: BorderRadius.circular(30),
                             child: InkWell(
                               borderRadius: BorderRadius.circular(30),
                               onTap: () => k == '⌫' ? _back() : _press(k),
-                              child: Center(child: Text(k, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: AppColors.providerAccent))),
+                              child: Center(child: Text(k, style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: context.tk.providerAccent))),
                             ),
                           ),
                 ],
@@ -563,14 +659,14 @@ class SafetyScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(24),
         children: [
-          const Center(child: CircleAvatar(radius: 56, backgroundColor: AppColors.providerSoft, child: Icon(Icons.shield_rounded, size: 60, color: AppColors.providerAccent))),
+          Center(child: CircleAvatar(radius: 56, backgroundColor: context.tk.providerSoft, child: Icon(Icons.shield_rounded, size: 60, color: context.tk.providerAccent))),
           const SizedBox(height: 18),
           const Text('O seu dinheiro está 100% protegido.', textAlign: TextAlign.center, style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900, height: 1.15)),
           const SizedBox(height: 12),
           Text(
             'Fique tranquilo: o valor de ${brl(job.agreedPrice)} está bloqueado em nosso sistema para garantir que você não saia no prejuízo. Abra um chamado e a nossa equipe de mediação assume o caso.',
             textAlign: TextAlign.center,
-            style: const TextStyle(height: 1.5, color: Color(0xFF374151)),
+            style: TextStyle(height: 1.5, color: context.tk.text),
           ),
           const SizedBox(height: 16),
           const InfoBanner('Recomendamos que você saia do local em segurança. Não há necessidade de discussão.', tone: BannerTone.warning, icon: Icons.shield_outlined),
@@ -606,7 +702,7 @@ class MediationScreen extends StatelessWidget {
           return ListView(
             padding: const EdgeInsets.all(24),
             children: [
-              const Center(child: CircleAvatar(radius: 52, backgroundColor: AppColors.providerSoft, child: Icon(Icons.gavel_rounded, size: 54, color: AppColors.providerAccent))),
+              Center(child: CircleAvatar(radius: 52, backgroundColor: context.tk.providerSoft, child: Icon(Icons.gavel_rounded, size: 54, color: context.tk.providerAccent))),
               const SizedBox(height: 16),
               const Text('Pagamento retido para análise.', textAlign: TextAlign.center, style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900)),
               const SizedBox(height: 12),
@@ -625,7 +721,7 @@ class MediationScreen extends StatelessWidget {
               Text(
                 'O valor de ${brl(job.agreedPrice)} fica bloqueado com a Desperrengue. Suas fotos e o histórico do serviço já estão salvos no chamado.',
                 textAlign: TextAlign.center,
-                style: const TextStyle(height: 1.5, color: Color(0xFF374151)),
+                style: TextStyle(height: 1.5, color: context.tk.text),
               ),
               const SizedBox(height: 14),
               const InfoBanner('A equipe da Desperrengue assumiu este caso e responde em até 24 horas.', tone: BannerTone.warning),
@@ -697,28 +793,28 @@ class _PaidSuccessScreenState extends State<PaidSuccessScreen> {
         padding: const EdgeInsets.all(24),
         children: [
           const SizedBox(height: 8),
-          const Center(child: CircleAvatar(radius: 56, backgroundColor: AppColors.providerSoft, child: Icon(Icons.verified_rounded, size: 64, color: AppColors.providerAccent))),
+          Center(child: CircleAvatar(radius: 56, backgroundColor: context.tk.providerSoft, child: Icon(Icons.verified_rounded, size: 64, color: context.tk.providerAccent))),
           const SizedBox(height: 18),
-          const Text('Serviço finalizado e pago!', textAlign: TextAlign.center, style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: AppColors.providerAccent)),
+          Text('Serviço finalizado e pago!', textAlign: TextAlign.center, style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: context.tk.providerAccent)),
           const SizedBox(height: 10),
           Text('O código foi validado e suas fotos ficaram registradas. ${brl(_credited)} foram adicionados com segurança à sua carteira!',
-              textAlign: TextAlign.center, style: const TextStyle(height: 1.45, color: AppColors.muted)),
+              textAlign: TextAlign.center, style: TextStyle(height: 1.45, color: context.tk.textMuted)),
           const SizedBox(height: 18),
           AppCard(
-            color: AppColors.successSoft,
-            borderColor: AppColors.success,
+            color: context.tk.successSoft,
+            borderColor: context.tk.success,
             child: Row(
               children: [
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Seu novo saldo é de', style: TextStyle(color: AppColors.successInk)),
-                      Text(_hide ? 'R\$ •••••' : brl(_balance), style: const TextStyle(fontSize: 34, fontWeight: FontWeight.w900, color: AppColors.successInk)),
+                      Text('Seu novo saldo é de', style: TextStyle(color: context.tk.successInk)),
+                      Text(_hide ? 'R\$ •••••' : brl(_balance), style: TextStyle(fontSize: 34, fontWeight: FontWeight.w900, color: context.tk.successInk)),
                     ],
                   ),
                 ),
-                IconButton(onPressed: () => setState(() => _hide = !_hide), icon: Icon(_hide ? Icons.visibility_off_rounded : Icons.visibility_rounded, color: AppColors.successInk)),
+                IconButton(onPressed: () => setState(() => _hide = !_hide), icon: Icon(_hide ? Icons.visibility_off_rounded : Icons.visibility_rounded, color: context.tk.successInk)),
               ],
             ),
           ),
@@ -827,7 +923,7 @@ class _RateClientScreenState extends State<RateClientScreen> {
               child: Padding(
                 padding: const EdgeInsets.only(top: 4),
                 child: Text('Nota atual do cliente: ${rep.avg.toStringAsFixed(1).replaceAll('.', ',')} (${rep.count} avaliações)',
-                    style: const TextStyle(color: AppColors.muted, fontSize: 12.5)),
+                    style: TextStyle(color: context.tk.textMuted, fontSize: 12.5)),
               ),
             ),
           const SizedBox(height: 14),
@@ -847,9 +943,9 @@ class _RateClientScreenState extends State<RateClientScreen> {
             duration: const Duration(milliseconds: 250),
             alignment: Alignment.topCenter,
             child: _rating == 0
-                ? const Padding(
+                ? Padding(
                     padding: EdgeInsets.only(top: 10),
-                    child: Text('Toque numa estrela para começar', textAlign: TextAlign.center, style: TextStyle(color: AppColors.muted)),
+                    child: Text('Toque numa estrela para começar', textAlign: TextAlign.center, style: TextStyle(color: context.tk.textMuted)),
                   )
                 : Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -857,7 +953,7 @@ class _RateClientScreenState extends State<RateClientScreen> {
                       const SizedBox(height: 22),
                       Text(ReviewTags.title(_rating), style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
                       const SizedBox(height: 4),
-                      const Text('Escolha quantas quiser (opcional).', style: TextStyle(color: AppColors.muted, fontSize: 12.5)),
+                      Text('Escolha quantas quiser (opcional).', style: TextStyle(color: context.tk.textMuted, fontSize: 12.5)),
                       const SizedBox(height: 10),
                       ReviewTagPills(
                         options: ReviewTags.options(_rating, byClient: false),

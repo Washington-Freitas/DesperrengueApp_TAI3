@@ -25,6 +25,18 @@ jobs:
       - name: Verificar links relativos dos .md
         run: node scripts/check-md-links.mjs
 
+  functions:
+    name: Dossiê de Despedida (PDF)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Testar a geração do PDF (pdf-lib, sem Deno)
+        run: node scripts/test-dossie.mjs
+
   flutter:
     name: Analyze & Test (Flutter)
     runs-on: ubuntu-latest

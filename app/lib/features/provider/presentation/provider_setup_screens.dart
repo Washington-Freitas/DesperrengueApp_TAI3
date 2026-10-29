@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import '../../../core/models/user_profile.dart';
 import '../../../core/services/app_session.dart';
 import '../../../core/services/profile_service.dart';
-import '../../../core/ui/app_theme.dart';
 import '../../../core/ui/widgets.dart';
 import 'provider_profile_screens.dart';
+import '../../../core/ui/app_tokens.dart';
 
 /// Cadastro inicial do PROFISSIONAL (após o KYC ser ativado):
 /// 1) perfil (foto, bio, especialidades, preços) 2) portfólio 3) conclusão.
@@ -50,14 +50,14 @@ class _ProviderSetupFlowState extends State<ProviderSetupFlow> {
             children: [
               const StepperBar(total: 3, current: 3),
               const SizedBox(height: 28),
-              const Center(child: CircleAvatar(radius: 52, backgroundColor: AppColors.successSoft, child: Icon(Icons.rocket_launch_rounded, size: 50, color: AppColors.success))),
+              Center(child: CircleAvatar(radius: 52, backgroundColor: context.tk.successSoft, child: Icon(Icons.rocket_launch_rounded, size: 50, color: context.tk.success))),
               const SizedBox(height: 20),
               Text('Tudo pronto, ${widget.profile.firstName}!', textAlign: TextAlign.center, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900)),
               const SizedBox(height: 10),
-              const Text(
+              Text(
                 'Seu perfil está no ar. Agora você recebe solicitações de clientes da sua região e pode enviar orçamentos.',
                 textAlign: TextAlign.center,
-                style: TextStyle(height: 1.45, color: AppColors.muted),
+                style: TextStyle(height: 1.45, color: context.tk.textMuted),
               ),
               const SizedBox(height: 22),
               const InfoBanner(

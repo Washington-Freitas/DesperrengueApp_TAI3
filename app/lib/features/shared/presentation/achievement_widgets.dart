@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../../core/models/achievements.dart';
 import '../../../core/services/provider_service.dart';
-import '../../../core/ui/app_theme.dart';
 import '../../../core/ui/widgets.dart';
+import '../../../core/ui/app_tokens.dart';
 
 /// Ícone de cada categoria.
 IconData achievementIcon(String categoryCode) => switch (categoryCode) {
@@ -117,7 +117,7 @@ class AchievementTile extends StatelessWidget {
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, height: 1.15, color: locked ? AppColors.muted : AppColors.ink),
+              style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, height: 1.15, color: locked ? context.tk.textMuted : context.tk.text),
             ),
           ],
         ),
@@ -143,23 +143,23 @@ Future<void> showAchievementDetail(BuildContext context, Achievement a, {DateTim
             const SizedBox(height: 14),
             Text(a.title, textAlign: TextAlign.center, style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w900)),
             const SizedBox(height: 6),
-            StatusChip('${a.category.name} • ${a.tier.label} • nível ${a.level}/10', color: unlocked ? p.ink : AppColors.muted),
+            StatusChip('${a.category.name} • ${a.tier.label} • nível ${a.level}/10', color: unlocked ? p.ink : context.tk.textMuted),
             const SizedBox(height: 12),
-            Text(a.description, textAlign: TextAlign.center, style: const TextStyle(color: AppColors.muted, height: 1.4)),
+            Text(a.description, textAlign: TextAlign.center, style: TextStyle(color: context.tk.textMuted, height: 1.4)),
             const SizedBox(height: 14),
             if (unlocked)
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.check_circle_rounded, color: AppColors.success, size: 20),
+                  Icon(Icons.check_circle_rounded, color: context.tk.success, size: 20),
                   const SizedBox(width: 6),
-                  Text('Desbloqueada em ${_date(unlockedAt)}', style: const TextStyle(fontWeight: FontWeight.w800, color: AppColors.successInk)),
+                  Text('Desbloqueada em ${_date(unlockedAt)}', style: TextStyle(fontWeight: FontWeight.w800, color: context.tk.successInk)),
                 ],
               )
             else if (count != null)
               Text('Faltam ${(a.threshold - count).clamp(0, a.threshold)} para desbloquear', style: const TextStyle(fontWeight: FontWeight.w800))
             else
-              const Text('Ainda não desbloqueada', style: TextStyle(fontWeight: FontWeight.w800, color: AppColors.muted)),
+              Text('Ainda não desbloqueada', style: TextStyle(fontWeight: FontWeight.w800, color: context.tk.textMuted)),
           ],
         ),
       ),
@@ -187,7 +187,7 @@ class AchievementsSection extends StatelessWidget {
         final best = [for (final c in progress) if (c.highest != null) c.highest!]..sort((a, b) => b.level.compareTo(a.level));
         final total = list.length;
         if (total == 0) {
-          return const Text('Este profissional ainda não desbloqueou conquistas.', style: TextStyle(color: AppColors.muted));
+          return Text('Este profissional ainda não desbloqueou conquistas.', style: TextStyle(color: context.tk.textMuted));
         }
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -306,13 +306,13 @@ class _Summary extends StatelessWidget {
                 SizedBox(
                   width: 78,
                   height: 78,
-                  child: CircularProgressIndicator(value: total == 0 ? 0 : unlocked / total, strokeWidth: 8, color: accent, backgroundColor: AppColors.line),
+                  child: CircularProgressIndicator(value: total == 0 ? 0 : unlocked / total, strokeWidth: 8, color: accent, backgroundColor: context.tk.border),
                 ),
                 Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text('$unlocked', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, height: 1)),
-                    Text('de $total', style: const TextStyle(fontSize: 11, color: AppColors.muted)),
+                    Text('de $total', style: TextStyle(fontSize: 11, color: context.tk.textMuted)),
                   ],
                 ),
               ],
@@ -327,7 +327,7 @@ class _Summary extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   last == null ? 'Conclua serviços e receba avaliações para desbloquear as primeiras.' : 'Mais recente: ${last!.title}',
-                  style: const TextStyle(color: AppColors.muted, height: 1.35, fontSize: 13),
+                  style: TextStyle(color: context.tk.textMuted, height: 1.35, fontSize: 13),
                 ),
               ],
             ),
@@ -359,7 +359,7 @@ class _CategoryCard extends StatelessWidget {
               Icon(achievementIcon(cp.category.code), size: 20, color: Theme.of(context).colorScheme.primary),
               const SizedBox(width: 8),
               Expanded(child: Text(cp.category.name, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16))),
-              Text('${cp.unlockedLevels.length}/${kAchievementThresholds.length}', style: const TextStyle(fontWeight: FontWeight.w800, color: AppColors.muted)),
+              Text('${cp.unlockedLevels.length}/${kAchievementThresholds.length}', style: TextStyle(fontWeight: FontWeight.w800, color: context.tk.textMuted)),
             ],
           ),
           const SizedBox(height: 12),
@@ -392,18 +392,18 @@ class _CategoryCard extends StatelessWidget {
                 value: progress ?? 0,
                 minHeight: 8,
                 color: Theme.of(context).colorScheme.primary,
-                backgroundColor: AppColors.line,
+                backgroundColor: context.tk.border,
               ),
             ),
             const SizedBox(height: 4),
             Text(
               cp.count == null ? '' : '${Achievement.formatCount(cp.count!)} / ${Achievement.formatCount(next.threshold)}',
-              style: const TextStyle(fontSize: 12, color: AppColors.muted),
+              style: TextStyle(fontSize: 12, color: context.tk.textMuted),
             ),
           ] else if (isOwner && next == null)
-            const Padding(
+            Padding(
               padding: EdgeInsets.only(top: 10),
-              child: Text('Categoria completa!', style: TextStyle(fontWeight: FontWeight.w900, color: AppColors.successInk)),
+              child: Text('Categoria completa!', style: TextStyle(fontWeight: FontWeight.w900, color: context.tk.successInk)),
             ),
         ],
       ),
@@ -442,7 +442,7 @@ class NewAchievementsBanner extends StatelessWidget {
                       Text('Conquista desbloqueada', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: tierPalette(a.tier).ink)),
                       const SizedBox(height: 2),
                       Text(a.title, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
-                      Text('${a.category.name} • ${a.tier.label}', style: const TextStyle(color: AppColors.muted, fontSize: 12.5)),
+                      Text('${a.category.name} • ${a.tier.label}', style: TextStyle(color: context.tk.textMuted, fontSize: 12.5)),
                     ],
                   ),
                 ),

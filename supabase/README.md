@@ -20,6 +20,9 @@ Uma **mesma conta pode ser cliente e profissional** (`profiles.is_client` / `is_
 | `job_evidence` | 4 fotos obrigatórias do serviço (`overview`, `detail`, `angle`, `clean`). |
 | `payments` | Pagamento **MOCK** em custódia (`escrow` → `released`/`refunded`), comissão de 12 %. |
 | `reviews` | Avaliação dos dois lados, **cega** (`revealed_at`: revelada com as duas partes ou 48 h depois), com pílulas (`tags`), fotos (`photo_paths`) e resposta pública única (`reply`). A nota do profissional só considera avaliações reveladas. |
+| `withdrawals` | Saques Pix (MVP simulado): valor, tipo da chave e chave **mascarada**; saldo = liberado − saques ([ADR-0013](../docs/adr/0013-exclusao-de-conta-lgpd-e-dossie.md)) |
+| `provider_case_pins` | Serviços fixados (máx. 3, só 5★) na vitrine do profissional ([ADR-0016](../docs/adr/0016-vitrine-de-cases-lifo.md)) |
+| `account_deletion_log` | Auditoria de exclusões (só *hash* do id; sem dado pessoal) |
 | `provider_achievements` | Conquistas desbloqueadas (`<categoria>_<limite>`; 9 categorias × 10 níveis). Só o sistema escreve ([ADR-0012](../docs/adr/0012-conquistas-do-profissional.md)). |
 | `messages` | Chat por demanda (Realtime). Só participam o cliente e o profissional que orçou. |
 | `notifications` | Geradas por triggers/RPCs (orçamento, aceite, pagamento, convite…). |
@@ -58,6 +61,11 @@ open ──(cliente aceita orçamento)──▶ awaiting_payment ──(checkout
 | `reply_to_review(id, texto)` | avaliado | Resposta pública, uma vez, só após revelada |
 | `review_status(job)` / `client_reputation(cliente)` | autenticado | Estado da avaliação / nota do cliente (só profissionais envolvidos) |
 | `my_achievement_counts()` | profissional | Contadores por categoria (progresso das conquistas) |
+| `my_wallet()` · `request_withdrawal(valor, tipo, chave, titular)` | profissional | Saldo no servidor e saque Pix simulado (trava anti-corrida) |
+| `account_deletion_status()` | autenticado | Trava da exclusão: saldo, custódia, serviços em andamento |
+| `account_dossier(uid)` · `purge_account(uid)` | **só `service_role`** | Dados do Dossiê PDF e limpeza LGPD (chamadas pela Edge Function) |
+| `provider_showcase(p)` · `provider_case_detail(job)` · `provider_case_history()` | autenticado | Vitrine LIFO (4 vagas), Case de Sucesso e histórico |
+| `pin_case(job)` · `unpin_case(job)` · `set_job_report(job, texto)` | profissional | Curadoria da vitrine e relatório técnico |
 | `create_support_ticket(...)` | participante | Abre chamado (congela o serviço em curso) |
 | `admin_resolve_dispute(ticket, release, texto)` | admin / service_role | Libera ao profissional ou devolve ao cliente |
 | `expire_invites()` | `pg_cron` (1/min) | Expira convites e **estorna emergências sem resposta** |
@@ -110,4 +118,5 @@ Para rotacionar o segredo do webhook, gere um novo valor, atualize o Vault (`vau
 
 ```bash
 supabase functions deploy enviar-email-aprovacao --use-api --no-verify-jwt
+supabase functions deploy excluir-conta --no-verify-jwt   # o JWT do usuário é validado dentro da função
 ```

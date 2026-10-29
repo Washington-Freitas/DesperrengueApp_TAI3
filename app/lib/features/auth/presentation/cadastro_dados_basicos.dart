@@ -5,7 +5,8 @@ import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/constants/env.dart';
-import 'cadastro_verificacao_otp.dart';
+import 'cadastro_verificacao_otp.dart';
+import '../../../core/ui/light_island.dart';
 
 class CadastroDadosBasicosScreen extends StatefulWidget {
   const CadastroDadosBasicosScreen({super.key});
@@ -163,7 +164,7 @@ class _CadastroDadosBasicosScreenState
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return LightIsland(child: Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
@@ -446,7 +447,7 @@ class _CadastroDadosBasicosScreenState
           ),
         ),
       ),
-    );
+    ));
   }
 
   InputDecoration _buildInputDecoration(String hint, IconData icon) {

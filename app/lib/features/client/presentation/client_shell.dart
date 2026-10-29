@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../../../core/models/marketplace_models.dart';
 import '../../../core/models/user_profile.dart';
 import '../../../core/services/job_service.dart';
-import '../../../core/ui/app_theme.dart';
 import '../../../core/ui/media_widgets.dart';
 import '../../../core/ui/widgets.dart';
 import '../../shared/presentation/notifications_screen.dart';
@@ -12,6 +11,8 @@ import 'client_orders_tab.dart';
 import 'client_setup_screen.dart';
 import 'provider_search_screen.dart';
 import 'request_wizard.dart';
+import '../../../core/ui/app_theme.dart';
+import '../../../core/ui/app_tokens.dart';
 
 void openClientJob(BuildContext context, String jobId) {
   Navigator.of(context).push(MaterialPageRoute(builder: (_) => ClientJobScreen(jobId: jobId)));
@@ -47,8 +48,8 @@ class _ClientShellState extends State<ClientShell> {
         bottomNavigationBar: NavigationBar(
           selectedIndex: _index,
           onDestinationSelected: (i) => setState(() => _index = i),
-          backgroundColor: Colors.white,
-          indicatorColor: AppColors.clientSoft,
+          backgroundColor: context.tk.card,
+          indicatorColor: context.tk.clientSoft,
           destinations: const [
             NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home_rounded), label: 'Início'),
             NavigationDestination(
@@ -117,7 +118,7 @@ class _ClientHomeTabState extends State<ClientHomeTab> {
         ),
         const SizedBox(height: 8),
         Text('Olá, ${widget.profile.firstName}! 👋',
-            style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w900, color: AppColors.clientInk)),
+            style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900, color: context.tk.brand)),
         const SizedBox(height: 4),
         InkWell(
           onTap: _editAddress,
@@ -127,7 +128,7 @@ class _ClientHomeTabState extends State<ClientHomeTab> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.place_rounded, size: 18, color: AppColors.clientAccent),
+                Icon(Icons.place_rounded, size: 18, color: context.tk.clientAccent),
                 const SizedBox(width: 4),
                 Flexible(child: Text(_addressLabel, style: const TextStyle(fontWeight: FontWeight.w600))),
                 const Icon(Icons.keyboard_arrow_down_rounded),
@@ -147,7 +148,7 @@ class _ClientHomeTabState extends State<ClientHomeTab> {
                   hintText: 'Do que você precisa hoje? (ex: eletricista)',
                   prefixIcon: const Icon(Icons.search_rounded),
                   filled: true,
-                  fillColor: const Color(0xFFEEF1F5),
+                  fillColor: context.tk.surface,
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
                   enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
                 ),
@@ -155,7 +156,7 @@ class _ClientHomeTabState extends State<ClientHomeTab> {
             ),
             const SizedBox(width: 10),
             Material(
-              color: const Color(0xFFEEF1F5),
+              color: context.tk.surface,
               borderRadius: BorderRadius.circular(14),
               child: InkWell(
                 borderRadius: BorderRadius.circular(14),
@@ -255,8 +256,8 @@ class _ActiveJobCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final (title, body, cta) = _copy;
     return AppCard(
-      color: const Color(0xFFFDE8D8),
-      borderColor: const Color(0xFFF9B98A),
+      color: context.tk.clientSoft,
+      borderColor: context.tk.clientAccent.withValues(alpha: 0.5),
       onTap: onTap,
       child: Row(
         children: [
@@ -268,9 +269,9 @@ class _ActiveJobCard extends StatelessWidget {
               children: [
                 Text(title, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
                 const SizedBox(height: 2),
-                Text(body, style: const TextStyle(color: Color(0xFF5B4636), height: 1.3)),
+                Text(body, style: TextStyle(color: context.tk.text, height: 1.3)),
                 const SizedBox(height: 6),
-                Text(cta, style: const TextStyle(color: AppColors.clientAccent, fontWeight: FontWeight.w800)),
+                Text(cta, style: TextStyle(color: context.tk.clientAccent, fontWeight: FontWeight.w800)),
               ],
             ),
           ),
@@ -299,7 +300,7 @@ class _PulseDotState extends State<_PulseDot> with SingleTickerProviderStateMixi
   @override
   Widget build(BuildContext context) => FadeTransition(
     opacity: Tween(begin: 0.35, end: 1.0).animate(_c),
-    child: Container(width: 14, height: 14, decoration: const BoxDecoration(color: AppColors.clientAccent, shape: BoxShape.circle)),
+    child: Container(width: 14, height: 14, decoration: BoxDecoration(color: context.tk.clientAccent, shape: BoxShape.circle)),
   );
 }
 
@@ -317,7 +318,7 @@ class _OpenJobBanner extends StatelessWidget {
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(18),
-          gradient: const LinearGradient(colors: [Color(0xFFFFF1E6), Color(0xFFFFE0CC)]),
+          gradient: LinearGradient(colors: [context.tk.clientSoft, context.tk.clientSoft]),
         ),
         child: Row(
           children: [
@@ -325,15 +326,15 @@ class _OpenJobBanner extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Resolva seu "desperrengue"!',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: AppColors.clientInk)),
+                  Text('Resolva seu "desperrengue"!',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: context.tk.brand)),
                   const SizedBox(height: 6),
-                  const Text('Descreva o problema e receba até 3 orçamentos de profissionais verificados.',
-                      style: TextStyle(height: 1.35, color: Color(0xFF5B4636))),
+                  Text('Descreva o problema e receba até 3 orçamentos de profissionais verificados.',
+                      style: TextStyle(height: 1.35, color: context.tk.text)),
                   const SizedBox(height: 10),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                    decoration: BoxDecoration(color: AppColors.clientAccent, borderRadius: BorderRadius.circular(20)),
+                    decoration: BoxDecoration(color: context.tk.clientAccent, borderRadius: BorderRadius.circular(20)),
                     child: const Text('Pedir orçamentos grátis',
                         style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
                   ),
@@ -341,7 +342,7 @@ class _OpenJobBanner extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8),
-            const Icon(Icons.home_repair_service_rounded, size: 64, color: AppColors.clientAccent),
+            Icon(Icons.home_repair_service_rounded, size: 64, color: context.tk.clientAccent),
           ],
         ),
       ),

@@ -60,7 +60,8 @@ class _AuthGateState extends State<AuthGate> {
   }
 
   void _onLink(Uri uri) {
-    final isOnboarding = uri.scheme == 'desperrengue' && uri.host == 'onboarding';
+    final isOnboarding =
+        uri.scheme == 'desperrengue' && uri.host == 'onboarding';
     if (isOnboarding && mounted) {
       setState(() => _refreshTick++);
     }

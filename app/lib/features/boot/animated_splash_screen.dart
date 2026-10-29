@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -42,13 +43,14 @@ class AnimatedSplashScreen extends StatefulWidget {
 class _AnimatedSplashScreenState extends State<AnimatedSplashScreen> with SingleTickerProviderStateMixin {
   late final AnimationController _c = AnimationController(vsync: this, duration: widget.duration);
   bool _slow = false;
+  Timer? _slowTimer;
 
   @override
   void initState() {
     super.initState();
     _run();
     // Se a inicialização demorar (rede/armazenamento lentos), avisa discretamente.
-    Future<void>.delayed(const Duration(milliseconds: 3200), () {
+    _slowTimer = Timer(const Duration(milliseconds: 3200), () {
       if (mounted && !_c.isAnimating) setState(() => _slow = true);
     });
   }
@@ -69,6 +71,7 @@ class _AnimatedSplashScreenState extends State<AnimatedSplashScreen> with Single
 
   @override
   void dispose() {
+    _slowTimer?.cancel();
     _c.dispose();
     super.dispose();
   }
@@ -93,6 +96,28 @@ class _AnimatedSplashScreenState extends State<AnimatedSplashScreen> with Single
             return Stack(
               alignment: Alignment.center,
               children: [
+                // Warm-up da fonte de ícones: desenha (quase invisível) os glifos das
+                // primeiras telas, para não haver "pop-in"/jank no primeiro frame delas.
+                const Positioned(
+                  left: 0,
+                  top: 0,
+                  child: Opacity(
+                    opacity: 0.01,
+                    child: SizedBox(
+                      width: 6,
+                      height: 6,
+                      child: FittedBox(
+                        child: Row(children: [
+                          Icon(Icons.manage_search_rounded),
+                          Icon(Icons.handyman_rounded),
+                          Icon(Icons.arrow_back_ios_new_rounded),
+                          Icon(Icons.visibility_rounded),
+                          Icon(Icons.dashboard_rounded),
+                        ]),
+                      ),
+                    ),
+                  ),
+                ),
                 Positioned.fill(
                   child: RepaintBoundary(
                     child: CustomPaint(painter: ConfettiPainter(progress: confetti)),

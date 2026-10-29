@@ -9,12 +9,12 @@ import '../../../core/services/draft_store.dart';
 import '../../../core/services/media_service.dart';
 import '../../../core/services/profile_service.dart';
 import '../../../core/services/provider_service.dart';
-import '../../../core/ui/app_theme.dart';
 import '../../../core/ui/image_picking.dart';
 import '../../../core/ui/media_widgets.dart';
 import '../../../core/ui/widgets.dart';
 import '../../../core/utils/format.dart';
 import '../../shared/presentation/review_widgets.dart';
+import '../../../core/ui/app_tokens.dart';
 
 /// Editar Perfil (protótipo P02): foto, título, bio, especialidades, preços.
 /// Em [setupMode] vira o 1º passo do cadastro inicial (botão "Continuar").
@@ -199,8 +199,8 @@ class _EditProviderProfileScreenState extends State<EditProviderProfileScreen> {
                   const SizedBox(height: 16),
                   const Text('Mostre quem você é', style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900)),
                   const SizedBox(height: 6),
-                  const Text('Clientes escolhem quem tem foto, boa descrição e especialidades claras.',
-                      style: TextStyle(color: AppColors.muted, height: 1.4)),
+                  Text('Clientes escolhem quem tem foto, boa descrição e especialidades claras.',
+                      style: TextStyle(color: context.tk.textMuted, height: 1.4)),
                   const SizedBox(height: 18),
                 ],
                 Center(
@@ -254,7 +254,7 @@ class _EditProviderProfileScreenState extends State<EditProviderProfileScreen> {
                         selected: _specialties.contains(c.name),
                         showCheckmark: false,
                         selectedColor: accent,
-                        labelStyle: TextStyle(color: _specialties.contains(c.name) ? Colors.white : AppColors.ink, fontWeight: FontWeight.w700),
+                        labelStyle: TextStyle(color: _specialties.contains(c.name) ? Colors.white : context.tk.text, fontWeight: FontWeight.w700),
                         onSelected: (v) {
                           setState(() => v ? _specialties.add(c.name) : _specialties.remove(c.name));
                           _scheduleDraft();
@@ -368,7 +368,7 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
                 const StepperBar(total: 3, current: 2),
                 const SizedBox(height: 16),
               ],
-              const Text('Mostre a qualidade do seu trabalho para atrair mais clientes.', style: TextStyle(color: AppColors.muted, fontSize: 15, height: 1.4)),
+              Text('Mostre a qualidade do seu trabalho para atrair mais clientes.', style: TextStyle(color: context.tk.textMuted, fontSize: 15, height: 1.4)),
               const SizedBox(height: 16),
               GridView.count(
                 crossAxisCount: 2,
@@ -382,19 +382,19 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
                     borderRadius: BorderRadius.circular(16),
                     child: Container(
                       decoration: BoxDecoration(
-                        color: const Color(0xFFEEF3F8),
+                        color: context.tk.surface,
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: const Color(0xFF9FB3C8), width: 1.5),
+                        border: Border.all(color: context.tk.border, width: 1.5),
                       ),
                       child: Center(
                         child: _uploading
                             ? const CircularProgressIndicator()
-                            : const Column(
+                            : Column(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(Icons.add_photo_alternate_outlined, size: 36, color: Color(0xFF0B3A6B)),
+                                  Icon(Icons.add_photo_alternate_outlined, size: 36, color: context.tk.providerAccent),
                                   SizedBox(height: 6),
-                                  Text('Adicionar', style: TextStyle(fontWeight: FontWeight.w800, color: Color(0xFF0B3A6B))),
+                                  Text('Adicionar', style: TextStyle(fontWeight: FontWeight.w800, color: context.tk.providerAccent)),
                                 ],
                               ),
                       ),
@@ -409,12 +409,12 @@ class _PortfolioScreenState extends State<PortfolioScreen> {
                           right: 8,
                           top: 8,
                           child: Material(
-                            color: Colors.white,
+                            color: context.tk.card,
                             shape: const CircleBorder(),
                             child: InkWell(
                               customBorder: const CircleBorder(),
                               onTap: () => _delete(it),
-                              child: const Padding(padding: EdgeInsets.all(8), child: Icon(Icons.delete_outline_rounded, size: 20, color: AppColors.danger)),
+                              child: Padding(padding: EdgeInsets.all(8), child: Icon(Icons.delete_outline_rounded, size: 20, color: context.tk.danger)),
                             ),
                           ),
                         ),
@@ -513,18 +513,18 @@ class _CertificatesScreenState extends State<CertificatesScreen> {
           return ListView(
             padding: const EdgeInsets.all(20),
             children: [
-              const Center(child: CircleAvatar(radius: 34, backgroundColor: Color(0xFFE6EEFB), child: Icon(Icons.verified_user_rounded, size: 34, color: Color(0xFF0B3A6B)))),
+              Center(child: CircleAvatar(radius: 34, backgroundColor: context.tk.providerSoft, child: Icon(Icons.verified_user_rounded, size: 34, color: Color(0xFF0B3A6B)))),
               const SizedBox(height: 12),
               const Text('Certificações', textAlign: TextAlign.center, style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
               const SizedBox(height: 6),
-              const Text('Comprovar suas qualificações ajuda a conquistar a confiança dos clientes.', textAlign: TextAlign.center, style: TextStyle(color: AppColors.muted, height: 1.4)),
+              Text('Comprovar suas qualificações ajuda a conquistar a confiança dos clientes.', textAlign: TextAlign.center, style: TextStyle(color: context.tk.textMuted, height: 1.4)),
               const SizedBox(height: 18),
               for (final c in items)
                 AppCard(
                   margin: const EdgeInsets.only(bottom: 10),
                   child: Row(
                     children: [
-                      const CircleAvatar(backgroundColor: AppColors.surface, child: Icon(Icons.workspace_premium_rounded, color: Color(0xFF0B3A6B))),
+                      CircleAvatar(backgroundColor: context.tk.surface, child: Icon(Icons.workspace_premium_rounded, color: context.tk.providerAccent)),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Column(
@@ -532,14 +532,14 @@ class _CertificatesScreenState extends State<CertificatesScreen> {
                           children: [
                             Text(c.title, style: const TextStyle(fontWeight: FontWeight.w900)),
                             Text([c.issuer, if (c.issuedAt != null) 'Emitido em ${c.issuedAt!.year}'].whereType<String>().join(' • '),
-                                style: const TextStyle(color: AppColors.muted, fontSize: 13)),
+                                style: TextStyle(color: context.tk.textMuted, fontSize: 13)),
                             const SizedBox(height: 6),
-                            const StatusChip('Em análise', color: AppColors.warningInk, icon: Icons.schedule_rounded),
+                            StatusChip('Em análise', color: context.tk.warningInk, icon: Icons.schedule_rounded),
                           ],
                         ),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.delete_outline_rounded, color: AppColors.muted),
+                        icon: Icon(Icons.delete_outline_rounded, color: context.tk.textMuted),
                         onPressed: () async {
                           await _providers.deleteCertificate(c.id);
                           _reload();
@@ -549,11 +549,11 @@ class _CertificatesScreenState extends State<CertificatesScreen> {
                   ),
                 ),
               if (items.isEmpty)
-                const Padding(padding: EdgeInsets.symmetric(vertical: 16), child: Center(child: Text('Nenhum certificado ainda.', style: TextStyle(color: AppColors.muted)))),
+                Padding(padding: EdgeInsets.symmetric(vertical: 16), child: Center(child: Text('Nenhum certificado ainda.', style: TextStyle(color: context.tk.textMuted)))),
               const SizedBox(height: 8),
               SecondaryButton(label: '+ Adicionar registro ou certificado', onPressed: _add),
               const SizedBox(height: 12),
-              const Center(child: Text('🔒 Seus dados são protegidos e visíveis só para você e a equipe.', style: TextStyle(fontSize: 12, color: AppColors.muted), textAlign: TextAlign.center)),
+              Center(child: Text('🔒 Seus dados são protegidos e visíveis só para você e a equipe.', style: TextStyle(fontSize: 12, color: context.tk.textMuted), textAlign: TextAlign.center)),
             ],
           );
         },
@@ -601,8 +601,8 @@ class _MyReviewsScreenState extends State<MyReviewsScreen> {
           children: [
             const Text('Responder avaliação', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
             const SizedBox(height: 6),
-            const Text('Sua resposta é pública e só pode ser enviada uma vez. Seja cordial e objetivo.',
-                style: TextStyle(color: AppColors.muted, height: 1.4)),
+            Text('Sua resposta é pública e só pode ser enviada uma vez. Seja cordial e objetivo.',
+                style: TextStyle(color: context.tk.textMuted, height: 1.4)),
             const SizedBox(height: 12),
             TextField(controller: ctl, maxLines: 4, maxLength: 500, autofocus: true, decoration: const InputDecoration(hintText: 'Escreva sua resposta...')),
             const SizedBox(height: 8),
@@ -652,7 +652,7 @@ class _MyReviewsScreenState extends State<MyReviewsScreen> {
                         Text(count > 0 ? avg.toStringAsFixed(2).replaceAll('.', ',') : '—', style: const TextStyle(fontSize: 38, fontWeight: FontWeight.w900)),
                         RatingStars(value: avg, size: 16),
                         const SizedBox(height: 2),
-                        Text('$count avaliações', style: const TextStyle(color: AppColors.muted, fontSize: 12)),
+                        Text('$count avaliações', style: TextStyle(color: context.tk.textMuted, fontSize: 12)),
                       ],
                     ),
                     const SizedBox(width: 18),
@@ -663,12 +663,12 @@ class _MyReviewsScreenState extends State<MyReviewsScreen> {
                           const Text('Nota de ranqueamento', style: TextStyle(fontWeight: FontWeight.w900)),
                           Text(
                             card?.rankScore == null ? '—' : card!.rankScore!.toStringAsFixed(2).replaceAll('.', ','),
-                            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: AppColors.providerAccent),
+                            style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: context.tk.providerAccent),
                           ),
                           const SizedBox(height: 2),
-                          const Text(
+                          Text(
                             'Define sua posição na busca. Considera a média e o volume de avaliações: quanto mais serviços bem avaliados, mais você sobe.',
-                            style: TextStyle(color: AppColors.muted, fontSize: 12, height: 1.35),
+                            style: TextStyle(color: context.tk.textMuted, fontSize: 12, height: 1.35),
                           ),
                         ],
                       ),
@@ -686,9 +686,9 @@ class _MyReviewsScreenState extends State<MyReviewsScreen> {
               BadgeWall(earned: card?.badges ?? const [], tagCounts: counts, showProgress: true),
               const SectionTitle('Avaliações recebidas'),
               if (reviews.isEmpty)
-                const Padding(
+                Padding(
                   padding: EdgeInsets.symmetric(vertical: 16),
-                  child: Text('Você ainda não recebeu avaliações reveladas.', style: TextStyle(color: AppColors.muted)),
+                  child: Text('Você ainda não recebeu avaliações reveladas.', style: TextStyle(color: context.tk.textMuted)),
                 )
               else
                 for (final r in reviews) ReviewCard(review: r, onReply: r.hasReply ? null : () => _reply(r)),

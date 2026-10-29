@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
+import '../../../core/ui/light_island.dart';
 
 /// Tela informativa 6b: Dicas para um bom perfil.
 /// Design focado em "Insights" valiosos, utilizando a psicologia das cores
@@ -19,7 +20,7 @@ class VerificacaoStep6bDicasScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return LightIsland(child: Scaffold(
       backgroundColor:
           _bgPearlGray, // Fundo contrastante para os cartões brancos
       appBar: AppBar(
@@ -92,7 +93,7 @@ class VerificacaoStep6bDicasScreen extends StatelessWidget {
           ),
         ),
       ),
-    );
+    ));
   }
 
   /// Constrói o banner explicativo no topo sobre o andamento e expectativa de aprovação.

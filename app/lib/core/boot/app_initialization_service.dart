@@ -63,6 +63,16 @@ class AppInitializationService {
   static Future<AppThemeMode> _defaultReadTheme() async =>
       AppThemeMode.parse(await LocalPrefs.read(LocalPrefs.keyTheme));
 
+  /// Executa [f]; qualquer erro (síncrono ou assíncrono) devolve [fallback].
+  @visibleForTesting
+  static Future<T> safe<T>(Future<T> Function() f, T fallback) async {
+    try {
+      return await f();
+    } catch (_) {
+      return fallback;
+    }
+  }
+
   Future<BootResult> run() async {
     var recovered = false;
 
@@ -82,10 +92,11 @@ class AppInitializationService {
       }
     }
 
+    // `safe`: nenhuma tarefa auxiliar derruba a abertura (falha vira valor padrão).
     final (_, ok, theme) = await (
-      warmUp().catchError((_) {}),
+      safe<void>(warmUp, null),
       backend(),
-      _readTheme().catchError((_) => AppThemeMode.system),
+      safe<AppThemeMode>(_readTheme, AppThemeMode.system),
     ).wait;
     return BootResult(theme: theme, backendReady: ok, recoveredFromCorruption: recovered);
   }

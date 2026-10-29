@@ -4,10 +4,10 @@ import 'package:flutter/services.dart';
 import '../../../core/models/marketplace_models.dart';
 import '../../../core/services/media_service.dart';
 import '../../../core/services/social_service.dart';
-import '../../../core/ui/app_theme.dart';
 import '../../../core/ui/image_picking.dart';
 import '../../../core/ui/widgets.dart';
 import '../../../core/utils/format.dart';
+import '../../../core/ui/app_tokens.dart';
 
 String protocolOf(String ticketId) => '#DSP-${ticketId.replaceAll('-', '').substring(0, 4).toUpperCase()}';
 
@@ -119,9 +119,9 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
             if (img != null && mounted) setState(() => _images.add(img));
           }, onRemove: (i) => setState(() => _images.removeAt(i))),
           const SizedBox(height: 16),
-          const Text.rich(TextSpan(children: [
+          Text.rich(TextSpan(children: [
             TextSpan(text: 'Descreva o ocorrido ', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
-            TextSpan(text: '*', style: TextStyle(color: AppColors.danger, fontWeight: FontWeight.w900)),
+            TextSpan(text: '*', style: TextStyle(color: context.tk.danger, fontWeight: FontWeight.w900)),
           ])),
           const SizedBox(height: 8),
           TextField(
@@ -154,7 +154,7 @@ class TicketCreatedScreen extends StatelessWidget {
         padding: const EdgeInsets.all(24),
         children: [
           const SizedBox(height: 12),
-          const Center(child: CircleAvatar(radius: 44, backgroundColor: AppColors.successSoft, child: Icon(Icons.shield_rounded, size: 46, color: AppColors.success))),
+          Center(child: CircleAvatar(radius: 44, backgroundColor: context.tk.successSoft, child: Icon(Icons.shield_rounded, size: 46, color: context.tk.success))),
           const SizedBox(height: 16),
           const Text('Recebemos o seu chamado', textAlign: TextAlign.center, style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900)),
           const SizedBox(height: 12),
@@ -174,7 +174,7 @@ class TicketCreatedScreen extends StatelessWidget {
                 ? 'O pagamento fica retido com a Desperrengue enquanto analisamos. Suas fotos e informações do serviço já estão salvas no chamado.'
                 : 'Nossa equipe responderá pelo app.',
             textAlign: TextAlign.center,
-            style: const TextStyle(height: 1.45, color: AppColors.muted),
+            style: TextStyle(height: 1.45, color: context.tk.textMuted),
           ),
           const SizedBox(height: 14),
           const InfoBanner('Prazo de resposta (SLA): até 24 horas.', tone: BannerTone.warning, icon: Icons.schedule_rounded),
@@ -239,7 +239,7 @@ class _SupportCenterScreenState extends State<SupportCenterScreen> {
               ),
               const SectionTitle('Meus chamados'),
               if (items.isEmpty)
-                const Padding(padding: EdgeInsets.all(24), child: Center(child: Text('Nenhum chamado aberto.', style: TextStyle(color: AppColors.muted))))
+                Padding(padding: EdgeInsets.all(24), child: Center(child: Text('Nenhum chamado aberto.', style: TextStyle(color: context.tk.textMuted))))
               else
                 for (final t in items)
                   AppCard(
@@ -253,14 +253,14 @@ class _SupportCenterScreenState extends State<SupportCenterScreen> {
                             const Spacer(),
                             StatusChip(
                               switch (t['status']) { 'resolved' => 'Resolvido', 'in_review' => 'Em análise', _ => 'Aberto' },
-                              color: t['status'] == 'resolved' ? AppColors.success : AppColors.warningInk,
+                              color: t['status'] == 'resolved' ? context.tk.success : context.tk.warningInk,
                             ),
                           ],
                         ),
                         const SizedBox(height: 6),
                         Text(t['reason'] as String, style: const TextStyle(fontWeight: FontWeight.w700)),
                         const SizedBox(height: 4),
-                        Text(relativeTime(DateTime.parse(t['created_at'] as String)), style: const TextStyle(color: AppColors.muted, fontSize: 12.5)),
+                        Text(relativeTime(DateTime.parse(t['created_at'] as String)), style: TextStyle(color: context.tk.textMuted, fontSize: 12.5)),
                         if (t['resolution'] != null) ...[
                           const SizedBox(height: 6),
                           Text('Resolução: ${t['resolution']}', style: const TextStyle(height: 1.35)),

@@ -102,7 +102,7 @@ class AppTokens extends ThemeExtension<AppTokens> {
     card: Color(0xFFFFFFFF),
     raised: Color(0xFFFFFFFF),
     text: Color(0xFF111827),
-    textMuted: Color(0xFF6B7280),
+    textMuted: Color(0xFF5E6673), // ≥ 4,5:1 também sobre `surface` (o #6B7280 antigo dava 4,47)
     border: Color(0xFFE5E7EB),
     brand: Color(0xFF003366),
     providerAccent: Color(0xFF1B3A78),
