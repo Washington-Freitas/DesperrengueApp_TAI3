@@ -36,7 +36,7 @@ O projeto utiliza bibliotecas de código aberto (por exemplo, o *framework* **Fl
 
 ## 5. Contribuições
 
-Ao submeter uma contribuição (código, documentação, *design*) ao repositório, você declara que **tem direito de fazê-lo** e **concede aos titulares do projeto uma licença perpétua, mundial, irrevogável, não exclusiva e isenta de royalties** para usar, reproduzir, modificar, sublicenciar e distribuir sua contribuição como parte do Desperrengue, sem prejuízo da sua autoria moral. Contribuições feitas com auxílio de ferramentas de IA devem respeitar a política do [CONTRIBUTING](CONTRIBUTING.md).
+Ao submeter uma contribuição (código, documentação, *design*) ao repositório, você declara que **tem direito de fazê-lo** e **concede aos titulares do projeto uma licença perpétua, mundial, irrevogável, não exclusiva e isenta de royalties** para usar, reproduzir, modificar, sublicenciar e distribuir sua contribuição como parte do Desperrengue, sem prejuízo da sua autoria moral. Contribuições feitas com auxílio de ferramentas de IA devem respeitar a política do [CONTRIBUTING](.github/CONTRIBUTING.md).
 
 ## 6. Isenção de garantia e limitação de responsabilidade
 

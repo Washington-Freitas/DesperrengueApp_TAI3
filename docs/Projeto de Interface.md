@@ -1,7 +1,7 @@
 # Projeto de Interface (UI/UX) — Desperrengue
 
 > **Escopo:** Este documento apresenta o projeto de interface do usuário (UI) e experiência do usuário (UX) do aplicativo móvel **Desperrengue**, detalhando o fluxo de telas (*User Flow*), a arquitetura de navegação multi-modo, os protótipos de alta fidelidade (*Hi-Fi*) e o mapeamento direto com as telas já implementadas em **Flutter** (`app/lib/features/`).
-> **Documentos correlatos:** [Template Padrão e Design System](./Template.md) · [Especificação do Projeto](./Especificação%20do%20Projeto.md) · [Arquitetura do Sistema](./Arquitetura%20do%20Sistema.md) · Fichas analíticas de telas em [`docs/specs/`](./specs/).
+> **Documentos correlatos:** [Template Padrão e Design System](./Template.md) · [Especificação do Projeto](./Especificação%20do%20Projeto.md) · [Arquitetura do Sistema](./Arquitetura%20do%20Sistema.md) · Fichas analíticas de telas em [`docs/specs/`](./specs).
 
 ---
 

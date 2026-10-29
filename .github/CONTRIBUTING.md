@@ -2,7 +2,7 @@
 
 Obrigado por contribuir com o Desperrengue. Este documento estabelece o **processo de engenharia** do projeto: fluxo de Git, padrão de *commits*, critérios de revisão, definição de pronto e regras específicas para banco de dados. Ele é **normativo**: o *pull request template* e o CI verificam parte destas regras.
 
-Leituras prévias: [SETUP](SETUP.md) · [ARCHITECTURE](ARCHITECTURE.md) · [TESTING](TESTING.md) · [SECURITY](SECURITY.md) · [Código de Conduta](CODE_OF_CONDUCT.md).
+Leituras prévias: [SETUP](../docs/SETUP.md) · [ARCHITECTURE](../docs/ARCHITECTURE.md) · [TESTING](../docs/TESTING.md) · [SECURITY](SECURITY.md) · [Código de Conduta](CODE_OF_CONDUCT.md).
 
 ## Sumário
 
@@ -22,7 +22,7 @@ Leituras prévias: [SETUP](SETUP.md) · [ARCHITECTURE](ARCHITECTURE.md) · [TEST
 
 ## 1. Princípios
 
-1. **O banco é a fronteira de confiança** ([ADR-0003](docs/adr/0003-regras-de-negocio-no-banco-via-rpc.md)); validações de UI são conveniência, não controle.
+1. **O banco é a fronteira de confiança** ([ADR-0003](../docs/adr/0003-regras-de-negocio-no-banco-via-rpc.md)); validações de UI são conveniência, não controle.
 2. **Pequeno, frequente, reversível.** Mudanças pequenas e integradas com frequência reduzem risco e custo de revisão.
 3. **Nada sem verificação.** Todo comportamento novo vem com teste ou, quando inviável, com evidência manual descrita no PR.
 4. **Documentação é parte do produto.** O que muda o comportamento ou a arquitetura atualiza os documentos no mesmo PR.
@@ -96,7 +96,7 @@ feat(db)!: substituir profiles.role por flags is_client/is_provider
 BREAKING CHANGE: clientes antigos que gravam role='client' passam a falhar.
 ```
 
-> **Idioma:** descrições em **português do Brasil** (idioma do domínio e da equipe); identificadores de código e de banco em **inglês** ([ADR-0004](docs/adr/0004-unificacao-de-perfis-e-nomes-em-ingles.md)). O histórico anterior a este guia não segue o padrão e **não será reescrito**.
+> **Idioma:** descrições em **português do Brasil** (idioma do domínio e da equipe); identificadores de código e de banco em **inglês** ([ADR-0004](../docs/adr/0004-unificacao-de-perfis-e-nomes-em-ingles.md)). O histórico anterior a este guia não segue o padrão e **não será reescrito**.
 
 ---
 
@@ -105,7 +105,7 @@ BREAKING CHANGE: clientes antigos que gravam role='client' passam a falhar.
 ### 4.1 Abertura
 
 * Um PR = **uma mudança coesa** (preferencialmente < 400 linhas alteradas, excluídos arquivos gerados).
-* Título no padrão Conventional Commits; preencha **todo** o [template](.github/PULL_REQUEST_TEMPLATE.md).
+* Título no padrão Conventional Commits; preencha **todo** o [template](PULL_REQUEST_TEMPLATE.md).
 * Vincule a *issue* (`Closes #n`). Anexe **capturas de tela/GIF** para mudanças de UI e **a saída do teste SQL** para mudanças de banco.
 * Use PR em **rascunho** para pedir feedback antecipado.
 
@@ -136,12 +136,12 @@ BREAKING CHANGE: clientes antigos que gravam role='client' passam a falhar.
 Um item só é considerado **pronto** quando:
 
 - [ ] `flutter analyze` sem avisos e `flutter test` verdes (local **e** CI).
-- [ ] Testes novos/atualizados cobrindo o comportamento (ver [TESTING](TESTING.md)).
-- [ ] Mudança de banco: migration **ensaiada com `ROLLBACK`**, aplicada, registrada, e `security_smoke.sql` com `FALHAS=0` (saída anexada).
+- [ ] Testes novos/atualizados cobrindo o comportamento (ver [TESTING](../docs/TESTING.md)).
+- [ ] Mudança de banco: migration **ensaiada com `ROLLBACK`**, aplicada, registrada, e **todos** os testes SQL (`security_smoke`, `review_system_smoke`, `achievements_smoke`) com `FALHAS=0` (saída anexada).
 - [ ] Verificação manual em emulador/dispositivo para mudanças de UI (capturas no PR).
 - [ ] Sem segredos, sem `print`/logs de dados pessoais.
-- [ ] [CHANGELOG](CHANGELOG.md) atualizado na seção **Não lançado**.
-- [ ] Documentação e, se estrutural, [ADR](docs/adr/README.md).
+- [ ] [CHANGELOG](../docs/CHANGELOG.md) atualizado na seção **Não lançado**.
+- [ ] Documentação e, se estrutural, [ADR](../docs/adr/README.md). Novos `.md` entram em `docs/` (políticas da comunidade em `.github/`; a raiz fica só com `README.md` e `LICENSE.md`) e são listados em [docs/README.md](../docs/README.md); `node scripts/check-md-links.mjs` sem links quebrados.
 - [ ] Revisão aprovada e conversas resolvidas.
 
 ---
@@ -216,11 +216,11 @@ O projeto é desenvolvido com **programação em par assistida por IA**. Regras:
 ## 10. Versionamento e *releases*
 
 * **SemVer 2.0.0** (`MAJOR.MINOR.PATCH`); enquanto `MAJOR = 0`, mudanças incompatíveis incrementam `MINOR`.
-* Processo: (1) mover **Não lançado** para a nova seção do [CHANGELOG](CHANGELOG.md); (2) atualizar `version:` no `app/pubspec.yaml`; (3) *commit* `chore(release): vX.Y.Z`; (4) *tag* anotada `git tag -a vX.Y.Z -m "…"` e `git push --tags`; (5) notas de versão no GitHub *Releases*.
+* Processo: (1) mover **Não lançado** para a nova seção do [CHANGELOG](../docs/CHANGELOG.md); (2) atualizar `version:` no `app/pubspec.yaml`; (3) *commit* `chore(release): vX.Y.Z`; (4) *tag* anotada `git tag -a vX.Y.Z -m "…"` e `git push --tags`; (5) notas de versão no GitHub *Releases*.
 * O *build number* (`+N`) do `pubspec` incrementa a cada envio às lojas.
 
 ---
 
 ## 11. Decisões de arquitetura (ADR)
 
-Mudanças que **afetam estrutura, segurança, dados ou contratos entre camadas** exigem um [ADR](docs/adr/README.md) no mesmo PR (copie `docs/adr/0000-modelo.md`). ADRs aceitos são imutáveis; para mudar, crie um novo que os **supere**.
+Mudanças que **afetam estrutura, segurança, dados ou contratos entre camadas** exigem um [ADR](../docs/adr/README.md) no mesmo PR (copie `docs/adr/0000-modelo.md`). ADRs aceitos são imutáveis; para mudar, crie um novo que os **supere**.

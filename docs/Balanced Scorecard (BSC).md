@@ -1,6 +1,6 @@
 # Balanced Scorecard (BSC) — Desperrengue
 
-> **Escopo:** Este documento apresenta o planejamento estratégico da startup **Desperrengue** estruturado na metodologia **Balanced Scorecard (BSC)** de Kaplan e Norton. Contempla **4 objetivos estratégicos para cada uma das 4 perspectivas** (totalizando 16 objetivos, acima do mínimo exigido de 3 por perspectiva), totalmente alinhados à Missão, Visão e Valores do [Documento de Contexto](./Documento%20de%20Contexto.md), às premissas do [Plano de Negócio e Tributação](./Planos%20de%20Negocio%20e%20Tributação.md) e às métricas *North Star* e épicos do [ROADMAP](../ROADMAP.md).
+> **Escopo:** Este documento apresenta o planejamento estratégico da startup **Desperrengue** estruturado na metodologia **Balanced Scorecard (BSC)** de Kaplan e Norton. Contempla **4 objetivos estratégicos para cada uma das 4 perspectivas** (totalizando 16 objetivos, acima do mínimo exigido de 3 por perspectiva), totalmente alinhados à Missão, Visão e Valores do [Documento de Contexto](./Documento%20de%20Contexto.md), às premissas do [Plano de Negócio e Tributação](./Planos%20de%20Negocio%20e%20Tributação.md) e às métricas *North Star* e épicos do [ROADMAP](ROADMAP.md).
 > **Arquivo de Planilha:** Uma versão tabular em formato CSV pronta para abertura no Microsoft Excel ou Google Sheets encontra-se em [`docs/planilhas/bsc_desperrengue.csv`](./planilhas/bsc_desperrengue.csv).
 
 ---

@@ -1,6 +1,6 @@
 # Planilha e Projeção de Fluxo de Caixa (12 Meses) — Desperrengue
 
-> **Escopo:** Este documento apresenta o planejamento financeiro e a **Planilha de Fluxo de Caixa projetada para 12 meses** da startup **Desperrengue**, mantendo total coerência com as premissas definidas em [`docs/Planos de Negocio e Tributação.md`](./Planos%20de%20Negocio%20e%20Tributação.md), com a regra de comissão implementada no banco de dados (`payments.fee_amount = 12%`) e com os marcos do [`ROADMAP.md`](../ROADMAP.md).
+> **Escopo:** Este documento apresenta o planejamento financeiro e a **Planilha de Fluxo de Caixa projetada para 12 meses** da startup **Desperrengue**, mantendo total coerência com as premissas definidas em [`docs/Planos de Negocio e Tributação.md`](./Planos%20de%20Negocio%20e%20Tributação.md), com a regra de comissão implementada no banco de dados (`payments.fee_amount = 12%`) e com os marcos do [`ROADMAP.md`](ROADMAP.md).
 > **Arquivo de Planilha:** A planilha completa em formato CSV (separada por ponto e vírgula, padrão PT-BR para Microsoft Excel e Google Sheets) está disponível em [`docs/planilhas/fluxo_de_caixa_12m.csv`](./planilhas/fluxo_de_caixa_12m.csv).
 
 ---

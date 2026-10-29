@@ -7,6 +7,7 @@ import '../../../core/ui/app_theme.dart';
 import '../../../core/ui/media_widgets.dart';
 import '../../../core/ui/widgets.dart';
 import '../../../core/utils/format.dart';
+import '../../shared/presentation/achievement_widgets.dart';
 import '../../shared/presentation/review_widgets.dart';
 import 'request_wizard.dart';
 
@@ -164,6 +165,8 @@ class _ProviderPublicProfileScreenState extends State<ProviderPublicProfileScree
                       const SectionTitle('Selos conquistados'),
                       BadgeWall(earned: p.badges),
                     ],
+                    const SectionTitle('Conquistas'),
+                    AchievementsSection(providerId: p.id, providerName: p.fullName),
                     const SectionTitle('Avaliações de clientes'),
                     FutureBuilder<List<PublicReview>>(
                       future: _reviews,

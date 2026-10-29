@@ -83,7 +83,7 @@ Para o **teste interno** a Play pede pouco, mas ela vai exibir uma lista em
 | **Público-alvo** | 18+ (serviços contratados por adultos). |
 | **Segurança dos dados** | Declare: nome, e-mail, telefone, localização (aproximada/precisa), fotos/vídeos (KYC), identificadores. Dados criptografados em trânsito; usuário pode pedir exclusão. |
 | **Aplicativo de notícias / saúde / finanças** | Marque "não". Observação: o pagamento atual é **simulado** (ambiente de demonstração). |
-| **Exclusão de conta** | A Play exige um caminho de exclusão de conta para apps com cadastro. Está no [ROADMAP](../ROADMAP.md); declare o e-mail `suporte@desperrengue.tech` enquanto não existe no app. |
+| **Exclusão de conta** | A Play exige um caminho de exclusão de conta para apps com cadastro. Está no [ROADMAP](ROADMAP.md); declare o e-mail `suporte@desperrengue.tech` enquanto não existe no app. |
 
 ## 7. Nova versão (cada atualização)
 

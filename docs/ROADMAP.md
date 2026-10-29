@@ -31,8 +31,9 @@ Priorização por **MoSCoW** (**M**ust, **S**hould, **C**ould, **W**on't-now) de
 | **E-01 Fundação e segurança** | Perfil único, RLS, `GRANT` por coluna, RPCs, KYC por bucket privado, Edge Function autenticada, migrations versionadas, teste de fumaça | ✅ |
 | **E-02 Multi-modo** | Mesma conta como cliente e profissional; seleção de modo; tema por modo | ✅ |
 | **E-03 Ciclo do serviço (mock financeiro)** | Pedido, convites (2 h/5 min), orçamentos (máx. 3), aceite, custódia, PIN, 4 evidências, avaliação, emergência com estorno, chat, notificações, suporte/disputa, carteira | ✅ |
-| **E-04 Governança de engenharia** | README, ARCHITECTURE, ADRs, SETUP, CONTRIBUTING, TESTING, SECURITY, templates, CI básico | 🟡 |
+| **E-04 Governança de engenharia** | README, ARCHITECTURE, ADRs, SETUP, CONTRIBUTING, TESTING, SECURITY, templates, CI (análise, testes e verificação de links dos `.md`); documentação organizada em `docs/` e `.github/` | ✅ |
 | **E-05 Validação em dispositivos reais** | Roteiro de testes em Android físico e iOS; OAuth Google; OTP; deep link; câmera | 🟡 |
+| **E-05b Reputação e conquistas (Fase 1)** | Avaliação guiada por pílulas e **cega** (48 h), ranking Bayesiano, selos e **conquistas escalonadas** (9 categorias × 10 níveis), visíveis no perfil público ([ADR-0011](adr/0011-avaliacoes-cegas-bayes-e-selos.md), [ADR-0012](adr/0012-conquistas-do-profissional.md)) | ✅ |
 
 ## 4. Curto prazo — até a entrega do MVP (nov – 1ª semana/dez 2026)
 
@@ -55,8 +56,8 @@ Priorização por **MoSCoW** (**M**ust, **S**hould, **C**ould, **W**on't-now) de
 | **E-13 Pagamentos reais** | Gateway (Pix e cartão) com *split* de comissão, **webhooks assinados**, conciliação, estorno real; saque Pix do profissional; dados bancários; nota fiscal/tributação (Simples Nacional — ver plano de negócio) | M |
 | **E-14 Matching e geolocalização** | Mapa com *hotspots* de demanda, raio de atendimento efetivo, ordenação por proximidade/tempo de resposta, check-in por GPS no local | M |
 | **E-15 Comunicação** | Notificações *push* (FCM/APNs) com *deep link* para o pedido; chamada de voz (VoIP) intermediada; mídia no chat | S |
-| **E-16 Navegação declarativa e estado** | Migração para `go_router`; adoção de Riverpod para estado compartilhado ([ADR-0009](docs/adr/0009-roteamento-por-funcao-pura-e-authgate.md)) | S |
-| **E-17 Reputação e gamificação** | Hub de conquistas, selos (Super Profissional), certificados **verificados** pela equipe, ranking por qualidade | S |
+| **E-16 Navegação declarativa e estado** | Migração para `go_router`; adoção de Riverpod para estado compartilhado ([ADR-0009](adr/0009-roteamento-por-funcao-pura-e-authgate.md)) | S |
+| **E-17 Reputação e gamificação (Fases 2–3)** | ✅ *Já entregue:* avaliações cegas, pílulas, ranking Bayesiano, selos e **conquistas** (90 troféus). 🧪 *Próximo:* multiplicador de SLA/*streak* (β = 0,12), Índice de Confiança, Saúde do Lar, Medidor de Diagnóstico; depois, em teste A/B: ligas de *take-rate* regressivo, Cofre da Casa e indicação — **com guarda-corpo de ≤ 10 % da margem** (ver [GAMIFICACAO](GAMIFICACAO.md)) | S |
 | **E-18 Agenda do profissional** | Disponibilidade por dia/horário, bloqueios, sincronização com calendário | S |
 | **E-19 Qualidade de serviço** | Garantia de serviço, reabertura, reagendamento/cancelamento com regras de multa e estorno | C |
 
@@ -88,4 +89,4 @@ Priorização por **MoSCoW** (**M**ust, **S**hould, **C**ould, **W**on't-now) de
 
 * Alterações por *pull request* (`docs:`); o PO valida prioridades, o desenvolvedor valida viabilidade.
 * Item concluído **migra** para o [CHANGELOG](CHANGELOG.md) e é marcado ✅ aqui.
-* Decisões estruturais geram [ADR](docs/adr/README.md).
+* Decisões estruturais geram [ADR](adr/README.md).

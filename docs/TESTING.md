@@ -1,7 +1,7 @@
 # TESTING — Estratégia de Garantia da Qualidade
 
 > **Escopo.** Define o que testamos, em que camada, com quais ferramentas, com que critérios de saída e como executar. Estrutura alinhada à **ISO/IEC 25010** (modelo de qualidade do produto) e às práticas da **ISO/IEC/IEEE 29119** (testes de software).
-> **Princípio.** *Risco dita a profundidade.* Onde há **dinheiro, identidade, privacidade ou concorrência**, o teste é automatizado e roda **no banco**, que é a fronteira de confiança ([ADR-0003](docs/adr/0003-regras-de-negocio-no-banco-via-rpc.md)).
+> **Princípio.** *Risco dita a profundidade.* Onde há **dinheiro, identidade, privacidade ou concorrência**, o teste é automatizado e roda **no banco**, que é a fronteira de confiança ([ADR-0003](adr/0003-regras-de-negocio-no-banco-via-rpc.md)).
 
 ## Sumário
 
@@ -26,8 +26,8 @@
 flowchart TB
     E2E["E2E / integração em dispositivo<br/>poucos · lentos · alto valor<br/>(integration_test — planejado)"]
     WID["Widget tests<br/>telas críticas com serviços falsos<br/>(planejado)"]
-    DBT["Testes de banco (SQL transacional)<br/>62 asserções · RLS, RPCs, estados"]
-    UNIT["Unitários (Dart puro)<br/>16 testes · rápidos · determinísticos"]
+    DBT["Testes de banco (SQL transacional)<br/>114 asserções · RLS, RPCs, estados"]
+    UNIT["Unitários (Dart puro)<br/>55 testes · rápidos · determinísticos"]
     UNIT --> DBT --> WID --> E2E
 ```
 
@@ -45,18 +45,18 @@ flowchart TB
 
 ## 2. Estado atual (medido)
 
-*Medição de 2026-10-21 (`flutter test --coverage`).*
+*Medição de 2026-10-29 (`flutter test --coverage`).*
 
 | Indicador | Valor |
 | :-- | :-- |
-| Testes unitários | **16**, todos aprovados |
-| Asserções SQL | **62**, `FALHAS = 0` |
+| Testes unitários | **55**, todos aprovados |
+| Asserções SQL | **114** (`security_smoke` 62 + `review_system_smoke` 30 + `achievements_smoke` 22), `FALHAS = 0` |
 | `flutter analyze` | **0** avisos |
-| Cobertura de linhas nos arquivos exercitados por testes (`user_profile.dart`, `marketplace_models.dart`, `format.dart`) | **139 / 241 = 57,7 %** |
-| Tamanho do código do app | 55 arquivos Dart, ≈ 13,6 mil linhas |
+| Cobertura de linhas nos 7 arquivos exercitados por testes (`user_profile`, `marketplace_models`, `format`, `address_data`, `address_lookup`, `draft_store`, `achievements`) | **364 / 465 = 78,3 %** |
+| Tamanho do código do app | 61 arquivos Dart, ≈ 15,6 mil linhas |
 | Cobertura **global** | **baixa** (telas e serviços ainda não têm testes automatizados); meta e plano em §8 |
 
-> Declaramos explicitamente que a cobertura global é **inferior** à da camada testada: o número de 57,7 % **não** representa o projeto inteiro.
+> Declaramos explicitamente que a cobertura global é **inferior** à da camada testada: o número de 78,3 % **não** representa o projeto inteiro (apenas 7 dos 61 arquivos têm teste).
 
 ---
 
@@ -111,6 +111,7 @@ Cobertos hoje (`app/test/user_profile_test.dart`):
 ```bash
 supabase db query --linked -f supabase/tests/security_smoke.sql
 supabase db query --linked -f supabase/tests/review_system_smoke.sql   # avaliações cegas, Bayes, selos e respostas (30 asserções)
+supabase db query --linked -f supabase/tests/achievements_smoke.sql      # conquistas: desbloqueio, escala e privacidade (22 asserções)
 # A saída é uma "falha" proposital contendo o relatório; o critério é "FALHAS=0".
 ```
 
@@ -246,7 +247,7 @@ supabase storage rm -r "ss:///job-media/<uid>" --linked --experimental --yes
 | Característica | Como é avaliada |
 | :-- | :-- |
 | Adequação funcional | Roteiro de aceitação; rastreabilidade (§9) |
-| **Segurança** | Smoke de banco (62); revisão de RLS em PR; política em [SECURITY](SECURITY.md) |
+| **Segurança** | Smoke de banco (62); revisão de RLS em PR; política em [SECURITY](../.github/SECURITY.md) |
 | **Confiabilidade** | Estorno automático (cron), idempotência de RPCs, tentativas de PIN persistidas; testes de falha de rede (manual #12) |
 | Usabilidade | Roteiro (§6 #11–#14); estados de erro/vazio; contraste e alvos de toque |
 | Eficiência de desempenho | *Smoke* de tempo de resposta em consultas principais (planejado); índices parciais |
@@ -276,10 +277,11 @@ cd app
 flutter analyze
 flutter test --coverage        # relatório em app/coverage/lcov.info
 
-# Banco (relatório de 62 asserções)
+# Banco (relatório de 114 asserções)
 cd ..
 supabase db query --linked -f supabase/tests/security_smoke.sql
 supabase db query --linked -f supabase/tests/review_system_smoke.sql   # avaliações cegas, Bayes, selos e respostas (30 asserções)
+supabase db query --linked -f supabase/tests/achievements_smoke.sql      # conquistas: desbloqueio, escala e privacidade (22 asserções)
 ```
 
-**Integração contínua:** o *workflow* [`.github/workflows/ci.yml`](.github/workflows/ci.yml) executa `flutter analyze` e `flutter test --coverage` a cada PR e *push* em `main`, publicando o `lcov.info` como artefato. O teste de banco **não** roda no CI (exige credenciais de projeto); ele é executado localmente e a **saída é anexada ao PR** de banco — a automação com *staging* está no [ROADMAP](ROADMAP.md) (E-08).
+**Integração contínua:** o *workflow* [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) executa `flutter analyze` e `flutter test --coverage` a cada PR e *push* em `main`, publicando o `lcov.info` como artefato. O teste de banco **não** roda no CI (exige credenciais de projeto); ele é executado localmente e a **saída é anexada ao PR** de banco — a automação com *staging* está no [ROADMAP](ROADMAP.md) (E-08).

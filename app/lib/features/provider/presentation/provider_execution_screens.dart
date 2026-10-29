@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../core/models/achievements.dart';
 import '../../../core/models/marketplace_models.dart';
 import '../../../core/services/job_service.dart';
 import '../../../core/services/provider_service.dart';
@@ -13,6 +14,7 @@ import '../../../core/ui/image_picking.dart';
 import '../../../core/ui/media_widgets.dart';
 import '../../../core/ui/widgets.dart';
 import '../../../core/utils/format.dart';
+import '../../shared/presentation/achievement_widgets.dart';
 import '../../shared/presentation/chat_screen.dart';
 import '../../shared/presentation/review_widgets.dart';
 import '../../shared/presentation/support_screens.dart';
@@ -658,6 +660,7 @@ class _PaidSuccessScreenState extends State<PaidSuccessScreen> {
   double _credited = 0;
   String _reviewStatus = 'none';
   bool _hide = false;
+  List<Achievement> _newAchievements = const [];
 
   @override
   void initState() {
@@ -669,11 +672,19 @@ class _PaidSuccessScreenState extends State<PaidSuccessScreen> {
     try {
       final payments = await ProviderService().myPayments();
       final status = await SocialService().reviewStatus(widget.job.id);
+      // Conquistas desbloqueadas agora há pouco (ao concluir este serviço).
+      final recent = await ProviderService().achievements(ProviderService().uid);
+      final since = DateTime.now().subtract(const Duration(minutes: 15));
+      final fresh = [
+        for (final r in recent)
+          if (r.unlockedAt.isAfter(since)) ?achievementFromCode(r.code),
+      ];
       if (!mounted) return;
       setState(() {
         _balance = ProviderService.summarize(payments).available;
         _credited = payments.where((p) => p.jobId == widget.job.id).fold(0.0, (a, p) => a + p.netAmount);
         _reviewStatus = status;
+        _newAchievements = fresh;
       });
     } catch (_) {}
   }
@@ -712,6 +723,7 @@ class _PaidSuccessScreenState extends State<PaidSuccessScreen> {
             ),
           ),
           const SizedBox(height: 24),
+          NewAchievementsBanner(achievements: _newAchievements),
           if (_reviewStatus == 'none')
             PrimaryButton(
               label: 'Avaliar atendimento do cliente',

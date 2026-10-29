@@ -2,7 +2,7 @@
 
 > **Objetivo.** Levar um(a) novo(a) desenvolvedor(a), em uma sessão de trabalho, do repositório recém-clonado até **(a)** o app rodando em um emulador, **(b)** `analyze` e testes verdes, **(c)** acesso de leitura ao backend e **(d)** o primeiro *commit* aberto como *pull request*.
 > **Tempo estimado:** 45–90 min (a maior parte é *download* do Android SDK e do Gradle na primeira compilação).
-> **Guias detalhados por sistema operacional:** [Windows](docs/setup/windows.md) · [macOS](docs/setup/macos.md) · [Linux](docs/setup/linux.md). Este documento é o **caminho crítico**; aqueles são a referência de instalação.
+> **Guias detalhados por sistema operacional:** [Windows](setup/windows.md) · [macOS](setup/macos.md) · [Linux](setup/linux.md). Este documento é o **caminho crítico**; aqueles são a referência de instalação.
 
 ---
 
@@ -88,7 +88,7 @@ flutter run \
   --dart-define=ABSTRACT_API_KEY=<opcional>
 ```
 
-> ⚠️ **Nunca** coloque `service_role`, senha do banco, `RESEND_API_KEY` ou tokens pessoais no app, no repositório ou em *issues*. Eles pertencem a **segredos do Supabase** ou ao seu cofre local. Ver [SECURITY](SECURITY.md).
+> ⚠️ **Nunca** coloque `service_role`, senha do banco, `RESEND_API_KEY` ou tokens pessoais no app, no repositório ou em *issues*. Eles pertencem a **segredos do Supabase** ou ao seu cofre local. Ver [SECURITY](../.github/SECURITY.md).
 
 ### 4.1 Login com Google em desenvolvimento
 
@@ -114,7 +114,7 @@ Você **não precisa** de acesso ao Supabase para alterar telas que usem apenas 
    supabase db query --linked "select count(*) from public.profiles;"
    supabase db query --linked -f supabase/tests/security_smoke.sql     # esperado: FALHAS=0
    ```
-4. Fluxo de *migrations* (resumo; regras completas no [CONTRIBUTING](CONTRIBUTING.md)): criar arquivo `supabase/migrations/AAAAMMDDHHMMSS_nome.sql` com `BEGIN … COMMIT`; **ensaiar com `ROLLBACK`**; aplicar; registrar a versão em `supabase_migrations.schema_migrations`; rodar o teste de fumaça.
+4. Fluxo de *migrations* (resumo; regras completas no [CONTRIBUTING](../.github/CONTRIBUTING.md)): criar arquivo `supabase/migrations/AAAAMMDDHHMMSS_nome.sql` com `BEGIN … COMMIT`; **ensaiar com `ROLLBACK`**; aplicar; registrar a versão em `supabase_migrations.schema_migrations`; rodar o teste de fumaça.
 
 > O ambiente remoto é **único** (desenvolvimento = MVP). Trate qualquer escrita como *produção*.
 
@@ -160,7 +160,7 @@ Alternativa: `F5` com a configuração **Desperrengue (debug)**, ou `Ctrl+Shift+
 3. Crie a *branch*: `git checkout -b docs/ajuste-no-setup`.
 4. Faça a mudança e rode a verificação novamente.
 5. *Commit* seguindo **Conventional Commits** (ex.: `docs(setup): corrige versão do JDK`).
-6. `git push -u origin <branch>` e abra o *pull request* (o *template* será carregado). Veja [CONTRIBUTING](CONTRIBUTING.md).
+6. `git push -u origin <branch>` e abra o *pull request* (o *template* será carregado). Veja [CONTRIBUTING](../.github/CONTRIBUTING.md).
 
 ---
 

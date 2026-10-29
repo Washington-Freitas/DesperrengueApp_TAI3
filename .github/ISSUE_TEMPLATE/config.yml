@@ -4,5 +4,5 @@ contact_links:
     url: https://github.com/Washington-Freitas/DesperrengueApp_TAI3/security/advisories/new
     about: "Relate de forma confidencial. NÃO abra uma issue pública. Veja o SECURITY.md."
   - name: "📚 Dúvidas de ambiente e onboarding"
-    url: https://github.com/Washington-Freitas/DesperrengueApp_TAI3/blob/main/SETUP.md
+    url: https://github.com/Washington-Freitas/DesperrengueApp_TAI3/blob/main/docs/SETUP.md
     about: "Consulte o SETUP.md (solução de problemas) antes de abrir uma issue."

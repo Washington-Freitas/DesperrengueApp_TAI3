@@ -39,4 +39,4 @@ Itens 12–13, 29–30 e 59 do teste de fumaça (não convidado não vê pedido 
 
 ## Referências
 
-`supabase/migrations/20261019120000…` · `…140000_realtime_reviews_withdraw.sql` · [SECURITY](../../SECURITY.md)
+`supabase/migrations/20261019120000…` · `…140000_realtime_reviews_withdraw.sql` · [SECURITY](../../.github/SECURITY.md)

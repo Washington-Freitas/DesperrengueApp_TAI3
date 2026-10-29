@@ -13,6 +13,18 @@ permissions:
   contents: read
 
 jobs:
+  docs:
+    name: Links da documentação (Markdown)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Verificar links relativos dos .md
+        run: node scripts/check-md-links.mjs
+
   flutter:
     name: Analyze & Test (Flutter)
     runs-on: ubuntu-latest

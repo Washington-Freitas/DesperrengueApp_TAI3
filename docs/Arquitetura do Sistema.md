@@ -1,7 +1,7 @@
 # Arquitetura do Sistema — Desperrengue
 
 > **Escopo:** Este documento apresenta o planejamento e a implementação da arquitetura de software do aplicativo **Desperrengue** para a entrega da Etapa 3, detalhando a stack tecnológica (Frontend, Backend, Banco de Dados e Integrações), os diagramas arquiteturais (Modelo C4), o esquema relacional, as máquinas de estado e os controles de segurança.
-> **Referência Técnica Completa:** Para detalhes adicionais de baixo nível e matrizes STRIDE, consulte também o documento raiz [`ARCHITECTURE.md`](../ARCHITECTURE.md) e os 10 Registros de Decisão de Arquitetura em [`docs/adr/`](./adr/README.md).
+> **Referência Técnica Completa:** Para detalhes adicionais de baixo nível e matrizes STRIDE, consulte também o documento técnico vivo [`ARCHITECTURE.md`](ARCHITECTURE.md) e os 12 Registros de Decisão de Arquitetura em [`docs/adr/`](./adr/README.md).
 
 ---
 
@@ -118,7 +118,7 @@ app/lib/
 
 ## 4. Modelo de Dados Relacional (`supabase/migrations/`)
 
-O esquema do banco é versionado através de **9 migrations sequenciais** em [`supabase/migrations/`](../supabase/migrations/).
+O esquema do banco é versionado através de **9 migrations sequenciais** em [`supabase/migrations/`](../supabase/migrations).
 
 ```mermaid
 erDiagram

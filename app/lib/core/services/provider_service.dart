@@ -100,6 +100,30 @@ class ProviderService {
     return [for (final r in rows) DateTime.parse(r['scheduled_for'] as String).toLocal()];
   }
 
+  // ------------------------------------------------------------- conquistas
+
+  /// Conquistas desbloqueadas de um profissional (vitrine pública ou as próprias).
+  Future<List<({String code, DateTime unlockedAt})>> achievements(String providerId) async {
+    final rows = await _client
+        .from('provider_achievements')
+        .select('code, unlocked_at')
+        .eq('provider_id', providerId)
+        .order('unlocked_at', ascending: false);
+    return [
+      for (final r in rows)
+        (code: r['code'] as String, unlockedAt: DateTime.tryParse('${r['unlocked_at']}')?.toLocal() ?? DateTime.now()),
+    ];
+  }
+
+  /// Contadores do PRÓPRIO profissional por categoria (para as barras de progresso).
+  Future<Map<String, int>> myAchievementCounts() async {
+    final rows = await _client.rpc('my_achievement_counts');
+    return {
+      if (rows is List)
+        for (final r in rows) (r as Map<String, dynamic>)['category'] as String: ((r['n'] as num?) ?? 0).toInt(),
+    };
+  }
+
   // ---------------------------------------------------------- próprio perfil
 
   Future<Map<String, dynamic>?> myProviderRow() =>
