@@ -5,12 +5,12 @@ import 'package:flutter/material.dart';
 import '../../../core/models/marketplace_models.dart';
 import '../../../core/services/job_service.dart';
 import '../../../core/services/provider_service.dart';
-import '../../../core/ui/app_theme.dart';
 import '../../../core/ui/media_widgets.dart';
 import '../../../core/ui/widgets.dart';
 import '../../../core/utils/format.dart';
 import '../../shared/presentation/chat_screen.dart';
 import '../../shared/presentation/support_screens.dart';
+import '../../../core/ui/app_tokens.dart';
 
 /// "Acompanhe seu Pedido" (protótipos 16 e 05): timeline, endereço, PIN de
 /// confirmação, evidências enviadas pelo profissional e contato.
@@ -100,16 +100,16 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
     final job = widget.job;
     final disputed = job.status == JobStatus.disputed;
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F7FB),
+      backgroundColor: context.tk.surface,
       appBar: AppBar(
-        backgroundColor: const Color(0xFFF4F7FB),
+        backgroundColor: context.tk.surface,
         leading: IconButton(icon: const Icon(Icons.arrow_back_ios_new_rounded), onPressed: () => Navigator.maybePop(context)),
         title: const BrandLogo(),
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
         children: [
-          const Text('Acompanhe seu Pedido', style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900, color: AppColors.clientInk)),
+          Text('Acompanhe seu Pedido', style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900, color: context.tk.brand)),
           const SizedBox(height: 12),
           if (disputed) ...[
             const InfoBanner(
@@ -126,11 +126,11 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (job.isEmergency)
-                  const StatusChip('🚨 EMERGÊNCIA ATIVA', color: AppColors.danger, background: AppColors.dangerSoft)
+                  StatusChip('🚨 EMERGÊNCIA ATIVA', color: context.tk.danger, background: context.tk.dangerSoft)
                 else
-                  const StatusChip('AGENDAMENTO CONFIRMADO', color: Color(0xFF0B58A8), background: AppColors.infoSoft),
+                  StatusChip('AGENDAMENTO CONFIRMADO', color: Color(0xFF0B58A8), background: context.tk.infoSoft),
                 const SizedBox(height: 8),
-                Text('Código do pedido: ${job.code}', style: const TextStyle(color: AppColors.muted, fontWeight: FontWeight.w600)),
+                Text('Código do pedido: ${job.code}', style: TextStyle(color: context.tk.textMuted, fontWeight: FontWeight.w600)),
                 const SizedBox(height: 14),
                 for (final s in _steps(job)) _TimelineTile(step: s, last: s == _steps(job).last),
               ],
@@ -142,7 +142,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const CircleAvatar(backgroundColor: AppColors.clientSoft, child: Icon(Icons.place_rounded, color: AppColors.clientAccent)),
+                CircleAvatar(backgroundColor: context.tk.clientSoft, child: Icon(Icons.place_rounded, color: context.tk.clientAccent)),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -152,7 +152,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
                       if (_reference != null && _reference!.isNotEmpty)
                         Padding(
                           padding: const EdgeInsets.only(top: 4),
-                          child: Text('Ref: $_reference', style: const TextStyle(color: AppColors.muted, fontSize: 13)),
+                          child: Text('Ref: $_reference', style: TextStyle(color: context.tk.textMuted, fontSize: 13)),
                         ),
                     ],
                   ),
@@ -205,7 +205,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(_provider!.fullName, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 17)),
-                            Text(_provider!.title, style: const TextStyle(color: AppColors.muted)),
+                            Text(_provider!.title, style: TextStyle(color: context.tk.textMuted)),
                             if (_provider!.ratingCount > 0)
                               Text('${_provider!.ratingAvg.toStringAsFixed(1).replaceAll('.', ',')} ★', style: const TextStyle(fontWeight: FontWeight.w700)),
                           ],
@@ -250,12 +250,12 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
       bottomNavigationBar: BottomBar(
         child: Row(
           children: [
-            const Icon(Icons.help_outline_rounded, color: AppColors.muted),
+            Icon(Icons.help_outline_rounded, color: context.tk.textMuted),
             const SizedBox(width: 8),
             const Expanded(child: Text('Preciso de ajuda?', style: TextStyle(fontWeight: FontWeight.w700))),
             TextButton(
               onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => ReportProblemScreen(job: job, asProvider: false))),
-              child: const Text('Relatar problema', style: TextStyle(color: AppColors.danger, fontWeight: FontWeight.w800)),
+              child: Text('Relatar problema', style: TextStyle(color: context.tk.danger, fontWeight: FontWeight.w800)),
             ),
           ],
         ),
@@ -284,8 +284,8 @@ class _TimelineTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = switch (step.state) {
       _State.done => const Color(0xFF0B58A8),
-      _State.current => AppColors.clientAccent,
-      _State.pending => const Color(0xFFB8BCC6),
+      _State.current => context.tk.clientAccent,
+      _State.pending => context.tk.border,
     };
     return IntrinsicHeight(
       child: Row(
@@ -295,7 +295,7 @@ class _TimelineTile extends StatelessWidget {
             children: [
               CircleAvatar(
                 radius: 14,
-                backgroundColor: step.state == _State.pending ? Colors.white : color.withValues(alpha: 0.14),
+                backgroundColor: step.state == _State.pending ? context.tk.card : color.withValues(alpha: 0.14),
                 child: Icon(step.state == _State.done ? Icons.check_rounded : step.icon, size: 16, color: color),
               ),
               if (!last) Expanded(child: Container(width: 2, color: color.withValues(alpha: 0.4))),
@@ -308,9 +308,9 @@ class _TimelineTile extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(step.title, style: TextStyle(fontWeight: FontWeight.w900, color: step.state == _State.pending ? AppColors.muted : AppColors.ink)),
+                  Text(step.title, style: TextStyle(fontWeight: FontWeight.w900, color: step.state == _State.pending ? context.tk.textMuted : context.tk.text)),
                   const SizedBox(height: 2),
-                  Text(step.subtitle, style: const TextStyle(color: AppColors.muted, fontSize: 13, height: 1.3)),
+                  Text(step.subtitle, style: TextStyle(color: context.tk.textMuted, fontSize: 13, height: 1.3)),
                 ],
               ),
             ),
@@ -329,14 +329,14 @@ class _PinCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AppCard(
-      color: AppColors.securitySoft,
-      borderColor: const Color(0xFF9FCFCB),
+      color: context.tk.securitySoft,
+      borderColor: context.tk.security.withValues(alpha: 0.5),
       radius: 18,
       child: Column(
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(Icons.lock_rounded, color: AppColors.security),
+              Icon(Icons.lock_rounded, color: context.tk.security),
               SizedBox(width: 8),
               Text('Código de confirmação', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
             ],
@@ -351,16 +351,16 @@ class _PinCard extends StatelessWidget {
                   height: 62,
                   margin: const EdgeInsets.symmetric(horizontal: 5),
                   alignment: Alignment.center,
-                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
-                  child: Text(d, style: const TextStyle(fontSize: 30, fontWeight: FontWeight.w900, color: AppColors.clientInk)),
+                  decoration: BoxDecoration(color: context.tk.card, borderRadius: BorderRadius.circular(12)),
+                  child: Text(d, style: TextStyle(fontSize: 30, fontWeight: FontWeight.w900, color: context.tk.brand)),
                 ),
             ],
           ),
           const SizedBox(height: 12),
-          const Text(
+          Text(
             'Informe este código ao profissional SOMENTE quando o serviço estiver concluído e aprovado por você. Ao digitá-lo, o pagamento é liberado.',
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 13, height: 1.4, color: Color(0xFF14565B)),
+            style: TextStyle(fontSize: 13, height: 1.4, color: context.tk.security),
           ),
         ],
       ),

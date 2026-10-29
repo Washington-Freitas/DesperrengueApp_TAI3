@@ -1,7 +1,7 @@
 name: desperrengue_app
 description: "Desperrengue: marketplace de serviços residenciais."
 publish_to: "none"
-version: 0.1.0+1
+version: 0.2.0+2
 
 environment:
   sdk: ^3.13.4
@@ -14,25 +14,47 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   flutter_riverpod: ^3.4.3
+  flutter_secure_storage: ^11.2.0
   geolocator: ^14.0.3
   go_router: ^18.0.1
   google_sign_in: ^7.2.0
   http: ^1.6.0
   image_picker: ^1.2.3
   lottie: ^3.6.1
+  package_info_plus: ^10.2.2
   permission_handler: ^13.0.2
+  qr_flutter: ^4.1.0
   shared_preferences: ^2.5.6
   supabase_flutter: ^2.17.2
+  url_launcher: ^6.3.3
+  video_player: ^2.14.1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
   change_app_package_name: ^1.5.0
+  flutter_native_splash: ^2.4.8
 
 flutter:
   uses-material-design: true
 
   assets:
-    - assets/images/casa_lupa.png
-    - assets/images/caixa_ferramentas.png
+    - assets/splash/logo.png
+
+# Splash NATIVA (renderizada pelo Android/iOS antes do Flutter subir; sem tela branca).
+# Mesmo azul da animacao (#1E3B70) nos temas claro e escuro. Gerar com:
+#   dart run flutter_native_splash:create
+flutter_native_splash:
+  color: "#1E3B70"
+  image: assets/splash/logo.png
+  android_12:
+    color: "#1E3B70"
+    image: assets/splash/logo.png
+  fullscreen: false
+
+# So para a GERACAO da splash: flutter_native_splash -> image 4.11 + archive 4.3 nao compilam juntos.
+# Fixar image 4.5.4 + archive 4.0.7 resolve (nao afeta o app em runtime).
+dependency_overrides:
+  archive: 4.0.7
+  image: 4.5.4

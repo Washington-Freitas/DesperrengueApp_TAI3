@@ -9,7 +9,8 @@ import 'auth_gate.dart';
 // Imports das telas informativas de apoio
 import 'verificacao_step6a_como_funciona.dart';
 import 'verificacao_step6b_dicas.dart';
-import 'verificacao_step6c_termos.dart';
+import 'verificacao_step6c_termos.dart';
+import '../../../core/ui/light_island.dart';
 
 /// Tela 6: Feedback de Envio de Documentos e Espera de KYC (Em Análise).
 /// Atua como uma barreira de segurança e central educativa para o prestador.
@@ -107,7 +108,7 @@ class _VerificacaoStep6FeedbackScreenState
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return LightIsland(child: Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
@@ -234,7 +235,7 @@ class _VerificacaoStep6FeedbackScreenState
           ),
         ),
       ),
-    );
+    ));
   }
 
   /// Construtor de botões de navegação personalizados para as telas de apoio

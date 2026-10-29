@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../core/services/profile_service.dart';
-import 'auth_gate.dart';
+import 'auth_gate.dart';
+import '../../../core/ui/light_island.dart';
 
 /// Tela 7: Celebração de Aprovação (Fim do Onboarding de Verificação)
 /// Destino do Deep-Link do e-mail de aprovação.
@@ -63,7 +64,7 @@ class _VerificacaoStep7AprovadoScreenState
     // Força a barra de status do celular a ficar escura, combinando com o fundo branco
     SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.dark);
 
-    return Scaffold(
+    return LightIsland(child: Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
         child: Column(
@@ -121,7 +122,7 @@ class _VerificacaoStep7AprovadoScreenState
           ],
         ),
       ),
-    );
+    ));
   }
 
   /// Constrói a ilustração do Escudo de Verificação com "confetes" em código nativo

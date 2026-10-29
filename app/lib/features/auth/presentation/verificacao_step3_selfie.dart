@@ -3,7 +3,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
-import 'verificacao_step4_registro.dart';
+import 'verificacao_step4_registro.dart';
+import '../../../core/ui/light_island.dart';
 
 class VerificacaoStep3SelfieScreen extends StatefulWidget {
   final File frenteDocumento;
@@ -85,7 +86,7 @@ class _VerificacaoStep3SelfieScreenState
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return LightIsland(child: Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
@@ -291,6 +292,6 @@ class _VerificacaoStep3SelfieScreenState
           ),
         ),
       ),
-    );
+    ));
   }
 }

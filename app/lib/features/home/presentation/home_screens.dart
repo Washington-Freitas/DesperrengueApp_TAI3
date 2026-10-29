@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/services/profile_service.dart';
+import '../../../core/ui/app_tokens.dart';
 
 /// Painel do administrador (placeholder). A revisão de KYC e a mediação de
 /// disputas são feitas hoje pelo dashboard do Supabase (RPCs
@@ -21,13 +22,13 @@ class HomeAdminScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: const Center(
+      body: Center(
         child: Padding(
           padding: EdgeInsets.all(32),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.admin_panel_settings_rounded, size: 72, color: Color(0xFF003366)),
+              Icon(Icons.admin_panel_settings_rounded, size: 72, color: context.tk.brand),
               SizedBox(height: 16),
               Text(
                 'A revisão de KYC e a mediação de disputas são feitas pelo dashboard do Supabase (funções admin_review_kyc e admin_resolve_dispute).',

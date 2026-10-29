@@ -4,7 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 // Importação ativa. O VS Code não apagará esta linha pois a classe está em uso.
-import 'verificacao_step3_selfie.dart';
+import 'verificacao_step3_selfie.dart';
+import '../../../core/ui/light_island.dart';
 
 class VerificacaoStep2VersoScreen extends StatefulWidget {
   final File frenteDocumento; // Recebe a imagem da Etapa 1
@@ -72,7 +73,7 @@ class _VerificacaoStep2VersoScreenState
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return LightIsland(child: Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
@@ -309,6 +310,6 @@ class _VerificacaoStep2VersoScreenState
           ),
         ),
       ),
-    );
+    ));
   }
 }

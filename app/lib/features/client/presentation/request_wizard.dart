@@ -5,7 +5,6 @@ import '../../../core/models/user_profile.dart';
 import '../../../core/services/job_service.dart';
 import '../../../core/services/media_service.dart';
 import '../../../core/services/provider_service.dart';
-import '../../../core/ui/app_theme.dart';
 import '../../../core/ui/image_picking.dart';
 import '../../../core/ui/media_widgets.dart';
 import '../../../core/ui/widgets.dart';
@@ -13,7 +12,9 @@ import '../../../core/utils/format.dart';
 import 'client_job_screen.dart';
 import 'address_form.dart';
 import 'client_setup_screen.dart';
+import '../../../core/models/wallet_models.dart';
 import 'payment_widgets.dart';
+import '../../../core/ui/app_tokens.dart';
 
 /// Assistente de pedido (protótipos 6, 7, 8 e emergência b2/c).
 ///
@@ -41,7 +42,6 @@ class _RequestWizardScreenState extends State<RequestWizardScreen> {
   bool _ackEmergency = false;
   DateTime _date = DateTime.now();
   int? _hour;
-  String _method = 'pix';
   bool _submitting = false;
   List<DateTime> _busy = const [];
 
@@ -121,6 +121,14 @@ class _RequestWizardScreenState extends State<RequestWizardScreen> {
       showSnack(context, 'Informe o endereço do atendimento.', error: true);
       return;
     }
+    // Emergência = reserva a taxa de visita na hora: trava de saldo ANTES de criar o pedido.
+    if (_emergency && _provider != null) {
+      setState(() => _submitting = true);
+      final enough = await ensureFunds(context, Money.fromReais(_provider!.visitFee));
+      if (!mounted) return;
+      setState(() => _submitting = false);
+      if (!enough) return;
+    }
     setState(() => _submitting = true);
     String? jobId;
     try {
@@ -152,7 +160,7 @@ class _RequestWizardScreenState extends State<RequestWizardScreen> {
         final n = await _jobs.invite(jobId, [_provider!.id]);
         if (n == 0) throw 'Não foi possível convidar o profissional. Tente outro.';
       }
-      if (_emergency) await _jobs.requestEmergency(jobId, _method);
+      if (_emergency) await _jobs.requestEmergency(jobId, 'wallet');
 
       if (!mounted) return;
       // Volta à home e abre o acompanhamento por cima: o "voltar" do pedido
@@ -261,19 +269,19 @@ class _RequestWizardScreenState extends State<RequestWizardScreen> {
                   : kCategories))
                 ChoiceChip(
                   label: Text(c.name),
-                  avatar: Icon(categoryIcon(c.name), size: 16, color: _category == c.name ? Colors.white : AppColors.ink),
+                  avatar: Icon(categoryIcon(c.name), size: 16, color: _category == c.name ? Colors.white : context.tk.text),
                   selected: _category == c.name,
                   showCheckmark: false,
-                  labelStyle: TextStyle(color: _category == c.name ? Colors.white : AppColors.ink, fontWeight: FontWeight.w700),
+                  labelStyle: TextStyle(color: _category == c.name ? Colors.white : context.tk.text, fontWeight: FontWeight.w700),
                   onSelected: (_) => setState(() => _category = c.name),
                 ),
             ],
           ),
           const SizedBox(height: 18),
         ],
-        const Text.rich(TextSpan(children: [
+        Text.rich(TextSpan(children: [
           TextSpan(text: 'O que precisa ser feito? ', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
-          TextSpan(text: '(Obrigatório)', style: TextStyle(color: AppColors.muted, fontSize: 13)),
+          TextSpan(text: '(Obrigatório)', style: TextStyle(color: context.tk.textMuted, fontSize: 13)),
         ])),
         const SizedBox(height: 8),
         TextField(
@@ -288,12 +296,12 @@ class _RequestWizardScreenState extends State<RequestWizardScreen> {
         const SizedBox(height: 10),
         Text.rich(TextSpan(children: [
           const TextSpan(text: 'Anexar fotos (até 4) ', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
-          const TextSpan(text: '(Obrigatório) ', style: TextStyle(color: AppColors.muted, fontSize: 13)),
-          TextSpan(text: '(${_images.length}/4)', style: const TextStyle(color: AppColors.muted, fontSize: 13)),
+          TextSpan(text: '(Obrigatório) ', style: TextStyle(color: context.tk.textMuted, fontSize: 13)),
+          TextSpan(text: '(${_images.length}/4)', style: TextStyle(color: context.tk.textMuted, fontSize: 13)),
         ])),
         const SizedBox(height: 4),
-        const Text('Fotos ajudam o profissional a avaliar o problema e a enviar um orçamento justo.',
-            style: TextStyle(color: AppColors.muted, fontSize: 12.5)),
+        Text('Fotos ajudam o profissional a avaliar o problema e a enviar um orçamento justo.',
+            style: TextStyle(color: context.tk.textMuted, fontSize: 12.5)),
         const SizedBox(height: 10),
         MediaPickerRow(images: _images, onAdd: _addImage, onRemove: (i) => setState(() => _images.removeAt(i))),
       ],
@@ -322,22 +330,22 @@ class _RequestWizardScreenState extends State<RequestWizardScreen> {
             setState(() => _emergency = s.first);
           },
           style: SegmentedButton.styleFrom(
-            selectedBackgroundColor: AppColors.clientAccent,
+            selectedBackgroundColor: context.tk.clientAccent,
             selectedForegroundColor: Colors.white,
           ),
         ),
         const SizedBox(height: 16),
         if (_emergency) ...[
           AppCard(
-            color: const Color(0xFFFDE9C9),
-            borderColor: const Color(0xFFF5C88C),
+            color: context.tk.warningSoft,
+            borderColor: context.tk.warning.withValues(alpha: 0.5),
             radius: 20,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Row(
+                Row(
                   children: [
-                    Icon(Icons.bolt_rounded, color: AppColors.clientAccent),
+                    Icon(Icons.bolt_rounded, color: context.tk.clientAccent),
                     SizedBox(width: 8),
                     Text('Serviço de Emergência', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 17)),
                   ],
@@ -349,9 +357,9 @@ class _RequestWizardScreenState extends State<RequestWizardScreen> {
                   style: TextStyle(height: 1.4),
                 ),
                 const SizedBox(height: 10),
-                const _Bullet(Icons.check_circle_rounded, 'Se aprovado: o profissional se desloca de imediato.', AppColors.clientAccent),
-                const _Bullet(Icons.check_circle_rounded, 'Se recusado ou sem resposta: a reserva é estornada na hora.', AppColors.clientAccent),
-                const _Bullet(Icons.warning_amber_rounded, 'Atenção: taxas de urgência podem ser combinadas no local.', AppColors.danger),
+                _Bullet(Icons.check_circle_rounded, 'Se aprovado: o profissional se desloca de imediato.', context.tk.clientAccent),
+                _Bullet(Icons.check_circle_rounded, 'Se recusado ou sem resposta: a reserva é estornada na hora.', context.tk.clientAccent),
+                _Bullet(Icons.warning_amber_rounded, 'Atenção: taxas de urgência podem ser combinadas no local.', context.tk.danger),
               ],
             ),
           ),
@@ -388,7 +396,7 @@ class _RequestWizardScreenState extends State<RequestWizardScreen> {
                   return ChoiceChip(
                     label: Text('${two(h)}:00', style: TextStyle(
                       decoration: disabled ? TextDecoration.lineThrough : null,
-                      color: disabled ? AppColors.muted : (selected ? Colors.white : AppColors.ink),
+                      color: disabled ? context.tk.textMuted : (selected ? Colors.white : context.tk.text),
                       fontWeight: FontWeight.w700,
                     )),
                     selected: selected,
@@ -417,7 +425,7 @@ class _RequestWizardScreenState extends State<RequestWizardScreen> {
             children: [
               Row(
                 children: [
-                  Icon(categoryIcon(_category ?? ''), color: AppColors.clientAccent),
+                  Icon(categoryIcon(_category ?? ''), color: context.tk.clientAccent),
                   const SizedBox(width: 8),
                   Text(_category ?? '', style: const TextStyle(fontWeight: FontWeight.w800)),
                 ],
@@ -440,13 +448,13 @@ class _RequestWizardScreenState extends State<RequestWizardScreen> {
         ),
         const SizedBox(height: 12),
         if (_emergency)
-          const StatusChip('🚨 EMERGÊNCIA: PARA AGORA ⚡', color: AppColors.danger, background: Color(0xFFFDE0DC))
+          StatusChip('🚨 EMERGÊNCIA: PARA AGORA ⚡', color: context.tk.danger, background: context.tk.dangerSoft)
         else
           AppCard(
-            color: const Color(0xFFF7F9FC),
+            color: context.tk.surface,
             child: Row(
               children: [
-                const Icon(Icons.calendar_month_rounded, color: AppColors.clientAccent),
+                Icon(Icons.calendar_month_rounded, color: context.tk.clientAccent),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Column(
@@ -455,7 +463,7 @@ class _RequestWizardScreenState extends State<RequestWizardScreen> {
                       const Text('Compromisso agendado', style: TextStyle(fontWeight: FontWeight.w800)),
                       Text(_scheduled == null ? '' : dateLong(_scheduled!)),
                       const SizedBox(height: 6),
-                      const StatusChip('SERVIÇO AGENDADO', color: AppColors.info),
+                      StatusChip('SERVIÇO AGENDADO', color: context.tk.info),
                     ],
                   ),
                 ),
@@ -481,15 +489,15 @@ class _RequestWizardScreenState extends State<RequestWizardScreen> {
         AppCard(
           child: Row(
             children: [
-              const CircleAvatar(
-                backgroundColor: AppColors.clientSoft,
-                child: Icon(Icons.place_rounded, color: AppColors.clientAccent),
+              CircleAvatar(
+                backgroundColor: context.tk.clientSoft,
+                child: Icon(Icons.place_rounded, color: context.tk.clientAccent),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
                   hasAddress ? _currentAddress : 'Nenhum endereço cadastrado. Toque em Editar.',
-                  style: TextStyle(height: 1.35, color: hasAddress ? AppColors.ink : AppColors.danger),
+                  style: TextStyle(height: 1.35, color: hasAddress ? context.tk.text : context.tk.danger),
                 ),
               ),
             ],
@@ -500,7 +508,7 @@ class _RequestWizardScreenState extends State<RequestWizardScreen> {
           const Text('Resumo financeiro', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
           const SizedBox(height: 8),
           AppCard(
-            color: const Color(0xFFF1F2F5),
+            color: context.tk.surface,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -511,10 +519,10 @@ class _RequestWizardScreenState extends State<RequestWizardScreen> {
                   ],
                 ),
                 const SizedBox(height: 8),
-                const Text(
+                Text(
                   'Valor bloqueado para garantir a ida do profissional. Reembolsável se ele recusar ou não responder. '
                   'O orçamento final é combinado no local.',
-                  style: TextStyle(fontSize: 12.5, color: AppColors.muted, height: 1.35),
+                  style: TextStyle(fontSize: 12.5, color: context.tk.textMuted, height: 1.35),
                 ),
               ],
             ),
@@ -522,7 +530,7 @@ class _RequestWizardScreenState extends State<RequestWizardScreen> {
           const SizedBox(height: 14),
           const Text('Forma de pagamento', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
           const SizedBox(height: 8),
-          PaymentMethodPicker(value: _method, onChanged: (m) => setState(() => _method = m)),
+          WalletPayCard(priceCents: Money.fromReais(p.visitFee)),
         ],
       ],
     );
@@ -558,7 +566,7 @@ class _ProviderMini extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AppCard(
-      color: const Color(0xFFF7F9FC),
+      color: context.tk.surface,
       child: Row(
         children: [
           UserAvatar(url: provider.avatarUrl, name: provider.fullName, radius: 24, verified: true),
@@ -568,7 +576,7 @@ class _ProviderMini extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(provider.fullName, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
-                Text(provider.title, style: const TextStyle(color: AppColors.muted)),
+                Text(provider.title, style: TextStyle(color: context.tk.textMuted)),
               ],
             ),
           ),

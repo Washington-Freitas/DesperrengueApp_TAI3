@@ -5,7 +5,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/services/draft_store.dart';
 import '../../../core/services/profile_service.dart';
-import 'auth_gate.dart';
+import 'auth_gate.dart';
+import '../../../core/ui/light_island.dart';
 
 class VerificacaoStep5FinalizacaoScreen extends StatefulWidget {
   final File frenteDocumento;
@@ -93,7 +94,7 @@ class _VerificacaoStep5FinalizacaoScreenState
   }
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return LightIsland(child: Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
@@ -240,6 +241,6 @@ class _VerificacaoStep5FinalizacaoScreenState
           ),
         ),
       ),
-    );
+    ));
   }
 }

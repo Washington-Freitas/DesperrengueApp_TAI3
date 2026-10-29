@@ -293,5 +293,11 @@ class JobService {
     );
   }
 
+  /// Relatório técnico já salvo do pedido (null se ainda não existe).
+  Future<String?> jobReport(String jobId) async {
+    final row = await _client.from('jobs').select('provider_report').eq('id', jobId).maybeSingle();
+    return row?['provider_report'] as String?;
+  }
+
   Future<void> removeEvidence(String id) => _client.from('job_evidence').delete().eq('id', id);
 }

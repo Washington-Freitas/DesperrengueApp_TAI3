@@ -137,7 +137,7 @@ Um item só é considerado **pronto** quando:
 
 - [ ] `flutter analyze` sem avisos e `flutter test` verdes (local **e** CI).
 - [ ] Testes novos/atualizados cobrindo o comportamento (ver [TESTING](../docs/TESTING.md)).
-- [ ] Mudança de banco: migration **ensaiada com `ROLLBACK`**, aplicada, registrada, e **todos** os testes SQL (`security_smoke`, `review_system_smoke`, `achievements_smoke`) com `FALHAS=0` (saída anexada).
+- [ ] Mudança de banco: migration **ensaiada com `ROLLBACK`**, aplicada, registrada, e **todos** os testes SQL (`security_smoke`, `review_system_smoke`, `achievements_smoke`, `offboarding_showcase_smoke`, `client_wallet_smoke`) com `FALHAS=0` (saída anexada).
 - [ ] Verificação manual em emulador/dispositivo para mudanças de UI (capturas no PR).
 - [ ] Sem segredos, sem `print`/logs de dados pessoais.
 - [ ] [CHANGELOG](../docs/CHANGELOG.md) atualizado na seção **Não lançado**.
@@ -188,6 +188,7 @@ Um item só é considerado **pronto** quando:
    ```
 6. **Backup lógico** antes de migrations destrutivas (`DROP`, `UPDATE` em massa).
 7. **Teste:** estenda `supabase/tests/security_smoke.sql` para cada nova regra de negócio/segurança; **toda nova tabela** deve ter RLS e pelo menos um teste de acesso negado.
+8. **Dinheiro:** valores novos em **centavos inteiros** (`bigint`), nunca `float`/`double`; movimentação de saldo **só pelo ledger** (`_ledger_post`: cada transação soma zero, `idempotency_key` única) — nunca `UPDATE` direto em `client_wallets` ([ADR-0018](../docs/adr/0018-carteira-ledger-e-pix-sandbox.md)).
 8. **Compatibilidade:** mudanças que quebram clientes publicados exigem estratégia de transição (colunas/RPCs antigas mantidas por uma versão) ou `BREAKING CHANGE` explícito.
 9. **Dinheiro e estado** só mudam por RPC; nunca conceda `UPDATE` direto em `status`, `payment_status`, `verification_status`, notas ou contadores.
 

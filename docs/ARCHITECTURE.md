@@ -36,7 +36,7 @@ Não existe servidor de aplicação próprio. O estilo é, portanto, **"banco co
 | Transições de estado atômicas | RPCs com `SELECT … FOR UPDATE` e *advisory locks* |
 | Minimização de dados | Views públicas mínimas; endereço em tabela separada; PIN em tabela com política de dono |
 | Observabilidade do domínio | Notificações geradas no servidor; `notifications` + Realtime |
-| Verificabilidade | Testes SQL transacionais com 114 asserções (segurança 62, avaliações 30, conquistas 22) ([TESTING](TESTING.md)) |
+| Verificabilidade | Testes SQL transacionais com 162 asserções (segurança 62, avaliações 30, conquistas 22, carteira/exclusão/vitrine 48) ([TESTING](TESTING.md)) |
 
 ---
 
@@ -55,7 +55,7 @@ flowchart LR
     V[("ViaCEP<br/>consulta de CEP")]
     AB[("Abstract API<br/>validação de e-mail<br/>(opcional)")]
 
-    C -- "pede serviços, paga (mock), avalia" --> D
+    C -- "pede serviços, paga com saldo da carteira, avalia" --> D
     P -- "recebe pedidos, orça, executa, recebe" --> D
     A -- "revisa KYC e disputas (SQL/RPC)" --> D
     D -- "OAuth 2.0 / OIDC" --> G
@@ -64,7 +64,7 @@ flowchart LR
     D -- "HTTPS GET" --> AB
 ```
 
-**Observação de fronteira.** O gateway de pagamento é **simulado** (MVP acadêmico): nenhum dado de cartão trafega e nenhuma cobrança real ocorre ([ADR-0006](adr/0006-pagamento-mock-com-custodia-e-pin.md)).
+**Observação de fronteira.** O gateway de pagamento é **simulado** (MVP acadêmico): nenhum dado de cartão trafega e nenhuma cobrança real ocorre ([ADR-0006](adr/0006-pagamento-mock-com-custodia-e-pin.md)). O dinheiro vive numa **carteira com ledger de partida dobrada** e a recarga usa um **Pix sandbox** com webhook normalizado ([ADR-0018](adr/0018-carteira-ledger-e-pix-sandbox.md)).
 
 ---
 
@@ -122,6 +122,10 @@ flowchart TB
 | Realtime | Supabase Realtime | Difusão de mudanças (`jobs`, `quotes`, `job_invites`, `messages`, `notifications`) |
 | Storage | S3-compatível | Documentos de KYC, fotos de pedido/evidência, mídia pública |
 | Edge Function | Deno | Envio do e-mail de aprovação do KYC (autenticada por segredo compartilhado, [ADR-0010](adr/0010-webhook-autenticado-por-segredo-no-vault.md)) |
+| Edge Function `pix-webhook` | Deno | Recebe a confirmação do Pix (payload normalizado, header `x-webhook-secret`) e chama `confirm_topup` (idempotente) com `service_role` ([ADR-0018](adr/0018-carteira-ledger-e-pix-sandbox.md)) |
+| Edge Function `excluir-conta` | Deno + `pdf-lib` | Offboarding LGPD: valida o JWT do usuário, gera o Dossiê PDF, envia (Resend) e só então apaga dados e conta ([ADR-0013](adr/0013-exclusao-de-conta-lgpd-e-dossie.md)) |
+| Abertura do app | Flutter | Splash nativa + animada, init paralela, sessão no Keystore, último perfil ([ADR-0015](adr/0015-abertura-do-app-splash-init-e-sessao-segura.md)) |
+| Tema | Flutter + Riverpod | Tokens semânticos, tri-state claro/escuro/automático ([ADR-0014](adr/0014-design-tokens-e-modo-escuro.md)) |
 
 ---
 
@@ -139,12 +143,13 @@ flowchart TB
     subgraph core["core/"]
         SES["AppSession<br/>modo ativo · tick de perfil"]
         MOD["models/<br/>user_profile · marketplace_models<br/>(puros, testáveis)"]
-        SVC["services/<br/>profile · job · provider · social · media"]
+        SVC["services/<br/>profile · job · provider · social · media · wallet"]
         UI["ui/<br/>tema · widgets · mídia · rótulos"]
         FMT["utils/format.dart"]
+        ST["state/<br/>privacy_mode · wallet_providers<br/>(Riverpod, streams em tempo real)"]
     end
     subgraph features["features/"]
-        CL["client/<br/>home · busca · wizard · pedido · pagamento · avaliação"]
+        CL["client/<br/>home · busca · wizard · pedido · carteira · pagamento · avaliação"]
         PV["provider/<br/>painel · oportunidades · execução · carteira · perfil"]
         SH["shared/<br/>chat · notificações · suporte"]
         KYC["auth/ KYC<br/>etapas 1–7"]
@@ -160,6 +165,8 @@ flowchart TB
     PV --> SVC
     SH --> SVC
     CL --> UI
+    CL --> ST
+    ST --> SVC
     PV --> UI
     SVC -->|"supabase_flutter"| SB[("Supabase")]
 ```
@@ -195,7 +202,11 @@ erDiagram
     JOBS ||--o{ JOB_INVITES : convida
     JOBS ||--o{ QUOTES : recebe
     JOBS ||--o{ JOB_EVIDENCE : "4 fotos"
-    JOBS ||--o| PAYMENTS : "custódia (mock)"
+    JOBS ||--o| PAYMENTS : "custódia (carteira)"
+    PROFILES ||--o| CLIENT_WALLETS : "carteira do cliente"
+    CLIENT_WALLETS ||--o{ WALLET_STATEMENT : extrato
+    CLIENT_WALLETS ||--o{ PIX_TOPUPS : recarrega
+    LEDGER_TXNS ||--|{ LEDGER_LINES : "soma zero"
     JOBS ||--o{ REVIEWS : "2 avaliações"
     JOBS ||--o{ MESSAGES : "chat por demanda"
     JOBS ||--o{ SUPPORT_TICKETS : "disputa"
@@ -239,6 +250,30 @@ erDiagram
         numeric net_amount
         text status "escrow|released|refunded"
     }
+    CLIENT_WALLETS {
+        uuid client_id PK
+        bigint available_cents "CHECK >= 0"
+        bigint escrow_cents "CHECK >= 0"
+    }
+    PIX_TOPUPS {
+        uuid id PK
+        uuid client_id FK
+        bigint amount_cents "R$ 5 a R$ 5.000"
+        text txid "unique"
+        text status "pending|paid|expired|canceled"
+        text idempotency_key "unique por cliente"
+    }
+    LEDGER_TXNS {
+        uuid id PK
+        text kind "seed|topup|hold|release|refund|withdrawal"
+        text idempotency_key "unique"
+    }
+    LEDGER_LINES {
+        bigint id PK
+        uuid txn_id FK
+        text account "client:id:available|escrow, provider:id:available, platform:revenue, external:pix"
+        bigint cents "diferente de 0; soma por transação = 0"
+    }
 ```
 
 ### 5.2 Decisões de modelagem relevantes
@@ -250,7 +285,8 @@ erDiagram
 | Endereço | `job_addresses` separada de `jobs` | RLS por *linha* não oculta *coluna*; separar aplica privacidade por contratação ([ADR-0007](adr/0007-privacidade-por-minimizacao-de-dados.md)) |
 | PIN | `job_secrets` com política "só dono" | O profissional valida via RPC e nunca lê o segredo |
 | Reputação | `rating_avg`, `rating_count`, `jobs_done` protegidos por *trigger* | Impede inflar a própria nota |
-| Valores monetários | `numeric` (exato), comissão fixa de 12 % calculada no servidor | Evita erros de ponto flutuante; regra única |
+| Valores monetários | `numeric` (exato) nas tabelas legadas (`payments`) e **centavos inteiros (`bigint`)** na carteira e no ledger; comissão fixa de 12 % calculada no servidor | Evita erros de ponto flutuante; regra única ([ADR-0018](adr/0018-carteira-ledger-e-pix-sandbox.md)) |
+| Carteira e ledger | `client_wallets` (saldo materializado) + `ledger_txns`/`ledger_lines` de **partida dobrada** (cada transação soma zero, `idempotency_key` única); o ledger **não** é legível pelo app e `wallet_statement` é a visão do cliente | Auditoria e prova de integridade (saldo == soma das linhas); o ledger sobrevive à exclusão da conta (UUID pseudonimizado) |
 | Integridade | FKs com `ON DELETE CASCADE` para dados do usuário; `CHECK` para domínios de estado | Consistência e LGPD (eliminação) |
 
 ---
@@ -283,13 +319,28 @@ stateDiagram-v2
 | Evento | `pending` | `escrow` | `released` | `refunded` |
 | :-- | :-: | :-: | :-: | :-: |
 | Pedido criado | ● | | | |
-| `pay_job_mock` / `request_emergency_mock` | | ● | | |
+| `pay_job_mock` / `request_emergency_mock` (método `wallet`: gatilho reserva o saldo; sem saldo → `INSUFFICIENT_FUNDS`) | | ● | | |
 | `complete_job_with_pin` | | | ● | |
 | Cancelamento/expiração com reserva; disputa resolvida a favor do cliente | | | | ● |
+
+> **Efeito na carteira (gatilhos em `payments`, [ADR-0018](adr/0018-carteira-ledger-e-pix-sandbox.md)):** `escrow` move `available → escrow` do cliente (ou aborta com `INSUFFICIENT_FUNDS`); `released` move `escrow →` saldo líquido do profissional + `platform:revenue` (comissão); `refunded` devolve `escrow → available`. Como todo caminho passa por `payments`, nenhuma RPC precisa "lembrar" da carteira.
 
 ### 6.3 Verificação do profissional (`profiles.verification_status`)
 
 `NOT_SUBMITTED → PENDING → APPROVED_PENDING_EMAIL → ACTIVE`, com `REJECTED` permitindo reenvio. Somente `ACTIVE` habilita enviar orçamentos e aparecer na busca.
+
+### 6.4 Recarga Pix (`pix_topups.status`)
+
+```mermaid
+stateDiagram-v2
+    [*] --> pending : create_topup (BR Code, expira em 30 min)
+    pending --> paid : confirm_topup (webhook) ou simulate_pix_payment (sandbox)
+    pending --> expired : prazo vencido
+    pending --> canceled : cliente altera o valor
+    paid --> paid : reenvio do webhook (idempotente, sem novo crédito)
+```
+
+O crédito (`topup:<id>` no ledger) acontece **uma única vez**, na transição `pending → paid`, com a linha da cobrança travada (`FOR UPDATE`).
 
 ---
 
@@ -352,6 +403,28 @@ sequenceDiagram
 
 O cliente **paga a reserva da visita antes** do aceite; o profissional tem 5 minutos. Aceite → `in_progress` com PIN gerado. Recusa ou expiração (`pg_cron expire-invites`, 1/min) → `canceled` e `payments.status = refunded`. O cancelamento pelo cliente também estorna. Essas invariantes são verificadas pelos itens 52–57 do teste de fumaça.
 
+### 7.4 Recarga Pix e pagamento com saldo
+
+```mermaid
+sequenceDiagram
+    participant A as App (cliente)
+    participant DB as Postgres (RPC + gatilhos)
+    participant W as Edge Function pix-webhook
+    participant P as PSP / simulador
+    A->>DB: pay_job_mock(job, 'wallet')
+    DB-->>A: INSUFFICIENT_FUNDS|necessário|disponível (aborta tudo)
+    A->>DB: create_topup(centavos, chave) → BR Code + txid
+    A->>P: cliente paga o Pix (ou toca "Simular pagamento")
+    P->>W: POST {txid, amount_cents, status: paid} + x-webhook-secret
+    W->>DB: confirm_topup (service_role, idempotente, confere o valor)
+    DB-->>A: Realtime: saldo e extrato atualizados
+    A->>DB: pay_job_mock(job, 'wallet')
+    DB->>DB: gatilho BEFORE INSERT em payments: FOR UPDATE, available → escrow
+    DB-->>A: pedido em andamento, PIN gerado
+```
+
+No sandbox, "o PSP" é o botão `simulate_pix_payment` (só com `app_settings.pix_sandbox = 'true'` e só para o **próprio** Pix). Um PSP real entra com um adaptador que traduz o seu *webhook* para o payload normalizado ([ROADMAP](ROADMAP.md) E-19).
+
 ---
 
 ## 8. Modelo de segurança
@@ -403,6 +476,11 @@ flowchart LR
 | **D**oS lógico: spam de orçamentos | Limite de 3, 1 por profissional, *advisory lock*; convites limitados a 3 |
 | **E**levation: função `SECURITY DEFINER` | `SET search_path = public`; `REVOKE ALL … FROM public, anon`; `GRANT` explícito a `authenticated` |
 | Força bruta no PIN | 5 tentativas **persistidas** (a tentativa não é desfeita por rollback) |
+| **T**ampering: criar saldo / alterar extrato | `client_wallets`, `ledger_*`, `wallet_statement` e `pix_topups` só têm `SELECT` para o dono; escrita apenas por RPC/gatilho `SECURITY DEFINER`; `CHECK (saldo >= 0)` |
+| **S**poofing do webhook Pix | `x-webhook-secret` (`PIX_WEBHOOK_SECRET`) em tempo constante; `txid` único; **valor conferido** contra a cobrança (409 se divergir) |
+| Gasto duplo / corrida no saldo | `SELECT … FOR UPDATE` na carteira dentro da mesma transação do pedido; pedido e débito são atômicos |
+| Replay e cobrança duplicada | `idempotency_key` única no ledger e por cliente nas recargas; reenvio do webhook devolve `already: true` sem novo crédito |
+| Simulação de pagamento em produção | `simulate_pix_payment` exige `app_settings.pix_sandbox = 'true'` (no servidor) e só vale para o próprio Pix |
 
 Política de divulgação de vulnerabilidades: [SECURITY.md](../.github/SECURITY.md).
 
@@ -412,13 +490,14 @@ Política de divulgação de vulnerabilidades: [SECURITY.md](../.github/SECURITY
 
 | Mecanismo | Uso |
 | :-- | :-- |
-| `supabase_realtime` (publicação) | `jobs`, `quotes`, `job_invites`, `messages`, `notifications` — o app usa `.stream()`; a RLS é respeitada pelo Realtime |
+| `supabase_realtime` (publicação) | `jobs`, `quotes`, `job_invites`, `messages`, `notifications`, `client_wallets`, `wallet_statement`, `pix_topups` — o app usa `.stream()`; a RLS é respeitada pelo Realtime |
 | `pg_cron` — `expire-invites` (1/min) | Expira convites; estorna emergências sem resposta |
 | `pg_cron` — `kyc-mock-approval` (1/min) | **Mock** de aprovação do KYC após 40 s (`app_settings.kyc_auto_approve`); desligar em produção |
 | `pg_net` | *Webhook* do banco para a Edge Function |
 | Resend | SMTP do Auth (`smtp.resend.com:465`, remetente `suporte@desperrengue.tech`) e API da Edge Function |
 | ViaCEP | Preenchimento de endereço por CEP (cliente HTTP direto do app) |
 | Abstract API | Validação opcional de e-mail no cadastro (`--dart-define`) |
+| Pix (sandbox) | BR Code EMV com chave **fictícia** gerado no banco + Edge Function `pix-webhook`; sem PSP real ([ADR-0018](adr/0018-carteira-ledger-e-pix-sandbox.md)) |
 
 ---
 
@@ -461,8 +540,10 @@ Mapeamento aos atributos da ISO/IEC 25010:
 | DT-01 | Ambiente único (sem *staging*) | Risco ao aplicar migrations | Criar projeto de *staging* e pipeline de migrations ([ROADMAP](ROADMAP.md)) |
 | DT-02 | Navegação com `Navigator` + `AuthGate`; `go_router` e `flutter_riverpod` declarados, pouco usados | Deep links por rota e *state management* limitados | Migrar para `go_router` + Riverpod |
 | DT-03 | Cobertura de testes restrita às camadas puras e ao banco | Regressões de UI não detectadas | Testes de *widget* e `integration_test` |
-| DT-04 | Pagamento simulado | Sem fluxo financeiro real | Integrar gateway (Pix/cartão) com *webhooks* assinados |
+| DT-04 | Pagamento simulado (carteira e Pix em sandbox; crédito inicial fictício) | Sem dinheiro real | Adaptador de PSP sobre o `pix-webhook` com *webhooks* assinados (ROADMAP E-19); incluir o saldo do cliente na trava de exclusão de conta |
 | DT-05 | Aprovação de KYC automática (mock) | Verificação não efetiva em produção | Fila de revisão administrativa |
 | DT-06 | Bucket legado `kyc_documentos` (privado, 19 objetos de teste) | Resíduo | Remoção após confirmação |
 | DT-07 | Sem *push notifications* | Avisos só dentro do app | FCM/APNs |
 | DT-08 | Aprovação por PIN sem biometria/QR | Atrito em campo | Leitura de QR do PIN |
+| DT-09 | Saldo do cliente não entra na trava de exclusão de conta | Com dinheiro real, haveria fundos sem destino | Reembolso à origem antes de excluir (junto com o PSP, E-19) |
+| DT-10 | Ledger sem *backfill* do profissional anterior à migration da carteira | Extrato do profissional só cobre fluxos novos | Migração contábil dos `payments` liberados antes de 2026-10-29 |

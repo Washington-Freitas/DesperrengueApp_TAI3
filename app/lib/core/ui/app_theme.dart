@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
 
 import '../models/user_profile.dart';
+import 'app_tokens.dart';
 
-/// Tokens de design únicos (a análise dos protótipos mostrou 4 azuis e 3
-/// laranjas diferentes; aqui há UM por modo).
+/// Constantes de MARCA (a análise dos protótipos mostrou 4 azuis e 3 laranjas
+/// diferentes; aqui há UM por modo).
+///
+/// ATENÇÃO: para superfície, texto, borda e estados use os tokens semânticos
+/// (context.tk.*, ver [AppTokens]) — eles mudam com o tema claro/escuro.
+/// As constantes abaixo servem a contextos sem BuildContext (ícone do app,
+/// splash, seed de tema) e a elementos que são iguais nos dois temas.
 class AppColors {
   AppColors._();
 
@@ -50,36 +56,91 @@ extension UserModeStyle on UserMode {
 class AppTheme {
   AppTheme._();
 
+  static final Map<(UserMode?, Brightness), ThemeData> _cache = {};
+
+  /// Tema pronto para o MaterialApp (com cache: montar ThemeData é caro e o
+  /// MaterialApp reconstrói a cada troca de modo/tema).
+  static ThemeData resolve(UserMode? mode, Brightness brightness) =>
+      _cache.putIfAbsent((mode, brightness), () => mode == null ? brand(brightness) : forMode(mode, brightness));
+
   /// Tema padrão (login, seleção de modo, KYC): azul da marca.
-  static ThemeData brand() => _build(AppColors.navy);
+  static ThemeData brand([Brightness brightness = Brightness.light]) =>
+      _build(AppColors.navy, brightness, null);
 
   /// Tema aplicado dentro de cada modo.
-  static ThemeData forMode(UserMode mode) => _build(mode.accent);
+  static ThemeData forMode(UserMode mode, [Brightness brightness = Brightness.light]) =>
+      _build(mode.accent, brightness, mode);
 
-  static ThemeData _build(Color accent) {
-    final scheme = ColorScheme.fromSeed(seedColor: accent, primary: accent);
+  static ThemeData _build(Color lightAccent, Brightness brightness, UserMode? mode) {
+    final tk = brightness == Brightness.dark ? AppTokens.dark : AppTokens.light;
+    // No escuro o acento vem do token (dessaturado), nunca da constante.
+    final accent = !tk.isDark
+        ? lightAccent
+        : switch (mode) {
+            UserMode.client => tk.clientAccent,
+            UserMode.provider => tk.providerAccent,
+            null => tk.brand,
+          };
+    final onAccent = AppTokens.onColor(accent);
+    final scheme = ColorScheme.fromSeed(
+      seedColor: lightAccent,
+      brightness: brightness,
+      primary: accent,
+      onPrimary: onAccent,
+      surface: tk.background,
+      onSurface: tk.text,
+      error: tk.danger,
+      outline: tk.border,
+      surfaceContainerHighest: tk.surface,
+      // Elevação tonal: o M3 mistura este tom nas superfícies elevadas.
+      surfaceTint: tk.isDark ? Colors.white : Colors.transparent,
+    );
+    final radius28 = RoundedRectangleBorder(borderRadius: BorderRadius.circular(28));
     return ThemeData(
       useMaterial3: true,
+      brightness: brightness,
       colorScheme: scheme,
-      scaffoldBackgroundColor: Colors.white,
-      appBarTheme: const AppBarTheme(
-        backgroundColor: Colors.white,
-        foregroundColor: AppColors.ink,
+      extensions: [tk],
+      scaffoldBackgroundColor: tk.background,
+      canvasColor: tk.background,
+      cardColor: tk.card,
+      dividerColor: tk.border,
+      appBarTheme: AppBarTheme(
+        backgroundColor: tk.background,
+        foregroundColor: tk.text,
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: true,
-        titleTextStyle: TextStyle(
-          color: AppColors.ink,
-          fontSize: 18,
-          fontWeight: FontWeight.w700,
-        ),
+        titleTextStyle: TextStyle(color: tk.text, fontSize: 18, fontWeight: FontWeight.w700),
       ),
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: tk.isDark ? AppTokens.tonal(tk.background, 3) : tk.background,
+        indicatorColor: switch (mode) {
+          UserMode.client => tk.clientSoft,
+          UserMode.provider => tk.providerSoft,
+          null => tk.infoSoft,
+        },
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+      ),
+      bottomSheetTheme: BottomSheetThemeData(
+        backgroundColor: tk.raised,
+        surfaceTintColor: Colors.transparent,
+        modalBackgroundColor: tk.raised,
+        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: tk.raised,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      ),
+      cardTheme: CardThemeData(color: tk.card, surfaceTintColor: Colors.transparent, elevation: 0),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
           backgroundColor: accent,
-          foregroundColor: Colors.white,
+          foregroundColor: onAccent,
           minimumSize: const Size.fromHeight(54),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+          shape: radius28,
           textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
         ),
       ),
@@ -88,7 +149,7 @@ class AppTheme {
           foregroundColor: accent,
           minimumSize: const Size.fromHeight(50),
           side: BorderSide(color: accent, width: 1.5),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+          shape: radius28,
           textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
         ),
       ),
@@ -97,15 +158,16 @@ class AppTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: Colors.white,
+        fillColor: tk.isDark ? tk.surface : Colors.white,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        hintStyle: TextStyle(color: tk.textMuted),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: Color(0xFFD0D5DD)),
+          borderSide: BorderSide(color: tk.isDark ? tk.border : const Color(0xFFD0D5DD)),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: Color(0xFFD0D5DD)),
+          borderSide: BorderSide(color: tk.isDark ? tk.border : const Color(0xFFD0D5DD)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
@@ -114,13 +176,18 @@ class AppTheme {
       ),
       chipTheme: ChipThemeData(
         shape: const StadiumBorder(),
-        side: const BorderSide(color: AppColors.line),
+        side: BorderSide(color: tk.border),
         selectedColor: accent,
-        labelStyle: const TextStyle(color: AppColors.ink, fontWeight: FontWeight.w600),
-        secondaryLabelStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
-        checkmarkColor: Colors.white,
+        labelStyle: TextStyle(color: tk.text, fontWeight: FontWeight.w600),
+        secondaryLabelStyle: TextStyle(color: onAccent, fontWeight: FontWeight.w600),
+        checkmarkColor: onAccent,
       ),
-      dividerTheme: const DividerThemeData(color: AppColors.line, space: 1),
+      dividerTheme: DividerThemeData(color: tk.border, space: 1),
+      listTileTheme: ListTileThemeData(iconColor: tk.textMuted, textColor: tk.text),
+      switchTheme: SwitchThemeData(
+        thumbColor: WidgetStateProperty.resolveWith((s) => s.contains(WidgetState.selected) ? onAccent : tk.textMuted),
+        trackColor: WidgetStateProperty.resolveWith((s) => s.contains(WidgetState.selected) ? accent : tk.surface),
+      ),
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),

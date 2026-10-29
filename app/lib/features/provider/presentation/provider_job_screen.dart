@@ -11,6 +11,7 @@ import '../../../core/ui/media_widgets.dart';
 import '../../../core/ui/widgets.dart';
 import '../../../core/utils/format.dart';
 import 'provider_execution_screens.dart';
+import '../../../core/ui/app_tokens.dart';
 
 /// Acompanha UM serviço do ponto de vista do profissional e mostra a tela
 /// certa para cada estado (orçar, aguardar, executar, concluir).
@@ -129,7 +130,7 @@ class ClientCardTile extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(name, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
-                  Text(subtitle ?? 'Cliente', style: const TextStyle(color: AppColors.muted, fontSize: 13)),
+                  Text(subtitle ?? 'Cliente', style: TextStyle(color: context.tk.textMuted, fontSize: 13)),
                   if (snap.data?['client_id'] is String) _ClientReputationChip(snap.data!['client_id'] as String),
                 ],
               ),
@@ -154,20 +155,20 @@ class _ClientReputationChip extends StatelessWidget {
       builder: (context, snap) {
         final r = snap.data;
         if (r == null || r.count == 0) {
-          return const Padding(padding: EdgeInsets.only(top: 4), child: StatusChip('Cliente novo', color: AppColors.info, icon: Icons.fiber_new_rounded));
+          return Padding(padding: EdgeInsets.only(top: 4), child: StatusChip('Cliente novo', color: context.tk.info, icon: Icons.fiber_new_rounded));
         }
         return Padding(
           padding: const EdgeInsets.only(top: 4),
-          child: StatusChip('${r.avg.toStringAsFixed(1).replaceAll('.', ',')} • ${r.count} avaliações do cliente', color: AppColors.warningInk, icon: Icons.star_rounded),
+          child: StatusChip('${r.avg.toStringAsFixed(1).replaceAll('.', ',')} • ${r.count} avaliações do cliente', color: context.tk.warningInk, icon: Icons.star_rounded),
         );
       },
     );
   }
 }
 
-Widget evidenceCarousel(Job job) {
+Widget evidenceCarousel(BuildContext context, Job job) {
   if (job.photoPaths.isEmpty) {
-    return const Text('O cliente não anexou fotos.', style: TextStyle(color: AppColors.muted));
+    return Text('O cliente não anexou fotos.', style: TextStyle(color: context.tk.textMuted));
   }
   return SizedBox(
     height: 150,
@@ -274,11 +275,11 @@ class _QuoteFormScreenState extends State<QuoteFormScreen> {
           if (_inviteDead) const InfoBanner('Este convite expirou ou não está mais disponível.', tone: BannerTone.warning),
           if (full && !_inviteDead) const InfoBanner('Este pedido já recebeu 3 orçamentos.', tone: BannerTone.warning),
           const SectionTitle('Evidências enviadas pelo cliente'),
-          evidenceCarousel(job),
+          evidenceCarousel(context, job),
           const SectionTitle('Relato do cliente'),
           AppCard(
-            color: const Color(0xFFE9ECF1),
-            borderColor: const Color(0xFFE9ECF1),
+            color: context.tk.surface,
+            borderColor: context.tk.surface,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -293,9 +294,9 @@ class _QuoteFormScreenState extends State<QuoteFormScreen> {
             spacing: 8,
             runSpacing: 6,
             children: [
-              StatusChip(job.category, color: AppColors.providerAccent),
-              if (job.scheduledFor != null) StatusChip(dateShort(job.scheduledFor!), color: AppColors.info, icon: Icons.calendar_month_rounded),
-              if (job.addressSummary != null) StatusChip(job.addressSummary!, color: AppColors.muted, icon: Icons.place_rounded),
+              StatusChip(job.category, color: context.tk.providerAccent),
+              if (job.scheduledFor != null) StatusChip(dateShort(job.scheduledFor!), color: context.tk.info, icon: Icons.calendar_month_rounded),
+              if (job.addressSummary != null) StatusChip(job.addressSummary!, color: context.tk.textMuted, icon: Icons.place_rounded),
             ],
           ),
           const SizedBox(height: 18),
@@ -316,7 +317,7 @@ class _QuoteFormScreenState extends State<QuoteFormScreen> {
               child: Text(
                 'Comissão da plataforma (${_feePct.toStringAsFixed(0)}%): ${brl(v * _feePct / 100)} • Você recebe ${brl(net)}',
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: AppColors.muted, fontSize: 13),
+                style: TextStyle(color: context.tk.textMuted, fontSize: 13),
               ),
             ),
           const SizedBox(height: 14),
@@ -337,7 +338,7 @@ class _QuoteFormScreenState extends State<QuoteFormScreen> {
             decoration: const InputDecoration(hintText: 'Ex: Preço inclui a troca da peça, não inclui quebrar azulejo.'),
           ),
           if (widget.invite != null && widget.invite!.isLive)
-            Center(child: LinkButton(label: 'Recusar solicitação', onPressed: _decline, color: AppColors.muted)),
+            Center(child: LinkButton(label: 'Recusar solicitação', onPressed: _decline, color: context.tk.textMuted)),
         ],
       ),
       bottomNavigationBar: BottomBar(
@@ -443,10 +444,10 @@ class _AwaitingResponseScreenState extends State<AwaitingResponseScreen> {
           const SizedBox(height: 14),
           Text('Orçamento de ${brl(widget.quote.price)} enviado!', textAlign: TextAlign.center, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w900)),
           const SizedBox(height: 10),
-          const Text(
+          Text(
             'Assim que o cliente aceitar, o valor fica retido na plataforma e você poderá ir até o local. Avisaremos por notificação.',
             textAlign: TextAlign.center,
-            style: TextStyle(height: 1.45, color: AppColors.muted),
+            style: TextStyle(height: 1.45, color: context.tk.textMuted),
           ),
           const SizedBox(height: 22),
           if (inv != null)
@@ -461,7 +462,7 @@ class _AwaitingResponseScreenState extends State<AwaitingResponseScreen> {
           else
             const Center(child: CircularProgressIndicator()),
           const SizedBox(height: 18),
-          Center(child: LinkButton(label: 'Cancelar proposta', onPressed: _cancel, color: const Color(0xFF8A4B55))),
+          Center(child: LinkButton(label: 'Cancelar proposta', onPressed: _cancel, color: context.tk.danger)),
         ],
       ),
     );
@@ -542,11 +543,11 @@ class _EmergencyDecisionScreenState extends State<EmergencyDecisionScreen> {
           const SizedBox(height: 16),
           const InfoBanner('Se aceitar, vá imediatamente. A reserva de garantia do cliente já está em custódia.', tone: BannerTone.danger, title: 'Atendimento imediato'),
           const SectionTitle('Evidências enviadas pelo cliente'),
-          evidenceCarousel(job),
+          evidenceCarousel(context, job),
           const SectionTitle('Relato'),
           AppCard(
-            color: const Color(0xFFE9ECF1),
-            borderColor: const Color(0xFFE9ECF1),
+            color: context.tk.surface,
+            borderColor: context.tk.surface,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [ClientCardTile(jobId: job.id, subtitle: job.addressSummary), const SizedBox(height: 10), Text(job.description, style: const TextStyle(height: 1.45))],
@@ -556,7 +557,7 @@ class _EmergencyDecisionScreenState extends State<EmergencyDecisionScreen> {
           AppCard(
             child: Row(
               children: [
-                const Icon(Icons.lock_rounded, color: AppColors.success),
+                Icon(Icons.lock_rounded, color: context.tk.success),
                 const SizedBox(width: 12),
                 const Expanded(child: Text('Reserva em custódia', style: TextStyle(fontWeight: FontWeight.w800))),
                 Text(brl(job.agreedPrice), style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
@@ -564,7 +565,7 @@ class _EmergencyDecisionScreenState extends State<EmergencyDecisionScreen> {
             ),
           ),
           const SizedBox(height: 8),
-          const Text('O orçamento final é combinado no local com o cliente.', style: TextStyle(color: AppColors.muted, fontSize: 13)),
+          Text('O orçamento final é combinado no local com o cliente.', style: TextStyle(color: context.tk.textMuted, fontSize: 13)),
         ],
       ),
       bottomNavigationBar: BottomBar(
@@ -573,7 +574,7 @@ class _EmergencyDecisionScreenState extends State<EmergencyDecisionScreen> {
           children: [
             PrimaryButton(label: 'Aceitar emergência', icon: Icons.bolt_rounded, loading: _busy, onPressed: live ? _accept : null),
             const SizedBox(height: 8),
-            TextButton(onPressed: live ? _decline : null, child: const Text('Recusar', style: TextStyle(color: AppColors.muted))),
+            TextButton(onPressed: live ? _decline : null, child: Text('Recusar', style: TextStyle(color: context.tk.textMuted))),
           ],
         ),
       ),
@@ -594,14 +595,14 @@ class _WaitingPaymentScreen extends StatelessWidget {
         padding: const EdgeInsets.all(24),
         children: [
           const SizedBox(height: 20),
-          const Center(child: CircleAvatar(radius: 46, backgroundColor: AppColors.successSoft, child: Icon(Icons.handshake_rounded, size: 46, color: AppColors.success))),
+          Center(child: CircleAvatar(radius: 46, backgroundColor: context.tk.successSoft, child: Icon(Icons.handshake_rounded, size: 46, color: context.tk.success))),
           const SizedBox(height: 16),
           const Text('O cliente aceitou!', textAlign: TextAlign.center, style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900)),
           const SizedBox(height: 10),
           Text(
             'Estamos aguardando o pagamento de ${brl(job.agreedPrice)}. Quando for confirmado, o valor fica em custódia e você será avisado para iniciar.',
             textAlign: TextAlign.center,
-            style: const TextStyle(height: 1.45, color: AppColors.muted),
+            style: TextStyle(height: 1.45, color: context.tk.textMuted),
           ),
           const SizedBox(height: 24),
           const Center(child: CircularProgressIndicator()),

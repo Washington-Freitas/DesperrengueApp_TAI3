@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/models/user_profile.dart';
 import '../../../core/services/app_session.dart';
 import '../../../core/services/profile_service.dart';
+import '../../../core/storage/local_prefs.dart';
 import '../../../core/ui/app_theme.dart';
 import '../../../core/ui/widgets.dart';
 import '../../client/presentation/client_setup_screen.dart';
@@ -29,6 +31,7 @@ class PostAuthRouter extends StatefulWidget {
 class _PostAuthRouterState extends State<PostAuthRouter> {
   final _session = AppSession.instance;
   UserProfile? _profile;
+  UserMode? _preferred;
   bool _loading = true;
 
   @override
@@ -45,18 +48,22 @@ class _PostAuthRouterState extends State<PostAuthRouter> {
   }
 
   /// Recarrega o perfil sem apagar a tela atual (evita "piscar" a navegação).
+  /// Offline-first: sem rede, abre com a última versão salva (se houver).
   Future<void> _load() async {
+    final uid = Supabase.instance.client.auth.currentUser?.id;
+    final preferred = uid == null ? null : await LocalPrefs.lastProfile(uid);
+    UserProfile? p;
     try {
-      final p = await ProfileService().fetchCurrent();
-      if (!mounted) return;
-      setState(() {
-        _profile = p;
-        _loading = false;
-      });
+      p = await ProfileService().fetchCurrent();
     } catch (e) {
-      if (!mounted) return;
-      setState(() => _loading = false);
+      p = await ProfileService().cachedProfile();
     }
+    if (!mounted) return;
+    setState(() {
+      _profile = p;
+      _preferred = preferred;
+      _loading = false;
+    });
   }
 
   Future<void> _signOut() async {
@@ -82,7 +89,10 @@ class _PostAuthRouterState extends State<PostAuthRouter> {
           },
         ),
         bottomNavigationBar: SafeArea(
-          child: TextButton(onPressed: _signOut, child: const Text('Sair da conta')),
+          child: TextButton(
+            onPressed: _signOut,
+            child: const Text('Sair da conta'),
+          ),
         ),
       );
     }
@@ -94,28 +104,40 @@ class _PostAuthRouterState extends State<PostAuthRouter> {
           profile,
           mode: _session.mode.value,
           forceSelection: _session.forceSelection.value,
+          preferred: _preferred,
         );
         return _screenFor(dest, profile);
       },
     );
   }
+
   Widget _screenFor(AppDestination dest, UserProfile profile) {
     // Sincroniza o tema do MaterialApp com o modo da tela atual.
     final wanted = switch (dest) {
-      AppDestination.clientSetup || AppDestination.clientHome => UserMode.client,
-      AppDestination.providerSetup || AppDestination.providerHome => UserMode.provider,
+      AppDestination.clientSetup ||
+      AppDestination.clientHome => UserMode.client,
+      AppDestination.providerSetup ||
+      AppDestination.providerHome => UserMode.provider,
       _ => null,
     };
     if (_session.theme.value != wanted) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _session.theme.value = wanted);
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _session.theme.value = wanted,
+      );
     }
     switch (dest) {
       case AppDestination.modeSelection:
         return RoleSelectionScreen(profile: profile);
       case AppDestination.clientEnroll:
-        return _EnrollRunner(mode: UserMode.client, key: const ValueKey('enroll-client'));
+        return _EnrollRunner(
+          mode: UserMode.client,
+          key: const ValueKey('enroll-client'),
+        );
       case AppDestination.providerEnroll:
-        return _EnrollRunner(mode: UserMode.provider, key: const ValueKey('enroll-provider'));
+        return _EnrollRunner(
+          mode: UserMode.provider,
+          key: const ValueKey('enroll-provider'),
+        );
       case AppDestination.clientSetup:
         return _themed(UserMode.client, ClientSetupScreen(profile: profile));
       case AppDestination.clientHome:
@@ -125,7 +147,9 @@ class _PostAuthRouterState extends State<PostAuthRouter> {
       case AppDestination.kycInReview:
         return const VerificacaoStep6FeedbackScreen();
       case AppDestination.kycApproved:
-        return VerificacaoStep7AprovadoScreen(nomeProfissional: profile.firstName);
+        return VerificacaoStep7AprovadoScreen(
+          nomeProfissional: profile.firstName,
+        );
       case AppDestination.providerSetup:
         return _themed(UserMode.provider, ProviderSetupFlow(profile: profile));
       case AppDestination.providerHome:
@@ -135,8 +159,10 @@ class _PostAuthRouterState extends State<PostAuthRouter> {
     }
   }
 
-  Widget _themed(UserMode mode, Widget child) =>
-      Theme(data: AppTheme.forMode(mode), child: child);
+  Widget _themed(UserMode mode, Widget child) => Theme(
+    data: AppTheme.resolve(mode, Theme.of(context).brightness),
+    child: child,
+  );
 }
 
 /// Cadastra o usuário no modo escolhido e recarrega o perfil.
@@ -181,6 +207,8 @@ class _EnrollRunnerState extends State<_EnrollRunner> {
         ),
       );
     }
-    return const Scaffold(body: LoadingView(message: 'Preparando sua conta...'));
+    return const Scaffold(
+      body: LoadingView(message: 'Preparando sua conta...'),
+    );
   }
 }

@@ -3,9 +3,9 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
-import 'app_theme.dart';
 import 'widgets.dart';
 import '../services/media_service.dart';
+import './app_tokens.dart';
 
 class PickedImage {
   const PickedImage(this.bytes, this.ext, this.name);
@@ -85,16 +85,16 @@ class MediaPickerRow extends StatelessWidget {
                 width: 92,
                 margin: const EdgeInsets.only(right: 10),
                 decoration: BoxDecoration(
-                  color: AppColors.surface,
+                  color: context.tk.surface,
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: const Color(0xFFB8BCC6)),
+                  border: Border.all(color: context.tk.border),
                 ),
-                child: const Column(
+                child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.add_a_photo_outlined, color: AppColors.muted),
-                    SizedBox(height: 4),
-                    Text('Adicionar', style: TextStyle(fontSize: 12, color: AppColors.muted)),
+                    Icon(Icons.add_a_photo_outlined, color: context.tk.textMuted),
+                    const SizedBox(height: 4),
+                    Text('Adicionar', style: TextStyle(fontSize: 12, color: context.tk.textMuted)),
                   ],
                 ),
               ),

@@ -1,35 +1,33 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'core/constants/env.dart';
 import 'core/models/user_profile.dart';
 import 'core/services/app_session.dart';
+import 'core/state/theme_controller.dart';
 import 'core/ui/app_theme.dart';
-import 'features/auth/presentation/auth_gate.dart';
+import 'features/boot/boot_gate.dart';
+import 'features/boot/update_gate.dart';
 
 Future<void> main() async {
   // Garante que os widgets do Flutter estão prontos antes de chamar o código assíncrono
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Inicializa o cliente do Supabase com a configuração central (core/constants/env.dart).
-  await Supabase.initialize(
-    url: Env.supabaseUrl,
-    publishableKey: Env.supabasePublishableKey,
-  );
-
+  // Cold start sem tela branca: a splash NATIVA já está na tela; o Flutter sobe
+  // na hora e a inicialização pesada (Supabase + sessão no armazenamento seguro,
+  // tema, cache de imagens) roda EM PARALELO durante a animação (BootGate).
   runApp(const ProviderScope(child: DesperrengueApp()));
 }
 
-class DesperrengueApp extends StatelessWidget {
+class DesperrengueApp extends ConsumerWidget {
   const DesperrengueApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    // O tema acompanha o MODO ativo (cliente = laranja, profissional = azul).
-    // Precisa estar no MaterialApp: telas empilhadas com Navigator.push não
-    // herdam um Theme colocado só dentro do roteador.
+  Widget build(BuildContext context, WidgetRef ref) {
+    final themeMode = ref.watch(themeModeProvider);
+    // O tema acompanha o MODO ativo (cliente = laranja, profissional = azul) e o
+    // tri-state claro/escuro/automático. Precisa estar no MaterialApp: telas
+    // empilhadas com Navigator.push não herdam um Theme colocado só dentro do roteador.
     return ValueListenableBuilder<UserMode?>(
       valueListenable: AppSession.instance.theme,
       builder: (context, mode, _) => MaterialApp(
@@ -42,14 +40,14 @@ class DesperrengueApp extends StatelessWidget {
           GlobalWidgetsLocalizations.delegate,
           GlobalCupertinoLocalizations.delegate,
         ],
-        theme: mode == null
-            ? ThemeData(
-                colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF003366)),
-                useMaterial3: true,
-              )
-            : AppTheme.forMode(mode),
-        // O AuthGate decide entre Login e o destino correto do usuário autenticado.
-        home: const AuthGate(),
+        theme: AppTheme.resolve(mode, Brightness.light),
+        darkTheme: AppTheme.resolve(mode, Brightness.dark),
+        themeMode: themeMode.material,
+        // Aviso de versão beta nova, sobre qualquer tela (só em builds BETA_UPDATES).
+        builder: (context, child) => UpdateGate(child: child ?? const SizedBox.shrink()),
+        // A BootGate (splash + init paralela) decide, via AuthGate, entre Login,
+        // Seleção de perfil e o painel do último perfil usado.
+        home: const BootGate(),
       ),
     );
   }

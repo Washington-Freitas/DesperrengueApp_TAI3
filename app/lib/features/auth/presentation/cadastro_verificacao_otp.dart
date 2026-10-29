@@ -3,7 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'cadastro_sucesso_routing.dart';
+import 'cadastro_sucesso_routing.dart';
+import '../../../core/ui/light_island.dart';
 
 class CadastroVerificacaoOtpScreen extends StatefulWidget {
   final String email;
@@ -178,7 +179,7 @@ class _CadastroVerificacaoOtpScreenState
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return LightIsland(child: Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
@@ -308,6 +309,6 @@ class _CadastroVerificacaoOtpScreenState
           ),
         ),
       ),
-    );
+    ));
   }
 }

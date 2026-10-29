@@ -1,8 +1,10 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/user_profile.dart';
+import '../storage/local_prefs.dart';
 import 'app_session.dart';
 
 /// Acesso ao perfil e às RPCs de KYC. É a única camada que conhece nomes de
@@ -30,7 +32,28 @@ class ProfileService {
         .eq('id', user.id)
         .maybeSingle();
 
+    if (row != null) {
+      // Offline-first: guarda a última versão para abrir o app sem rede.
+      await LocalPrefs.write(LocalPrefs.keyProfileCache, jsonEncode(row));
+    }
     return row == null ? null : UserProfile.fromMap(row);
+  }
+
+  /// Último perfil carregado com sucesso (cache local) — só do usuário logado.
+  /// Devolve null se não houver, for de outra conta ou estiver corrompido.
+  Future<UserProfile?> cachedProfile() async {
+    final user = _client.auth.currentUser;
+    if (user == null) return null;
+    try {
+      final raw = await LocalPrefs.read(LocalPrefs.keyProfileCache);
+      if (raw == null) return null;
+      final map = Map<String, dynamic>.from(jsonDecode(raw) as Map);
+      if (map['id'] != user.id) return null;
+      return UserProfile.fromMap(map);
+    } catch (_) {
+      await LocalPrefs.remove(LocalPrefs.keyProfileCache);
+      return null;
+    }
   }
 
   /// Cadastra o usuário no modo escolhido (cliente e/ou profissional). Idempotente.
@@ -102,6 +125,8 @@ class ProfileService {
   Future<void> signOut() async {
     await _client.auth.signOut();
     AppSession.instance.reset();
+    // O perfil em cache é do usuário que saiu (dado pessoal): não fica no aparelho.
+    await LocalPrefs.remove(LocalPrefs.keyProfileCache);
   }
 
   Future<void> _upload(

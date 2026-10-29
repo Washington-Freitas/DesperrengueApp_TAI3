@@ -28,6 +28,10 @@ class MediaService {
         return 'image/png';
       case 'webp':
         return 'image/webp';
+      case 'mp4':
+        return 'video/mp4';
+      case 'mov':
+        return 'video/quicktime';
       default:
         return 'image/jpeg';
     }

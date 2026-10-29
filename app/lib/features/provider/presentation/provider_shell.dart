@@ -13,12 +13,17 @@ import '../../../core/ui/job_labels.dart';
 import '../../../core/ui/media_widgets.dart';
 import '../../../core/ui/widgets.dart';
 import '../../../core/utils/format.dart';
+import '../../../core/state/privacy_mode.dart';
 import '../../shared/presentation/achievement_widgets.dart';
+import '../../shared/presentation/delete_account_screen.dart';
+import '../../shared/presentation/showcase_widgets.dart';
+import '../../shared/presentation/theme_picker.dart';
 import '../../shared/presentation/notifications_screen.dart';
 import '../../shared/presentation/support_screens.dart';
 import 'provider_job_screen.dart';
 import 'provider_profile_screens.dart';
 import 'wallet_tab.dart';
+import '../../../core/ui/app_tokens.dart';
 
 void openProviderJob(BuildContext context, String jobId) {
   Navigator.of(context).push(
@@ -57,8 +62,8 @@ class _ProviderShellState extends State<ProviderShell> {
         bottomNavigationBar: NavigationBar(
           selectedIndex: _index,
           onDestinationSelected: (i) => setState(() => _index = i),
-          backgroundColor: Colors.white,
-          indicatorColor: AppColors.providerSoft,
+          backgroundColor: context.tk.card,
+          indicatorColor: context.tk.providerSoft,
           destinations: const [
             NavigationDestination(icon: Icon(Icons.dashboard_outlined), selectedIcon: Icon(Icons.dashboard_rounded), label: 'Painel'),
             NavigationDestination(icon: Icon(Icons.travel_explore_outlined), selectedIcon: Icon(Icons.travel_explore_rounded), label: 'Oportunidades'),
@@ -104,6 +109,7 @@ class _ProviderDashboardTabState extends State<ProviderDashboardTab> {
   @override
   void initState() {
     super.initState();
+    PrivacyMode.instance.ensureLoaded();
     _timer = Timer.periodic(const Duration(seconds: 20), (_) {
       if (mounted) setState(() { _future = _load(); });
     });
@@ -122,12 +128,13 @@ class _ProviderDashboardTabState extends State<ProviderDashboardTab> {
       _jobs.myPendingQuotes(),
       _providers.myPayments(),
       _providers.myProviderRow(),
+      _providers.myWithdrawnTotal(),
     ]);
     return _DashData(
       jobs: r[0] as List<Job>,
       invites: r[1] as List<({JobInvite invite, Job job})>,
       quotes: r[2] as List<({Quote quote, Job? job})>,
-      wallet: ProviderService.summarize(r[3] as List<Payment>),
+      wallet: ProviderService.summarize(r[3] as List<Payment>, withdrawn: r[5] as double),
       row: r[4] as Map<String, dynamic>?,
     );
   }
@@ -165,21 +172,36 @@ class _ProviderDashboardTabState extends State<ProviderDashboardTab> {
             children: [
               Row(
                 children: [
+                  IconButton(
+                    tooltip: 'Voltar à seleção de perfil',
+                    visualDensity: VisualDensity.compact,
+                    onPressed: AppSession.instance.switchMode,
+                    icon: Icon(Icons.arrow_back_ios_new_rounded, size: 20, color: context.tk.text),
+                  ),
                   UserAvatar(url: widget.profile.avatarUrl, name: widget.profile.fullName, radius: 24),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Olá, ${widget.profile.firstName}', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: AppColors.providerAccent)),
+                        Text('Olá, ${widget.profile.firstName}', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: context.tk.providerAccent)),
                         Row(
                           children: [
-                            Icon(Icons.circle, size: 10, color: online ? AppColors.success : AppColors.muted),
+                            Icon(Icons.circle, size: 10, color: online ? context.tk.success : context.tk.textMuted),
                             const SizedBox(width: 6),
-                            Text(online ? 'Online • recebendo solicitações' : 'Offline • pausado', style: const TextStyle(color: AppColors.muted, fontSize: 13)),
+                            Flexible(child: Text(online ? 'Online • recebendo pedidos' : 'Offline • pausado', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: context.tk.textMuted, fontSize: 13))),
                           ],
                         ),
                       ],
+                    ),
+                  ),
+                  // Modo privacidade: oculta saldo, custódia e faturamento (R$ •••••).
+                  ValueListenableBuilder<bool>(
+                    valueListenable: PrivacyMode.instance.hidden,
+                    builder: (context, hidden, _) => IconButton(
+                      tooltip: hidden ? 'Mostrar valores' : 'Ocultar valores',
+                      onPressed: PrivacyMode.instance.toggle,
+                      icon: Icon(hidden ? Icons.visibility_off_rounded : Icons.visibility_rounded, color: context.tk.textMuted),
                     ),
                   ),
                   UnreadBell(onOpenJob: (c, id) => openProviderJob(c, id)),
@@ -196,27 +218,44 @@ class _ProviderDashboardTabState extends State<ProviderDashboardTab> {
               if (snap.hasError) const InfoBanner('Não foi possível atualizar o painel. Puxe para tentar de novo.', tone: BannerTone.warning),
               if (d == null && !snap.hasError) const Padding(padding: EdgeInsets.all(40), child: LoadingView()),
               if (d != null) ...[
-                Row(
-                  children: [
-                    Expanded(child: _Stat(icon: Icons.payments_rounded, label: 'Faturado na semana', value: brl(d.wallet.week), onTap: widget.onSeeWallet)),
-                    const SizedBox(width: 10),
-                    Expanded(child: _Stat(icon: Icons.check_circle_rounded, label: 'Serviços concluídos', value: '${(d.row?['jobs_done'] as num?)?.toInt() ?? 0}')),
-                  ],
+                ValueListenableBuilder<bool>(
+                  valueListenable: PrivacyMode.instance.hidden,
+                  builder: (context, hidden, _) {
+                    String m(double v) => PrivacyMode.money(brl(v), hidden: hidden);
+                    final done = (d.row?['jobs_done'] as num?)?.toInt() ?? 0;
+                    final rated = ((d.row?['rating_count'] as num?) ?? 0) > 0;
+                    return Column(
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(child: _Stat(icon: Icons.account_balance_wallet_rounded, label: 'Saldo disponível', value: m(d.wallet.available), onTap: widget.onSeeWallet)),
+                            const SizedBox(width: 10),
+                            Expanded(child: _Stat(icon: Icons.lock_clock_rounded, label: 'Em custódia', value: m(d.wallet.held), onTap: widget.onSeeWallet)),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        Row(
+                          children: [
+                            Expanded(child: _Stat(icon: Icons.payments_rounded, label: 'Faturado na semana', value: m(d.wallet.week), onTap: widget.onSeeWallet)),
+                            const SizedBox(width: 10),
+                            Expanded(child: _Stat(icon: Icons.check_circle_rounded, label: 'Serviços concluídos', value: '$done')),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        SizedBox(
+                          width: double.infinity,
+                          child: _Stat(
+                            icon: Icons.star_rounded,
+                            label: 'Sua nota',
+                            value: rated ? ((d.row?['rating_avg'] as num).toDouble()).toStringAsFixed(1).replaceAll('.', ',') : 'Novo',
+                          ),
+                        ),
+                      ],
+                    );
+                  },
                 ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _Stat(
-                        icon: Icons.star_rounded,
-                        label: 'Sua nota',
-                        value: ((d.row?['rating_count'] as num?) ?? 0) > 0 ? ((d.row?['rating_avg'] as num).toDouble()).toStringAsFixed(1).replaceAll('.', ',') : 'Novo',
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(child: _Stat(icon: Icons.lock_clock_rounded, label: 'Em custódia', value: brl(d.wallet.held), onTap: widget.onSeeWallet)),
-                  ],
-                ),
+                const SizedBox(height: 18),
+                ShowcaseStrip(providerId: widget.profile.id, isOwner: true),
                 if (d.invites.isNotEmpty) ...[
                   const SectionTitle('Solicitações para você'),
                   for (final i in d.invites) _InviteTile(job: i.job, invite: i.invite),
@@ -234,7 +273,7 @@ class _ProviderDashboardTabState extends State<ProviderDashboardTab> {
                         onTap: () => openProviderJob(context, q.job!.id),
                         child: Row(
                           children: [
-                            const Icon(Icons.hourglass_top_rounded, color: AppColors.providerAccent),
+                            Icon(Icons.hourglass_top_rounded, color: context.tk.providerAccent),
                             const SizedBox(width: 12),
                             Expanded(child: Text(q.job!.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w800))),
                             Text(brl(q.quote.price), style: const TextStyle(fontWeight: FontWeight.w900)),
@@ -272,15 +311,15 @@ class _Stat extends StatelessWidget {
   Widget build(BuildContext context) {
     return AppCard(
       onTap: onTap,
-      color: AppColors.providerSoft,
-      borderColor: const Color(0xFFD3E0F7),
+      color: context.tk.providerSoft,
+      borderColor: context.tk.border,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: AppColors.providerAccent),
+          Icon(icon, color: context.tk.providerAccent),
           const SizedBox(height: 8),
-          Text(value, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: AppColors.providerAccent)),
-          Text(label, style: const TextStyle(color: AppColors.muted, fontSize: 12.5)),
+          Text(value, style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: context.tk.providerAccent)),
+          Text(label, style: TextStyle(color: context.tk.textMuted, fontSize: 12.5)),
         ],
       ),
     );
@@ -298,8 +337,8 @@ class _InviteTile extends StatelessWidget {
     final urgent = job.isEmergency;
     return AppCard(
       margin: const EdgeInsets.only(bottom: 10),
-      color: urgent ? AppColors.dangerSoft : Colors.white,
-      borderColor: urgent ? const Color(0xFFF1A9AE) : AppColors.line,
+      color: urgent ? context.tk.dangerSoft : context.tk.card,
+      borderColor: urgent ? context.tk.danger.withValues(alpha: 0.5) : context.tk.border,
       onTap: () => openProviderJob(context, job.id),
       child: Row(
         children: [
@@ -311,7 +350,7 @@ class _InviteTile extends StatelessWidget {
               children: [
                 Text(urgent ? 'Emergência: ${job.title}' : job.title, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w900)),
                 const SizedBox(height: 2),
-                Text('Responder em ${clock(invite.remaining)}', style: TextStyle(color: urgent ? AppColors.danger : AppColors.muted, fontWeight: FontWeight.w700, fontSize: 12.5)),
+                Text('Responder em ${clock(invite.remaining)}', style: TextStyle(color: urgent ? context.tk.danger : context.tk.textMuted, fontWeight: FontWeight.w700, fontSize: 12.5)),
               ],
             ),
           ),
@@ -411,7 +450,7 @@ class _OpportunitiesTabState extends State<OpportunitiesTab> {
             children: [
               const Text('Oportunidades', style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900)),
               const SizedBox(height: 4),
-              const Text('Serviços próximos que combinam com suas especialidades.', style: TextStyle(color: AppColors.muted)),
+              Text('Serviços próximos que combinam com suas especialidades.', style: TextStyle(color: context.tk.textMuted)),
               if (invites.isNotEmpty) ...[
                 const SectionTitle('Solicitações diretas'),
                 for (final i in invites) _InviteTile(job: i.job, invite: i.invite),
@@ -446,13 +485,13 @@ class _OpportunitiesTabState extends State<OpportunitiesTab> {
                           spacing: 8,
                           runSpacing: 6,
                           children: [
-                            StatusChip(j.category, color: AppColors.providerAccent),
-                            if (j.addressSummary != null) StatusChip(j.addressSummary!, color: AppColors.muted, icon: Icons.place_rounded),
-                            StatusChip('${j.quoteCount}/3 orçamentos', color: j.quoteCount >= 2 ? AppColors.warningInk : AppColors.info),
+                            StatusChip(j.category, color: context.tk.providerAccent),
+                            if (j.addressSummary != null) StatusChip(j.addressSummary!, color: context.tk.textMuted, icon: Icons.place_rounded),
+                            StatusChip('${j.quoteCount}/3 orçamentos', color: j.quoteCount >= 2 ? context.tk.warningInk : context.tk.info),
                           ],
                         ),
                         const SizedBox(height: 6),
-                        Text('Publicado ${relativeTime(j.createdAt)}', style: const TextStyle(color: AppColors.muted, fontSize: 12.5)),
+                        Text('Publicado ${relativeTime(j.createdAt)}', style: TextStyle(color: context.tk.textMuted, fontSize: 12.5)),
                       ],
                     ),
                   ),
@@ -475,7 +514,7 @@ class ProviderProfileTab extends StatelessWidget {
   Widget build(BuildContext context) {
     Widget tile(IconData icon, String title, String subtitle, VoidCallback onTap) => ListTile(
       contentPadding: EdgeInsets.zero,
-      leading: CircleAvatar(backgroundColor: AppColors.providerSoft, child: Icon(icon, color: AppColors.providerAccent)),
+      leading: CircleAvatar(backgroundColor: context.tk.providerSoft, child: Icon(icon, color: context.tk.providerAccent)),
       title: Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
       subtitle: Text(subtitle),
       trailing: const Icon(Icons.chevron_right_rounded),
@@ -497,7 +536,7 @@ class ProviderProfileTab extends StatelessWidget {
                 children: [
                   Text(profile.fullName, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
                   const SizedBox(height: 4),
-                  const StatusChip('Profissional verificado', color: AppColors.success, icon: Icons.verified_rounded),
+                  StatusChip('Profissional verificado', color: context.tk.success, icon: Icons.verified_rounded),
                 ],
               ),
             ),
@@ -509,7 +548,10 @@ class ProviderProfileTab extends StatelessWidget {
         tile(Icons.workspace_premium_rounded, 'Meus certificados', 'Cofre de qualificações', () => push(const CertificatesScreen())),
         tile(Icons.reviews_rounded, 'Minhas avaliações', 'Nota, selos e respostas aos clientes', () => push(MyReviewsScreen(profile: profile))),
         tile(Icons.emoji_events_rounded, 'Minhas conquistas', 'Troféus por serviços, avaliações e mais', () => push(AchievementsScreen(providerId: profile.id, providerName: profile.fullName, isOwner: true))),
+        tile(Icons.push_pin_rounded, 'Vitrine de cases', 'Fixe seus melhores serviços no topo', () => push(const CaseCurationScreen())),
         tile(Icons.support_agent_rounded, 'Ajuda e suporte', 'Central e chamados', () => push(const SupportCenterScreen())),
+        AppearanceTile(accent: context.tk.providerAccent, soft: context.tk.providerSoft),
+        tile(Icons.delete_forever_rounded, 'Excluir conta', 'Receba seu dossiê e apague seus dados', () => push(const DeleteAccountScreen())),
         const Divider(height: 32),
         InfoBanner(
           profile.isClient
@@ -531,8 +573,8 @@ class ProviderProfileTab extends StatelessWidget {
             final ok = await confirmDialog(context, title: 'Sair da conta?', message: 'Você precisará entrar novamente.', confirmLabel: 'Sair', destructive: true);
             if (ok) await ProfileService().signOut();
           },
-          icon: const Icon(Icons.logout_rounded, color: AppColors.danger),
-          label: const Text('Sair da conta', style: TextStyle(color: AppColors.danger)),
+          icon: Icon(Icons.logout_rounded, color: context.tk.danger),
+          label: Text('Sair da conta', style: TextStyle(color: context.tk.danger)),
         ),
       ],
     );

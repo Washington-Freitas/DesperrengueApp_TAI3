@@ -3,13 +3,14 @@ import 'package:flutter/material.dart';
 import '../../../core/models/marketplace_models.dart';
 import '../../../core/models/user_profile.dart';
 import '../../../core/services/provider_service.dart';
-import '../../../core/ui/app_theme.dart';
 import '../../../core/ui/media_widgets.dart';
 import '../../../core/ui/widgets.dart';
 import '../../../core/utils/format.dart';
 import '../../shared/presentation/achievement_widgets.dart';
 import '../../shared/presentation/review_widgets.dart';
+import '../../shared/presentation/showcase_widgets.dart';
 import 'request_wizard.dart';
+import '../../../core/ui/app_tokens.dart';
 
 /// Perfil público do profissional (protótipos 3, 4 e 5).
 class ProviderPublicProfileScreen extends StatefulWidget {
@@ -39,13 +40,13 @@ class _ProviderPublicProfileScreenState extends State<ProviderPublicProfileScree
   Widget build(BuildContext context) {
     final p = widget.provider;
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.tk.card,
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
             pinned: true,
             expandedHeight: 120,
-            backgroundColor: AppColors.clientAccent,
+            backgroundColor: context.tk.clientAccent,
             foregroundColor: Colors.white,
             flexibleSpace: FlexibleSpaceBar(
               background: Container(
@@ -61,8 +62,8 @@ class _ProviderPublicProfileScreenState extends State<ProviderPublicProfileScree
           ),
           SliverToBoxAdapter(
             child: Container(
-              decoration: const BoxDecoration(
-                color: Colors.white,
+              decoration: BoxDecoration(
+                color: context.tk.card,
                 borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
               ),
               padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
@@ -79,7 +80,7 @@ class _ProviderPublicProfileScreenState extends State<ProviderPublicProfileScree
                           children: [
                             Text(p.fullName, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900)),
                             const SizedBox(height: 2),
-                            Text(p.title, style: const TextStyle(color: Color(0xFFE8650A), fontWeight: FontWeight.w800, fontSize: 16)),
+                            Text(p.title, style: TextStyle(color: context.tk.clientAccent, fontWeight: FontWeight.w800, fontSize: 16)),
                           ],
                         ),
                       ),
@@ -106,18 +107,18 @@ class _ProviderPublicProfileScreenState extends State<ProviderPublicProfileScree
                                     style: const TextStyle(fontSize: 30, fontWeight: FontWeight.w900)),
                                 RatingStars(value: p.ratingAvg, size: 16),
                                 const SizedBox(height: 2),
-                                Text('(${p.ratingCount} avaliações)', style: const TextStyle(color: AppColors.muted, fontSize: 12)),
+                                Text('(${p.ratingCount} avaliações)', style: TextStyle(color: context.tk.textMuted, fontSize: 12)),
                               ],
                             ),
                           ),
-                          Container(width: 1, height: 56, color: AppColors.line),
+                          Container(width: 1, height: 56, color: context.tk.border),
                           Expanded(
                             child: Column(
                               children: [
-                                const Icon(Icons.check_circle_rounded, color: AppColors.clientAccent, size: 30),
+                                Icon(Icons.check_circle_rounded, color: context.tk.clientAccent, size: 30),
                                 const SizedBox(height: 2),
                                 Text('${p.jobsDone} serviços', style: const TextStyle(fontWeight: FontWeight.w900)),
-                                const Text('finalizados', style: TextStyle(color: AppColors.muted, fontSize: 12)),
+                                Text('finalizados', style: TextStyle(color: context.tk.textMuted, fontSize: 12)),
                               ],
                             ),
                           ),
@@ -129,7 +130,7 @@ class _ProviderPublicProfileScreenState extends State<ProviderPublicProfileScree
                       (p.bio != null && p.bio!.trim().isNotEmpty)
                           ? p.bio!
                           : 'Este profissional ainda não escreveu uma apresentação, mas teve a identidade e o registro verificados pela Desperrengue.',
-                      style: const TextStyle(height: 1.5, color: Color(0xFF374151)),
+                      style: TextStyle(height: 1.5, color: context.tk.text),
                     ),
                     if (p.specialties.isNotEmpty) ...[
                       const SectionTitle('Especialidades'),
@@ -139,6 +140,8 @@ class _ProviderPublicProfileScreenState extends State<ProviderPublicProfileScree
                         children: [for (final s in p.specialties) Chip(label: Text(s), avatar: Icon(categoryIcon(s), size: 16))],
                       ),
                     ],
+                    // Vitrine LIFO: os últimos serviços (máx. 4) com o dossiê técnico de cada um.
+                    ShowcaseStrip(providerId: p.id),
                     const SectionTitle('Portfólio'),
                     FutureBuilder<List<PortfolioItem>>(
                       future: _portfolio,
@@ -148,7 +151,7 @@ class _ProviderPublicProfileScreenState extends State<ProviderPublicProfileScree
                           return const SizedBox(height: 90, child: LoadingView());
                         }
                         if (items.isEmpty) {
-                          return const Text('Ainda sem trabalhos publicados.', style: TextStyle(color: AppColors.muted));
+                          return Text('Ainda sem trabalhos publicados.', style: TextStyle(color: context.tk.textMuted));
                         }
                         return SizedBox(
                           height: 130,
@@ -175,7 +178,7 @@ class _ProviderPublicProfileScreenState extends State<ProviderPublicProfileScree
                         if (snap.connectionState != ConnectionState.done) return const SizedBox(height: 60, child: LoadingView());
                         final photos = [for (final r in items) ...r.photoPaths];
                         if (items.isEmpty) {
-                          return const Text('Ainda não há avaliações.', style: TextStyle(color: AppColors.muted));
+                          return Text('Ainda não há avaliações.', style: TextStyle(color: context.tk.textMuted));
                         }
                         return Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -193,7 +196,7 @@ class _ProviderPublicProfileScreenState extends State<ProviderPublicProfileScree
                             if (_tab == 0)
                               for (final r in items) ReviewCard(review: r)
                             else if (photos.isEmpty)
-                              const Text('Nenhum cliente enviou fotos ainda.', style: TextStyle(color: AppColors.muted))
+                              Text('Nenhum cliente enviou fotos ainda.', style: TextStyle(color: context.tk.textMuted))
                             else
                               GridView.count(
                                 crossAxisCount: 3,
@@ -212,7 +215,7 @@ class _ProviderPublicProfileScreenState extends State<ProviderPublicProfileScree
                                           bottom: 4,
                                           child: Container(
                                             padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                                            decoration: BoxDecoration(color: AppColors.success, borderRadius: BorderRadius.circular(8)),
+                                            decoration: BoxDecoration(color: context.tk.success, borderRadius: BorderRadius.circular(8)),
                                             child: const Row(
                                               mainAxisSize: MainAxisSize.min,
                                               children: [
@@ -255,8 +258,8 @@ class _ProviderPublicProfileScreenState extends State<ProviderPublicProfileScree
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Taxa de visita:', style: TextStyle(color: AppColors.muted, fontSize: 12)),
-                      Text(brl(p.visitFee), style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: AppColors.clientAccent)),
+                      Text('Taxa de visita:', style: TextStyle(color: context.tk.textMuted, fontSize: 12)),
+                      Text(brl(p.visitFee), style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: context.tk.clientAccent)),
                     ],
                   ),
                   const SizedBox(width: 16),

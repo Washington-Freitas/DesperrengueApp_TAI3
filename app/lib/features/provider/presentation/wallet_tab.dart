@@ -3,10 +3,12 @@ import 'package:flutter/material.dart';
 import '../../../core/models/marketplace_models.dart';
 import '../../../core/services/job_service.dart';
 import '../../../core/services/provider_service.dart';
-import '../../../core/ui/app_theme.dart';
 import '../../../core/ui/widgets.dart';
 import '../../../core/utils/format.dart';
+import '../../../core/state/privacy_mode.dart';
 import '../../shared/presentation/support_screens.dart';
+import 'pix_withdraw_screen.dart';
+import '../../../core/ui/app_tokens.dart';
 
 /// Carteira do profissional (protótipos 13 e 14): saldo, lançamentos
 /// futuros (custódia/mediação), desempenho semanal e últimos serviços.
@@ -20,13 +22,41 @@ class WalletTab extends StatefulWidget {
 class _WalletTabState extends State<WalletTab> {
   final _providers = ProviderService();
   final _jobs = JobService();
-  late Future<(List<Payment>, Map<String, Job>)> _future = _load();
-  bool _hidden = false;
+  late Future<(List<Payment>, Map<String, Job>, double)> _future = _load();
 
-  Future<(List<Payment>, Map<String, Job>)> _load() async {
+  bool get _hidden => PrivacyMode.instance.hidden.value;
+
+  void _onPrivacy() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    PrivacyMode.instance.ensureLoaded();
+    PrivacyMode.instance.hidden.addListener(_onPrivacy);
+  }
+
+  @override
+  void dispose() {
+    PrivacyMode.instance.hidden.removeListener(_onPrivacy);
+    super.dispose();
+  }
+
+  Future<(List<Payment>, Map<String, Job>, double)> _load() async {
     final payments = await _providers.myPayments();
     final jobs = await _jobs.providerJobs();
-    return (payments, {for (final j in jobs) j.id: j});
+    final withdrawn = await _providers.myWithdrawnTotal();
+    return (payments, {for (final j in jobs) j.id: j}, withdrawn);
+  }
+
+  Future<void> _openPix(double available) async {
+    if (available <= 0) {
+      showSnack(context, 'Você não tem saldo disponível para transferir.');
+      return;
+    }
+    final done = await Navigator.of(context).push<bool>(MaterialPageRoute(builder: (_) => PixWithdrawScreen(available: available)));
+    if (done == true) _refresh();
   }
 
   Future<void> _refresh() async {
@@ -40,13 +70,13 @@ class _WalletTabState extends State<WalletTab> {
   Widget build(BuildContext context) {
     return RefreshIndicator(
       onRefresh: _refresh,
-      child: FutureBuilder<(List<Payment>, Map<String, Job>)>(
+      child: FutureBuilder<(List<Payment>, Map<String, Job>, double)>(
         future: _future,
         builder: (context, snap) {
           if (snap.hasError) return ListView(children: [ErrorView(message: 'Não foi possível carregar a carteira.', onRetry: _refresh)]);
           if (!snap.hasData) return const LoadingView();
-          final (payments, jobs) = snap.data!;
-          final w = ProviderService.summarize(payments);
+          final (payments, jobs, withdrawn) = snap.data!;
+          final w = ProviderService.summarize(payments, withdrawn: withdrawn);
           final upcoming = payments.where((p) => p.status == 'escrow').toList();
           final done = payments.where((p) => p.status == 'released').toList();
           return ListView(
@@ -69,12 +99,12 @@ class _WalletTabState extends State<WalletTab> {
                         const Text('Saldo disponível', style: TextStyle(color: Colors.white70)),
                         const Spacer(),
                         IconButton(
-                          onPressed: () => setState(() => _hidden = !_hidden),
+                          onPressed: PrivacyMode.instance.toggle,
                           icon: Icon(_hidden ? Icons.visibility_off_rounded : Icons.visibility_rounded, color: Colors.white70),
                         ),
                       ],
                     ),
-                    Text(_hidden ? 'R\$ •••••' : brl(w.available), style: const TextStyle(color: Colors.white, fontSize: 40, fontWeight: FontWeight.w900)),
+                    Text(PrivacyMode.money(brl(w.available), hidden: _hidden), style: const TextStyle(color: Colors.white, fontSize: 40, fontWeight: FontWeight.w900)),
                     const SizedBox(height: 6),
                     Text('Em custódia: ${_hidden ? '•••' : brl(w.held)}', style: const TextStyle(color: Colors.white70)),
                   ],
@@ -84,14 +114,14 @@ class _WalletTabState extends State<WalletTab> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  _Shortcut(icon: Icons.pix_rounded, label: 'Pix', onTap: () => _soon('O saque via Pix')),
+                  _Shortcut(icon: Icons.pix_rounded, label: 'Pix', onTap: () => _openPix(w.available)),
                   _Shortcut(icon: Icons.receipt_long_rounded, label: 'Extrato', onTap: () => _soon('O extrato detalhado')),
                   _Shortcut(icon: Icons.account_balance_rounded, label: 'Dados bancários', onTap: () => _soon('O cadastro bancário')),
                 ],
               ),
               const SectionTitle('Próximos lançamentos'),
               if (upcoming.isEmpty)
-                const Text('Nenhum valor em custódia no momento.', style: TextStyle(color: AppColors.muted))
+                Text('Nenhum valor em custódia no momento.', style: TextStyle(color: context.tk.textMuted))
               else
                 for (final p in upcoming)
                   Builder(builder: (context) {
@@ -99,22 +129,22 @@ class _WalletTabState extends State<WalletTab> {
                     final disputed = job?.status == JobStatus.disputed;
                     return AppCard(
                       margin: const EdgeInsets.only(bottom: 10),
-                      color: disputed ? const Color(0xFFFDF1C8) : Colors.white,
-                      borderColor: disputed ? AppColors.warning : AppColors.line,
+                      color: disputed ? context.tk.warningSoft : context.tk.card,
+                      borderColor: disputed ? context.tk.warning : context.tk.border,
                       child: Row(
                         children: [
-                          Icon(disputed ? Icons.warning_amber_rounded : Icons.arrow_forward_rounded, color: disputed ? AppColors.warningInk : AppColors.success),
+                          Icon(disputed ? Icons.warning_amber_rounded : Icons.arrow_forward_rounded, color: disputed ? context.tk.warningInk : context.tk.success),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(job?.title ?? 'Serviço', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w800)),
-                                Text(disputed ? 'Em mediação' : 'Libera na conclusão (PIN do cliente)', style: const TextStyle(color: AppColors.muted, fontSize: 12.5)),
+                                Text(disputed ? 'Em mediação' : 'Libera na conclusão (PIN do cliente)', style: TextStyle(color: context.tk.textMuted, fontSize: 12.5)),
                               ],
                             ),
                           ),
-                          Text(brl(p.netAmount), style: TextStyle(fontWeight: FontWeight.w900, color: disputed ? AppColors.warningInk : const Color(0xFF1E7A45))),
+                          Text(brl(p.netAmount), style: TextStyle(fontWeight: FontWeight.w900, color: disputed ? context.tk.warningInk : context.tk.successInk)),
                         ],
                       ),
                     );
@@ -128,9 +158,9 @@ class _WalletTabState extends State<WalletTab> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('Você já faturou', style: TextStyle(color: AppColors.muted)),
-                          Text(brl(w.week), style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w900, color: Color(0xFF1E7A45))),
-                          const Text('nesta semana', style: TextStyle(color: AppColors.muted)),
+                          Text('Você já faturou', style: TextStyle(color: context.tk.textMuted)),
+                          Text(PrivacyMode.money(brl(w.week), hidden: _hidden), style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900, color: context.tk.successInk)),
+                          Text('nesta semana', style: TextStyle(color: context.tk.textMuted)),
                         ],
                       ),
                     ),
@@ -140,15 +170,15 @@ class _WalletTabState extends State<WalletTab> {
               ),
               const SectionTitle('Últimos serviços realizados'),
               if (done.isEmpty)
-                const Text('Seus serviços concluídos aparecerão aqui.', style: TextStyle(color: AppColors.muted))
+                Text('Seus serviços concluídos aparecerão aqui.', style: TextStyle(color: context.tk.textMuted))
               else
                 for (final p in done.take(10))
                   ListTile(
                     contentPadding: EdgeInsets.zero,
-                    leading: const CircleAvatar(backgroundColor: AppColors.successSoft, child: Icon(Icons.check_rounded, color: AppColors.success)),
+                    leading: CircleAvatar(backgroundColor: context.tk.successSoft, child: Icon(Icons.check_rounded, color: context.tk.success)),
                     title: Text(jobs[p.jobId]?.title ?? 'Serviço', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w800)),
                     subtitle: Text(dateShort(p.releasedAt ?? p.createdAt)),
-                    trailing: Text('+ ${brl(p.netAmount)}', style: const TextStyle(fontWeight: FontWeight.w900, color: Color(0xFF1E7A45))),
+                    trailing: Text('+ ${brl(p.netAmount)}', style: TextStyle(fontWeight: FontWeight.w900, color: context.tk.successInk)),
                   ),
               const SizedBox(height: 10),
               Center(
@@ -181,7 +211,7 @@ class _Shortcut extends StatelessWidget {
         padding: const EdgeInsets.all(6),
         child: Column(
           children: [
-            CircleAvatar(radius: 28, backgroundColor: const Color(0xFFE5E9F1), child: Icon(icon, color: AppColors.providerAccent)),
+            CircleAvatar(radius: 28, backgroundColor: context.tk.surface, child: Icon(icon, color: context.tk.providerAccent)),
             const SizedBox(height: 6),
             Text(label, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
           ],
@@ -215,12 +245,12 @@ class _WeekBars extends StatelessWidget {
                     width: 12,
                     height: max == 0 ? 4 : (4 + 54 * (values[i] / max)),
                     decoration: BoxDecoration(
-                      color: values[i] > 0 ? const Color(0xFF2F5596) : const Color(0xFFE8ECF4),
+                      color: values[i] > 0 ? context.tk.providerAccent : context.tk.border,
                       borderRadius: BorderRadius.circular(6),
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Text(labels[i], style: const TextStyle(fontSize: 10, color: AppColors.muted)),
+                  Text(labels[i], style: TextStyle(fontSize: 10, color: context.tk.textMuted)),
                 ],
               ),
             ),

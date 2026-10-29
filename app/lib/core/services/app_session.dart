@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/user_profile.dart';
+import '../storage/local_prefs.dart';
 
 /// Estado de sessão (em memória) do modo de uso escolhido.
 ///
@@ -26,6 +28,11 @@ class AppSession {
   void choose(UserMode m) {
     forceSelection.value = false;
     mode.value = m;
+    // Lembra o último perfil usado (por conta) para abrir direto nele da próxima vez.
+    try {
+      final uid = Supabase.instance.client.auth.currentUser?.id;
+      if (uid != null) LocalPrefs.saveLastProfile(uid, m);
+    } catch (_) {/* Supabase ainda não iniciado (testes): sem cache */}
   }
 
   void switchMode() {

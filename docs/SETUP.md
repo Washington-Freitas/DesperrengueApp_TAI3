@@ -80,6 +80,8 @@ O app **não lê arquivos `.env`**. A configuração é feita por **`--dart-defi
 | `SUPABASE_URL` | `https://eisfkemgooqbgqljvwvs.supabase.co` | Endpoint do projeto |
 | `SUPABASE_PUBLISHABLE_KEY` | chave *publishable* do MVP (**pública por design**) | Acesso anônimo/autenticado limitado pela RLS |
 | `ABSTRACT_API_KEY` | vazio (validação extra de e-mail desativada) | Opcional |
+| `PIX_SANDBOX` | `true` | Mostra o cartão "Simular pagamento Pix agora" na recarga da carteira. Em produção use `false` (o servidor também bloqueia, via `app_settings.pix_sandbox`) |
+| `BETA_UPDATES` | `false` | Liga o aviso de atualização dentro do app; a CI do beta define `true` ([ADR-0017](adr/0017-distribuicao-beta-e-atualizacao-no-app.md)) |
 
 ```bash
 flutter run \

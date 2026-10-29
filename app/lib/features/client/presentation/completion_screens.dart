@@ -5,12 +5,12 @@ import '../../../core/services/job_service.dart';
 import '../../../core/services/media_service.dart';
 import '../../../core/services/provider_service.dart';
 import '../../../core/services/social_service.dart';
-import '../../../core/ui/app_theme.dart';
 import '../../../core/ui/image_picking.dart';
 import '../../../core/ui/widgets.dart';
 import '../../../core/utils/format.dart';
 import '../../shared/presentation/review_widgets.dart';
 import '../../shared/presentation/support_screens.dart';
+import '../../../core/ui/app_tokens.dart';
 
 /// "Serviço Concluído!" (protótipo 06): resumo + avaliar / relatar problema.
 class CompletionScreen extends StatefulWidget {
@@ -55,6 +55,7 @@ class _CompletionScreenState extends State<CompletionScreen> {
   }
 
   String _method(String? m) => switch (m) {
+        'wallet' => 'Saldo da carteira',
     'pix' => 'Pix (pelo app)',
     'credit_card' => 'Cartão de crédito (simulado)',
     'debit_card' => 'Cartão de débito (simulado)',
@@ -76,9 +77,9 @@ class _CompletionScreenState extends State<CompletionScreen> {
               children: [
                 const Center(child: CircleAvatar(radius: 46, backgroundColor: Color(0xFF22A559), child: Icon(Icons.check_rounded, color: Colors.white, size: 56))),
                 const SizedBox(height: 16),
-                const Text('Serviço Concluído!', textAlign: TextAlign.center, style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: AppColors.clientInk)),
+                Text('Serviço Concluído!', textAlign: TextAlign.center, style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: context.tk.brand)),
                 const SizedBox(height: 4),
-                const Text('Seu desperrengue foi resolvido!', textAlign: TextAlign.center, style: TextStyle(color: AppColors.muted)),
+                Text('Seu desperrengue foi resolvido!', textAlign: TextAlign.center, style: TextStyle(color: context.tk.textMuted)),
                 const SizedBox(height: 18),
                 if (_provider != null)
                   AppCard(
@@ -91,9 +92,9 @@ class _CompletionScreenState extends State<CompletionScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(_provider!.fullName, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 17)),
-                              Text(_provider!.title, style: const TextStyle(color: AppColors.muted)),
+                              Text(_provider!.title, style: TextStyle(color: context.tk.textMuted)),
                               const SizedBox(height: 4),
-                              const StatusChip('✔ Verificado', color: AppColors.info),
+                              StatusChip('✔ Verificado', color: context.tk.info),
                             ],
                           ),
                         ),
@@ -104,8 +105,8 @@ class _CompletionScreenState extends State<CompletionScreen> {
                 const Text('Resumo do serviço', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 17)),
                 const SizedBox(height: 8),
                 AppCard(
-                  color: const Color(0xFFE6EEF8),
-                  borderColor: const Color(0xFFD0DDF0),
+                  color: context.tk.infoSoft,
+                  borderColor: context.tk.border,
                   child: Column(
                     children: [
                       Row(children: [
@@ -120,7 +121,7 @@ class _CompletionScreenState extends State<CompletionScreen> {
                       const SizedBox(height: 8),
                       Align(
                         alignment: Alignment.centerLeft,
-                        child: Text('Forma de pagamento: ${_method(_payment?.method)}', style: const TextStyle(color: AppColors.muted, fontSize: 13)),
+                        child: Text('Forma de pagamento: ${_method(_payment?.method)}', style: TextStyle(color: context.tk.textMuted, fontSize: 13)),
                       ),
                     ],
                   ),
@@ -221,19 +222,19 @@ class _RatingScreenState extends State<RatingScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Center(child: Container(width: 44, height: 4, decoration: BoxDecoration(color: AppColors.line, borderRadius: BorderRadius.circular(2)))),
+              Center(child: Container(width: 44, height: 4, decoration: BoxDecoration(color: context.tk.border, borderRadius: BorderRadius.circular(2)))),
               const SizedBox(height: 16),
-              const Row(
+              Row(
                 children: [
-                  CircleAvatar(radius: 22, backgroundColor: AppColors.successSoft, child: Icon(Icons.shield_rounded, color: AppColors.successInk)),
+                  CircleAvatar(radius: 22, backgroundColor: context.tk.successSoft, child: Icon(Icons.shield_rounded, color: context.tk.successInk)),
                   SizedBox(width: 12),
                   Expanded(child: Text('Sentimos muito por isso!', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900))),
                 ],
               ),
               const SizedBox(height: 10),
-              const Text(
+              Text(
                 'Antes de publicar, podemos resolver isso agora. Você prefere acionar a Garantia Desperrengue ou falar com o nosso suporte?',
-                style: TextStyle(height: 1.45, color: AppColors.muted),
+                style: TextStyle(height: 1.45, color: context.tk.textMuted),
               ),
               const SizedBox(height: 18),
               PrimaryButton(label: 'Acionar a garantia do serviço', icon: Icons.verified_user_rounded, onPressed: () => Navigator.pop(ctx, 'guarantee')),
@@ -314,9 +315,9 @@ class _RatingScreenState extends State<RatingScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(p.fullName, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 17)),
-                      Text('${p.title} • ${widget.job.category}', style: const TextStyle(color: AppColors.muted)),
+                      Text('${p.title} • ${widget.job.category}', style: TextStyle(color: context.tk.textMuted)),
                       const SizedBox(height: 2),
-                      Text('OS ${widget.job.code}', style: const TextStyle(color: AppColors.muted, fontSize: 12, fontWeight: FontWeight.w700)),
+                      Text('OS ${widget.job.code}', style: TextStyle(color: context.tk.textMuted, fontSize: 12, fontWeight: FontWeight.w700)),
                     ],
                   ),
                 ),
@@ -324,7 +325,7 @@ class _RatingScreenState extends State<RatingScreen> {
             ),
           ),
           const SizedBox(height: 18),
-          Text('Como foi o serviço do ${firstName(p.fullName)}?', textAlign: TextAlign.center, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: AppColors.clientInk)),
+          Text('Como foi o serviço do ${firstName(p.fullName)}?', textAlign: TextAlign.center, style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: context.tk.brand)),
           const SizedBox(height: 12),
           Center(
             child: RatingStars(
@@ -340,9 +341,9 @@ class _RatingScreenState extends State<RatingScreen> {
             duration: const Duration(milliseconds: 250),
             alignment: Alignment.topCenter,
             child: _rating == 0
-                ? const Padding(
+                ? Padding(
                     padding: EdgeInsets.only(top: 10),
-                    child: Text('Toque numa estrela para começar', textAlign: TextAlign.center, style: TextStyle(color: AppColors.muted)),
+                    child: Text('Toque numa estrela para começar', textAlign: TextAlign.center, style: TextStyle(color: context.tk.textMuted)),
                   )
                 : Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -350,7 +351,7 @@ class _RatingScreenState extends State<RatingScreen> {
                       const SizedBox(height: 22),
                       Text(ReviewTags.title(_rating), style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
                       const SizedBox(height: 4),
-                      const Text('Escolha quantas quiser (opcional).', style: TextStyle(color: AppColors.muted, fontSize: 12.5)),
+                      Text('Escolha quantas quiser (opcional).', style: TextStyle(color: context.tk.textMuted, fontSize: 12.5)),
                       const SizedBox(height: 10),
                       ReviewTagPills(
                         options: options,
@@ -373,14 +374,14 @@ class _RatingScreenState extends State<RatingScreen> {
           const SizedBox(height: 6),
           const Text('Foto do serviço (opcional)', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 17)),
           const SizedBox(height: 4),
-          const Text('Mostre o resultado: fotos reais de "antes e depois" ajudam outros clientes e ganham o selo "Serviço verificado".',
-              style: TextStyle(color: AppColors.muted, fontSize: 12.5, height: 1.35)),
+          Text('Mostre o resultado: fotos reais de "antes e depois" ajudam outros clientes e ganham o selo "Serviço verificado".',
+              style: TextStyle(color: context.tk.textMuted, fontSize: 12.5, height: 1.35)),
           const SizedBox(height: 10),
           MediaPickerRow(images: _photos, onAdd: _addPhoto, onRemove: (i) => setState(() => _photos.removeAt(i)), max: 3),
           const SizedBox(height: 22),
           Text('Quer deixar uma gorjeta para o ${firstName(p.fullName)}?', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 17)),
           const SizedBox(height: 4),
-          const Text('Simulada no MVP: registramos a intenção, sem cobrança.', style: TextStyle(color: AppColors.muted, fontSize: 12.5)),
+          Text('Simulada no MVP: registramos a intenção, sem cobrança.', style: TextStyle(color: context.tk.textMuted, fontSize: 12.5)),
           const SizedBox(height: 10),
           Wrap(
             spacing: 8,
@@ -390,8 +391,8 @@ class _RatingScreenState extends State<RatingScreen> {
                   label: Text(v == 0 ? 'Não' : brl(v).replaceAll(',00', '')),
                   selected: _tip == v,
                   showCheckmark: false,
-                  selectedColor: AppColors.clientAccent,
-                  labelStyle: TextStyle(color: _tip == v ? Colors.white : AppColors.ink, fontWeight: FontWeight.w700),
+                  selectedColor: context.tk.clientAccent,
+                  labelStyle: TextStyle(color: _tip == v ? Colors.white : context.tk.text, fontWeight: FontWeight.w700),
                   onSelected: (_) => setState(() => _tip = v),
                 ),
             ],

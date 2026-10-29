@@ -117,6 +117,7 @@
 **(5) Ações:** radio → seleciona; Adicionar cartão → form de cartão (não mostrado); Confirmar → processa → Agendamento confirmado / Acompanhamento (14.jpg? ver ordem); Pix → tela QR (não mostrada).
 **(6) Dados:** total, saldo da carteira (R$ 50,00 < 150 → saldo insuficiente/parcial?), cartões salvos, métodos.
 **Inconsistência:** "Passo 2 de 2" (aqui) vs wizard anterior "3 de 3".
+**Atualização (implementado):** o checkout passou a pagar com o **saldo da carteira** (`WalletPayCard`); cartões e Pix "na hora" deste protótipo foram substituídos pela recarga Pix (ver "Telas implementadas sem protótipo", ao final).
 
 ---
 
@@ -247,6 +248,37 @@
 **(4) Cores:** dropzone `#F3F4F6` borda tracejada `#9CA3AF` raio ~12; asterisco `#E53935`; CTA `#FF6A00` pílula.
 **(5) Ações:** radios → motivo; dropzone → câmera/galeria; CTA → cria disputa (escrow retido/congelado) → confirmação/protocolo (não mostrado).
 **(6) Dados:** pedido (id), motivo (enum), mídias, descrição obrigatória; status do repasse retido.
+
+---
+
+# Telas implementadas sem protótipo — Carteira do Cliente (ADR-0018)
+
+Telas criadas direto no código (sem JPG de referência). Convenções: tokens semânticos (`context.tk.*`), tema claro/escuro e modo privacidade (👁️).
+
+## Forma de pagamento — cartão "Pagar com saldo da carteira" (`WalletPayCard`)
+**(1) Propósito:** mostrar, antes de confirmar, se o saldo cobre o serviço.
+**(2) Textos:** `Pagar com saldo da carteira` · `Saldo disponível` · `Este serviço` · `Saldo depois` (com saldo) ou `Faltam R$ X` em destaque (sem saldo) · microcopy de garantia.
+**(5) Ações:** `Confirmar e pagar` → se faltar saldo abre o *bottom sheet* abaixo; se houver, paga (método `wallet`) e segue ao acompanhamento.
+**(6) Dados:** `walletProvider` (stream), valor do pedido em centavos.
+
+## Saldo insuficiente (`InsufficientFundsBottomSheet`)
+**(1) Propósito:** transformar o bloqueio em recarga com um toque.
+**(2) Textos:** `Saldo insuficiente para este serviço` · colunas `Valor do serviço | Seu saldo | Faltam` (Faltam em vermelho) · microcopy "No Desperrengue, o valor fica protegido em garantia e só é liberado ao profissional quando você aprovar o serviço com seu código." · CTA azul `Adicionar R$ X agora ➔` · `Agora não`.
+**(5) Ações:** CTA abre `AdicionarSaldoScreen` com o **déficit pré-preenchido**; ao concluir a recarga, retorna ao pedido e o pagamento prossegue.
+**(6) Dados:** `FundsCheck` (necessário, disponível, faltam); o servidor também valida (`INSUFFICIENT_FUNDS`).
+
+## Minha carteira (`CarteiraClienteScreen`)
+**(1) Propósito:** saldo, custódia e histórico.
+**(2) Textos:** `Minha carteira` · `Saldo disponível` · pílula `Valor protegido em custódia: R$ X` (ⓘ explica) · `+ Adicionar saldo` · `Extrato`.
+**(3) Layout:** cartão em degradê azul com 👁️ no canto; extrato em lista com ícone circular por tipo (🎁 crédito inicial, 🟢 Pix, 🔒 retido, ✅ liberado, 🔄 estorno), valor verde (entrada) ou neutro (saída).
+**(5) Ações:** 👁️ alterna a privacidade (global); pílula abre a explicação da custódia; botão abre a recarga.
+**(6) Dados:** `walletProvider` e `statementProvider` (Realtime).
+
+## Adicionar saldo (`AdicionarSaldoScreen`)
+**(1) Propósito:** recarregar por Pix.
+**(2) Textos:** `Quanto você quer adicionar?` · valor grande com máscara BRL · `Mínimo R$ 5,00 · máximo R$ 5.000,00` · atalhos `+ R$ 50/100/200/500` · `Gerar Pix de Recarga`; após gerar: QR, `Copiar código Pix (copia e cola)`, `Aguardando confirmação automática do banco...`, cartão **"Modo de teste ativo"** com `Simular pagamento Pix agora`, `Alterar valor`; sucesso: `Pix confirmado!` · `R$ X adicionados ao seu saldo.` · `Continuar`.
+**(5) Ações:** atalhos somam ao valor (com vibração); gerar é idempotente (anti toque duplo); o cartão de teste só aparece com `PIX_SANDBOX=true` e o servidor o valida.
+**(6) Dados:** `PixTopup` (stream por id), `create_topup`, `simulate_pix_payment`.
 
 ---
 

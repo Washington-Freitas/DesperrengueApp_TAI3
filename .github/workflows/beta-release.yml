@@ -1,0 +1,120 @@
+name: Beta (APK automático)
+
+# A cada push em main (ou na branch de trabalho) compila um APK assinado com a chave BETA e
+# publica no release ROLANTE `beta-latest`:
+#   * link fixo de download: https://github.com/<repo>/releases/download/beta-latest/desperrengue.apk
+#   * o app dos testadores consulta esse release e mostra "Nova versão disponível".
+# Só roda se `flutter analyze` e `flutter test` passarem (build quebrado nunca chega aos testadores).
+# Veja docs/TESTE_COM_AMIGOS.md e docs/adr/0017-distribuicao-beta-e-atualizacao-no-app.md.
+
+on:
+  push:
+    branches: [main, fix/foundation-hardening]
+    paths-ignore:
+      - "**/*.md"
+      - "docs/**"
+      - "supabase/**"
+      - "scripts/**"
+      - "LICENSE.md"
+  workflow_dispatch: # botão "Run workflow" na aba Actions
+
+concurrency:
+  group: beta-release
+  cancel-in-progress: false
+
+permissions:
+  contents: write # criar/atualizar o release
+
+jobs:
+  beta:
+    name: Compilar e publicar o APK beta
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Dependências
+        working-directory: app
+        run: flutter pub get
+
+      - name: Análise estática (portão de qualidade)
+        working-directory: app
+        run: flutter analyze
+
+      - name: Testes (portão de qualidade)
+        working-directory: app
+        run: flutter test
+
+      - name: Preparar a assinatura BETA
+        env:
+          KS_B64: ${{ secrets.BETA_KEYSTORE_B64 }}
+          KS_PASS: ${{ secrets.BETA_KEYSTORE_PASSWORD }}
+        run: |
+          if [ -z "$KS_B64" ] || [ -z "$KS_PASS" ]; then
+            echo "::error::Faltam os segredos BETA_KEYSTORE_B64 / BETA_KEYSTORE_PASSWORD (Settings > Secrets and variables > Actions)."
+            exit 1
+          fi
+          KS_PASS=$(printf '%s' "$KS_PASS" | tr -d '\r\n')
+          printf '%s' "$KS_B64" | tr -d '\r\n ' | base64 -d > "$RUNNER_TEMP/beta.jks"
+          printf 'storePassword=%s\nkeyPassword=%s\nkeyAlias=beta\nstoreFile=%s\n' "$KS_PASS" "$KS_PASS" "$RUNNER_TEMP/beta.jks" > app/android/key.properties
+
+      - name: Compilar o APK (versionCode = minutos desde 1970, sempre crescente)
+        working-directory: app
+        run: |
+          NAME=$(grep -m1 '^version:' pubspec.yaml | sed -E 's/^version:[[:space:]]*([0-9]+\.[0-9]+\.[0-9]+).*/\1/')
+          BUILD=$(( $(date +%s) / 60 ))
+          echo "NAME=$NAME" >> "$GITHUB_ENV"
+          echo "BUILD=$BUILD" >> "$GITHUB_ENV"
+          # O download do NDK pelo Gradle falha de vez em quando ("unknown archive"): tenta ate 3x.
+          SDK="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          ok=0
+          for i in 1 2 3; do
+            if flutter build apk --release --build-name "$NAME" --build-number "$BUILD" --dart-define=BETA_UPDATES=true; then ok=1; break; fi
+            echo "::warning::Tentativa $i falhou. Limpando downloads parciais do NDK e tentando de novo."
+            for d in "$SDK"/ndk/*; do [ -f "$d/source.properties" ] || rm -rf "$d"; done
+            sleep 15
+          done
+          [ "$ok" = 1 ]
+          cp build/app/outputs/flutter-apk/app-release.apk "$RUNNER_TEMP/desperrengue.apk"
+
+      - name: Publicar no release rolante "beta-latest"
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          SHA256=$(sha256sum "$RUNNER_TEMP/desperrengue.apk" | cut -d' ' -f1)
+          MSG=$(git log -1 --format=%s)
+          {
+            echo "build: $BUILD"
+            echo "version: $NAME"
+            echo "## Novidades"
+            printf '%s\n' "$MSG"
+            echo ""
+            echo "---"
+            echo "Instalador **beta** para testadores (Android). Não é a versão final."
+            echo ""
+            echo "**Instalar:** toque em \`desperrengue.apk\` abaixo (Assets) e siga o guia em docs/TESTE_COM_AMIGOS.md."
+            echo "**Atualizar:** quem já instalou recebe o aviso dentro do app (alguns minutos após cada push)."
+            echo ""
+            echo "Commit: ${GITHUB_SHA::7} · SHA-256: \`$SHA256\`"
+          } > "$RUNNER_TEMP/notes.md"
+          gh release delete beta-latest --cleanup-tag --yes || true
+          gh release create beta-latest "$RUNNER_TEMP/desperrengue.apk" \
+            --target "$GITHUB_SHA" --prerelease \
+            --title "Desperrengue beta (build $BUILD)" \
+            --notes-file "$RUNNER_TEMP/notes.md"
+          echo "### APK beta publicado" >> "$GITHUB_STEP_SUMMARY"
+          echo "Build **$BUILD** (versão $NAME) · [baixar](https://github.com/$GITHUB_REPOSITORY/releases/download/beta-latest/desperrengue.apk)" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Limpar a chave do runner
+        if: always()
+        run: rm -f "$RUNNER_TEMP/beta.jks" app/android/key.properties

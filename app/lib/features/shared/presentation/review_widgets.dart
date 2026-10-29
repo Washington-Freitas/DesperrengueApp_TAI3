@@ -1,19 +1,19 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/models/marketplace_models.dart';
-import '../../../core/ui/app_theme.dart';
 import '../../../core/ui/media_widgets.dart';
 import '../../../core/ui/widgets.dart';
 import '../../../core/utils/format.dart';
+import '../../../core/ui/app_tokens.dart';
 
 /// Ícone e cor de cada selo automático.
-({IconData icon, Color color}) badgeStyle(ProviderBadge b) => switch (b) {
-      ProviderBadge.superPro => (icon: Icons.local_fire_department_rounded, color: AppColors.clientAccent),
-      ProviderBadge.organizacao => (icon: Icons.cleaning_services_rounded, color: AppColors.security),
-      ProviderBadge.pontual => (icon: Icons.alarm_on_rounded, color: AppColors.info),
-      ProviderBadge.mestre => (icon: Icons.workspace_premium_rounded, color: AppColors.providerAccent),
-      ProviderBadge.honesto => (icon: Icons.handshake_rounded, color: AppColors.success),
-      ProviderBadge.confiavel => (icon: Icons.verified_user_rounded, color: AppColors.info),
+({IconData icon, Color color}) badgeStyle(BuildContext context, ProviderBadge b) => switch (b) {
+      ProviderBadge.superPro => (icon: Icons.local_fire_department_rounded, color: context.tk.clientAccent),
+      ProviderBadge.organizacao => (icon: Icons.cleaning_services_rounded, color: context.tk.security),
+      ProviderBadge.pontual => (icon: Icons.alarm_on_rounded, color: context.tk.info),
+      ProviderBadge.mestre => (icon: Icons.workspace_premium_rounded, color: context.tk.providerAccent),
+      ProviderBadge.honesto => (icon: Icons.handshake_rounded, color: context.tk.success),
+      ProviderBadge.confiavel => (icon: Icons.verified_user_rounded, color: context.tk.info),
     };
 
 /// Selos conquistados (códigos vindos do banco), em chips.
@@ -32,7 +32,7 @@ class BadgeChips extends StatelessWidget {
       spacing: 6,
       runSpacing: 6,
       children: [
-        for (final b in shown) StatusChip(b.label, color: badgeStyle(b).color, icon: badgeStyle(b).icon),
+        for (final b in shown) StatusChip(b.label, color: badgeStyle(context, b).color, icon: badgeStyle(context, b).icon),
       ],
     );
   }
@@ -55,13 +55,13 @@ class BadgeWall extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (earned.isEmpty)
-          const Text('Nenhum selo ainda. Eles são concedidos automaticamente pelas avaliações dos clientes.',
-              style: TextStyle(color: AppColors.muted, height: 1.4))
+          Text('Nenhum selo ainda. Eles são concedidos automaticamente pelas avaliações dos clientes.',
+              style: TextStyle(color: context.tk.textMuted, height: 1.4))
         else
           Wrap(
             spacing: 10,
             runSpacing: 10,
-            children: [for (final c in earned) _tile(ProviderBadge.parse(c), true, 1)],
+            children: [for (final c in earned) _tile(context, ProviderBadge.parse(c), true, 1)],
           ),
         if (showProgress && locked.isNotEmpty) ...[
           const SizedBox(height: 14),
@@ -70,16 +70,16 @@ class BadgeWall extends StatelessWidget {
           for (final b in locked)
             Padding(
               padding: const EdgeInsets.only(bottom: 10),
-              child: _progress(b),
+              child: _progress(context, b),
             ),
         ],
       ],
     );
   }
 
-  Widget _tile(ProviderBadge? b, bool on, double progress) {
+  Widget _tile(BuildContext context, ProviderBadge? b, bool on, double progress) {
     if (b == null) return const SizedBox.shrink();
-    final s = badgeStyle(b);
+    final s = badgeStyle(context, b);
     return Container(
       width: 150,
       padding: const EdgeInsets.all(12),
@@ -99,13 +99,13 @@ class BadgeWall extends StatelessWidget {
     );
   }
 
-  Widget _progress(ProviderBadge b) {
-    final s = badgeStyle(b);
+  Widget _progress(BuildContext context, ProviderBadge b) {
+    final s = badgeStyle(context, b);
     final count = b.tag == null ? 0 : (tagCounts[b.tag] ?? 0);
     final frac = b.tag == null ? 0.0 : (count / b.goal).clamp(0.0, 1.0);
     return Row(
       children: [
-        CircleAvatar(radius: 18, backgroundColor: AppColors.surface, child: Icon(s.icon, size: 18, color: AppColors.muted)),
+        CircleAvatar(radius: 18, backgroundColor: context.tk.surface, child: Icon(s.icon, size: 18, color: context.tk.textMuted)),
         const SizedBox(width: 10),
         Expanded(
           child: Column(
@@ -113,15 +113,15 @@ class BadgeWall extends StatelessWidget {
             children: [
               Text(b.label, style: const TextStyle(fontWeight: FontWeight.w800)),
               const SizedBox(height: 2),
-              Text(b.description, style: const TextStyle(color: AppColors.muted, fontSize: 12)),
+              Text(b.description, style: TextStyle(color: context.tk.textMuted, fontSize: 12)),
               if (b.tag != null) ...[
                 const SizedBox(height: 4),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(6),
-                  child: LinearProgressIndicator(value: frac, minHeight: 6, color: s.color, backgroundColor: AppColors.line),
+                  child: LinearProgressIndicator(value: frac, minHeight: 6, color: s.color, backgroundColor: context.tk.border),
                 ),
                 const SizedBox(height: 2),
-                Text('$count/${b.goal}', style: const TextStyle(fontSize: 11, color: AppColors.muted)),
+                Text('$count/${b.goal}', style: TextStyle(fontSize: 11, color: context.tk.textMuted)),
               ],
             ],
           ),
@@ -142,7 +142,7 @@ class ReviewTagPills extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tone = negative ? AppColors.danger : AppColors.clientAccent;
+    final tone = negative ? context.tk.danger : context.tk.clientAccent;
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 220),
       child: Wrap(
@@ -160,7 +160,7 @@ class ReviewTagPills extends StatelessWidget {
               backgroundColor: tone.withValues(alpha: 0.07),
               side: BorderSide(color: tone.withValues(alpha: selected.contains(t) ? 1 : 0.35)),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
-              labelStyle: TextStyle(color: selected.contains(t) ? Colors.white : AppColors.ink, fontWeight: FontWeight.w700),
+              labelStyle: TextStyle(color: selected.contains(t) ? Colors.white : context.tk.text, fontWeight: FontWeight.w700),
               onSelected: (v) => onToggle(t, v),
             ),
         ],
@@ -208,7 +208,7 @@ class ReviewPhotoStrip extends StatelessWidget {
               bottom: 4,
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                decoration: BoxDecoration(color: AppColors.success, borderRadius: BorderRadius.circular(8)),
+                decoration: BoxDecoration(color: context.tk.success, borderRadius: BorderRadius.circular(8)),
                 child: const Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -248,7 +248,7 @@ class ReviewCard extends StatelessWidget {
               UserAvatar(name: r.reviewerName, radius: 20),
               const SizedBox(width: 10),
               Expanded(child: Text(r.reviewerName, style: const TextStyle(fontWeight: FontWeight.w800))),
-              Text(relativeTime(r.createdAt), style: const TextStyle(color: AppColors.muted, fontSize: 12)),
+              Text(relativeTime(r.createdAt), style: TextStyle(color: context.tk.textMuted, fontSize: 12)),
             ],
           ),
           const SizedBox(height: 6),
@@ -260,7 +260,7 @@ class ReviewCard extends StatelessWidget {
               runSpacing: 6,
               children: [
                 for (final t in r.tags)
-                  StatusChip(t, color: ReviewTags.isNegative(r.rating) ? AppColors.danger : AppColors.clientAccent),
+                  StatusChip(t, color: ReviewTags.isNegative(r.rating) ? context.tk.danger : context.tk.clientAccent),
               ],
             ),
           ],
@@ -278,16 +278,16 @@ class ReviewCard extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: AppColors.surface,
+                color: context.tk.surface,
                 borderRadius: BorderRadius.circular(12),
-                border: const Border(left: BorderSide(color: AppColors.providerAccent, width: 3)),
+                border: Border(left: BorderSide(color: context.tk.providerAccent, width: 3)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Row(
+                  Row(
                     children: [
-                      Icon(Icons.reply_rounded, size: 16, color: AppColors.providerAccent),
+                      Icon(Icons.reply_rounded, size: 16, color: context.tk.providerAccent),
                       SizedBox(width: 6),
                       Text('Resposta do profissional', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12.5)),
                     ],

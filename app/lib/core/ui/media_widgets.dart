@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/marketplace_models.dart';
 import '../services/media_service.dart';
 import 'app_theme.dart';
+import './app_tokens.dart';
 
 IconData categoryIcon(String name) {
   switch (name) {
@@ -33,7 +34,7 @@ Color categoryColor(String name) {
   for (final c in kCategories) {
     if (c.name == name) return Color(c.colorValue);
   }
-  return AppColors.surface;
+  return AppColors.surface; // pastel fixo (sem context): ícones sobre ele usam AppColors.ink
 }
 
 /// Imagem de bucket PRIVADO (URL assinada, com cache).
@@ -66,18 +67,18 @@ class SignedImage extends StatelessWidget {
             final url = snap.data;
             if (url == null) {
               return Container(
-                color: AppColors.surface,
+                color: context.tk.surface,
                 child: Center(
                   child: snap.connectionState == ConnectionState.done
-                      ? const Icon(Icons.broken_image_outlined, color: AppColors.muted)
+                      ? Icon(Icons.broken_image_outlined, color: context.tk.textMuted)
                       : const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
                 ),
               );
             }
             return Image.network(url, fit: fit, width: width, height: height,
                 errorBuilder: (_, _, _) => Container(
-                      color: AppColors.surface,
-                      child: const Icon(Icons.broken_image_outlined, color: AppColors.muted),
+                      color: context.tk.surface,
+                      child: Icon(Icons.broken_image_outlined, color: context.tk.textMuted),
                     ));
           },
         ),
@@ -109,8 +110,8 @@ class PublicImage extends StatelessWidget {
         errorBuilder: (_, _, _) => Container(
           width: width,
           height: height,
-          color: AppColors.surface,
-          child: const Icon(Icons.broken_image_outlined, color: AppColors.muted),
+          color: context.tk.surface,
+          child: Icon(Icons.broken_image_outlined, color: context.tk.textMuted),
         ),
       ),
     );

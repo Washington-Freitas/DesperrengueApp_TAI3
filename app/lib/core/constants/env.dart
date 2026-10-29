@@ -19,6 +19,16 @@ class Env {
     defaultValue: 'sb_publishable_7uVAOXQaut46NP0gTTv3dA_qh5CE0e7',
   );
 
+  /// Atualização automática do beta (APK fora da Play Store). A CI compila com
+  /// `--dart-define=BETA_UPDATES=true`; builds locais e da Play Store ficam desligados.
+  static const bool betaUpdates = bool.fromEnvironment('BETA_UPDATES');
+
+  /// Repositório GitHub onde a CI publica o release rolante `beta-latest`.
+  static const String updateRepo = String.fromEnvironment(
+    'UPDATE_REPO',
+    defaultValue: 'Washington-Freitas/DesperrengueApp_TAI3',
+  );
+
   /// Opcional. Vazia = a validação extra de e-mail (Abstract API) é desativada
   /// e a verificação fica a cargo do código OTP enviado pelo Supabase.
   static const String abstractApiKey = String.fromEnvironment(

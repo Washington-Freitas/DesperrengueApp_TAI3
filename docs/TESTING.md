@@ -26,8 +26,8 @@
 flowchart TB
     E2E["E2E / integração em dispositivo<br/>poucos · lentos · alto valor<br/>(integration_test — planejado)"]
     WID["Widget tests<br/>telas críticas com serviços falsos<br/>(planejado)"]
-    DBT["Testes de banco (SQL transacional)<br/>114 asserções · RLS, RPCs, estados"]
-    UNIT["Unitários (Dart puro)<br/>55 testes · rápidos · determinísticos"]
+    DBT["Testes de banco (SQL transacional)<br/>162 asserções · RLS, RPCs, estados, LGPD"]
+    UNIT["Unitários (Dart puro)<br/>143 testes · rápidos · determinísticos"]
     UNIT --> DBT --> WID --> E2E
 ```
 
@@ -49,14 +49,17 @@ flowchart TB
 
 | Indicador | Valor |
 | :-- | :-- |
-| Testes unitários | **55**, todos aprovados |
-| Asserções SQL | **114** (`security_smoke` 62 + `review_system_smoke` 30 + `achievements_smoke` 22), `FALHAS = 0` |
+| Testes unitários e de *widget* | **143**, todos aprovados (inclui o atualizador beta e a **carteira**: `Money`, máscara BRL, trava de saldo, bottom sheet, recarga Pix, extrato e tema escuro) |
+| Asserções SQL | **214** (`security_smoke` 62 + `review_system_smoke` 30 + `achievements_smoke` 22 + `offboarding_showcase_smoke` 48 + `client_wallet_smoke` 52), `FALHAS = 0` |
+| Teste do Dossiê PDF (Node) | **7**, aprovados (`node scripts/test-dossie.mjs`) |
+| E2E da Edge Function `excluir-conta` | 401 sem sessão · 400 sem confirmação · 409 com saldo · 200 após o saque (e-mail aceito pelo Resend, dados e conta removidos) — executado manualmente com usuário de teste |
+| E2E da Edge Function `pix-webhook` | 401 sem segredo · 400 payload inválido · 409 valor divergente · *pending* ignorado · 200 pago (saldo creditado **uma vez**) · reenvio idempotente (`already: true`) — executado manualmente |
 | `flutter analyze` | **0** avisos |
-| Cobertura de linhas nos 7 arquivos exercitados por testes (`user_profile`, `marketplace_models`, `format`, `address_data`, `address_lookup`, `draft_store`, `achievements`) | **364 / 465 = 78,3 %** |
-| Tamanho do código do app | 61 arquivos Dart, ≈ 15,6 mil linhas |
-| Cobertura **global** | **baixa** (telas e serviços ainda não têm testes automatizados); meta e plano em §8 |
+| Cobertura de linhas nos 28 arquivos com teste dedicado (≥ 40 % de linhas cobertas: modelos, tokens/tema, boot, sessão segura, `LocalPrefs`, `PrivacyMode`, seleção de perfil, tela de Pix, carteira do cliente, splash…) | **1475 / 1704 = 86,6 %** |
+| Tamanho do código do app | 86 arquivos Dart, ≈ 21,0 mil linhas |
+| Cobertura **global** (todas as linhas dos 83 arquivos que o `lcov` enxerga) | **19,5 % (1620 / 8291)** — subiu, mas ainda é baixa: a maioria das telas e serviços não tem teste; meta e plano em §8 |
 
-> Declaramos explicitamente que a cobertura global é **inferior** à da camada testada: o número de 78,3 % **não** representa o projeto inteiro (apenas 7 dos 61 arquivos têm teste).
+> Declaramos explicitamente que a cobertura global é **inferior** à da camada testada: o número de 86,6 % **não** representa o projeto inteiro (apenas 28 dos 86 arquivos têm teste dedicado; o global é 19,5 %).
 
 ---
 
@@ -71,6 +74,7 @@ Cobertos hoje (`app/test/user_profile_test.dart`):
 * **`destinationFor`**: usuário novo, dois modos, "trocar de modo", cadastro de cliente, máquina de estados do KYC, cliente que vira profissional, admin.
 * Formatação: `brl`, `parseBrl`, `clock`, `relativeTime`, `distanceKm`.
 * Modelos de domínio: `Job.fromMap`, `JobStatus`, `ProviderCard`.
+* **Carteira** (`app/test/wallet_test.dart`, 22 testes): `Money` e máscara BRL, `FundsCheck`/`InsufficientFunds`, `WalletPayCard`, *bottom sheet* de saldo insuficiente, recarga Pix (QR, estados, anti toque duplo), extrato e tema escuro — com `FakeWalletService`, sem rede.
 
 **Convenções**
 
@@ -112,6 +116,8 @@ Cobertos hoje (`app/test/user_profile_test.dart`):
 supabase db query --linked -f supabase/tests/security_smoke.sql
 supabase db query --linked -f supabase/tests/review_system_smoke.sql   # avaliações cegas, Bayes, selos e respostas (30 asserções)
 supabase db query --linked -f supabase/tests/achievements_smoke.sql      # conquistas: desbloqueio, escala e privacidade (22 asserções)
+supabase db query --linked -f supabase/tests/offboarding_showcase_smoke.sql  # saque Pix, exclusão LGPD e vitrine LIFO (48 asserções)
+supabase db query --linked -f supabase/tests/client_wallet_smoke.sql         # carteira do cliente: ledger, custódia, trava de saldo, Pix e webhook (52 asserções)
 # A saída é uma "falha" proposital contendo o relatório; o critério é "FALHAS=0".
 ```
 
@@ -277,11 +283,16 @@ cd app
 flutter analyze
 flutter test --coverage        # relatório em app/coverage/lcov.info
 
-# Banco (relatório de 114 asserções)
+# Banco (relatório de 162 asserções)
 cd ..
 supabase db query --linked -f supabase/tests/security_smoke.sql
 supabase db query --linked -f supabase/tests/review_system_smoke.sql   # avaliações cegas, Bayes, selos e respostas (30 asserções)
 supabase db query --linked -f supabase/tests/achievements_smoke.sql      # conquistas: desbloqueio, escala e privacidade (22 asserções)
+supabase db query --linked -f supabase/tests/offboarding_showcase_smoke.sql  # saque Pix, exclusão LGPD e vitrine LIFO (48 asserções)
+supabase db query --linked -f supabase/tests/client_wallet_smoke.sql         # carteira do cliente: ledger, custódia, trava de saldo, Pix e webhook (52 asserções)
+
+# Dossiê de Despedida (PDF) — roda em Node, sem Deno
+node scripts/test-dossie.mjs
 ```
 
-**Integração contínua:** o *workflow* [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) executa `flutter analyze` e `flutter test --coverage` a cada PR e *push* em `main`, publicando o `lcov.info` como artefato. O teste de banco **não** roda no CI (exige credenciais de projeto); ele é executado localmente e a **saída é anexada ao PR** de banco — a automação com *staging* está no [ROADMAP](ROADMAP.md) (E-08).
+**Integração contínua:** o *workflow* [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) executa `flutter analyze` e `flutter test --coverage` (e `node scripts/test-dossie.mjs`) a cada PR e *push* em `main`, publicando o `lcov.info` como artefato. O teste de banco **não** roda no CI (exige credenciais de projeto); ele é executado localmente e a **saída é anexada ao PR** de banco — a automação com *staging* está no [ROADMAP](ROADMAP.md) (E-08).

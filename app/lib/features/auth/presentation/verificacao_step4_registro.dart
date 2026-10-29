@@ -5,7 +5,8 @@ import 'package:flutter/material.dart';
 import '../../../core/services/draft_store.dart';
 
 // Importação ATIVADA para que a navegação funcione
-import 'verificacao_step5_finalizacao.dart';
+import 'verificacao_step5_finalizacao.dart';
+import '../../../core/ui/light_island.dart';
 
 class VerificacaoStep4RegistroScreen extends StatefulWidget {
   final File frenteDocumento;
@@ -111,7 +112,7 @@ class _VerificacaoStep4RegistroScreenState
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return LightIsland(child: Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
@@ -324,6 +325,6 @@ class _VerificacaoStep4RegistroScreenState
           ),
         ),
       ),
-    );
+    ));
   }
 }

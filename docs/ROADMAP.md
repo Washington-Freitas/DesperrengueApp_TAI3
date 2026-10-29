@@ -34,6 +34,8 @@ Priorização por **MoSCoW** (**M**ust, **S**hould, **C**ould, **W**on't-now) de
 | **E-04 Governança de engenharia** | README, ARCHITECTURE, ADRs, SETUP, CONTRIBUTING, TESTING, SECURITY, templates, CI (análise, testes e verificação de links dos `.md`); documentação organizada em `docs/` e `.github/` | ✅ |
 | **E-05 Validação em dispositivos reais** | Roteiro de testes em Android físico e iOS; OAuth Google; OTP; deep link; câmera | 🟡 |
 | **E-05b Reputação e conquistas (Fase 1)** | Avaliação guiada por pílulas e **cega** (48 h), ranking Bayesiano, selos e **conquistas escalonadas** (9 categorias × 10 níveis), visíveis no perfil público ([ADR-0011](adr/0011-avaliacoes-cegas-bayes-e-selos.md), [ADR-0012](adr/0012-conquistas-do-profissional.md)) | ✅ |
+| **E-05d Carteira do cliente** | Ledger de partida dobrada, custódia por gatilhos, trava de saldo e recarga Pix sandbox com webhook e simulação de 1 toque ([ADR-0018](adr/0018-carteira-ledger-e-pix-sandbox.md)) | ✅ |
+| **E-05c Conta, tema e vitrine** | Exclusão de conta LGPD com trava financeira e Dossiê PDF; saque Pix (simulado); tema Automático/Claro/Escuro com tokens; splash coreografada; sessão no Keystore; último perfil; **vitrine LIFO** e Case de Sucesso (vídeo, fotos, relatório) | ✅ |
 
 ## 4. Curto prazo — até a entrega do MVP (nov – 1ª semana/dez 2026)
 
@@ -58,6 +60,8 @@ Priorização por **MoSCoW** (**M**ust, **S**hould, **C**ould, **W**on't-now) de
 | **E-15 Comunicação** | Notificações *push* (FCM/APNs) com *deep link* para o pedido; chamada de voz (VoIP) intermediada; mídia no chat | S |
 | **E-16 Navegação declarativa e estado** | Migração para `go_router`; adoção de Riverpod para estado compartilhado ([ADR-0009](adr/0009-roteamento-por-funcao-pura-e-authgate.md)) | S |
 | **E-17 Reputação e gamificação (Fases 2–3)** | ✅ *Já entregue:* avaliações cegas, pílulas, ranking Bayesiano, selos e **conquistas** (90 troféus). 🧪 *Próximo:* multiplicador de SLA/*streak* (β = 0,12), Índice de Confiança, Saúde do Lar, Medidor de Diagnóstico; depois, em teste A/B: ligas de *take-rate* regressivo, Cofre da Casa e indicação — **com guarda-corpo de ≤ 10 % da margem** (ver [GAMIFICACAO](GAMIFICACAO.md)) | S |
+| **E-18 Tema escuro completo** | Migrar Login, Cadastro e KYC aos tokens e remover `LightIsland`; revisar pastéis de categoria | S | Nenhuma tela com cor literal de superfície/texto |
+| **E-19 Pix real (PSP)** | Trocar o Pix **sandbox** da carteira ([ADR-0018](adr/0018-carteira-ledger-e-pix-sandbox.md)) e o saque simulado por um provedor (Mercado Pago/Asaas/Efí): adaptador que traduz o webhook do PSP para o payload normalizado de `pix-webhook`; remover o crédito inicial e desligar `pix_sandbox`; titularidade pelo CPF do KYC; conciliação | L | Recarga e saque reais com comprovante e conciliação diária |
 | **E-18 Agenda do profissional** | Disponibilidade por dia/horário, bloqueios, sincronização com calendário | S |
 | **E-19 Qualidade de serviço** | Garantia de serviço, reabertura, reagendamento/cancelamento com regras de multa e estorno | C |
 
