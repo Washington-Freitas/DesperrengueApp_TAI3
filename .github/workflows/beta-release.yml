@@ -67,7 +67,7 @@ jobs:
           echo "$KS_B64" | base64 -d > "$RUNNER_TEMP/beta.jks"
           printf 'storePassword=%s\nkeyPassword=%s\nkeyAlias=beta\nstoreFile=%s\n' "$KS_PASS" "$KS_PASS" "$RUNNER_TEMP/beta.jks" > app/android/key.properties
 
-      - name: Compilar o APK (versionCode = minutos desde 1970: sempre crescente)
+      - name: Compilar o APK (versionCode = minutos desde 1970, sempre crescente)
         working-directory: app
         run: |
           NAME=$(grep -m1 '^version:' pubspec.yaml | sed -E 's/^version:[[:space:]]*([0-9]+\.[0-9]+\.[0-9]+).*/\1/')
