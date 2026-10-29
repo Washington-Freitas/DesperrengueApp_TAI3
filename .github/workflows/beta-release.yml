@@ -75,7 +75,16 @@ jobs:
           BUILD=$(( $(date +%s) / 60 ))
           echo "NAME=$NAME" >> "$GITHUB_ENV"
           echo "BUILD=$BUILD" >> "$GITHUB_ENV"
-          flutter build apk --release --build-name "$NAME" --build-number "$BUILD" --dart-define=BETA_UPDATES=true
+          # O download do NDK pelo Gradle falha de vez em quando ("unknown archive"): tenta ate 3x.
+          SDK="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          ok=0
+          for i in 1 2 3; do
+            if flutter build apk --release --build-name "$NAME" --build-number "$BUILD" --dart-define=BETA_UPDATES=true; then ok=1; break; fi
+            echo "::warning::Tentativa $i falhou. Limpando downloads parciais do NDK e tentando de novo."
+            for d in "$SDK"/ndk/*; do [ -f "$d/source.properties" ] || rm -rf "$d"; done
+            sleep 15
+          done
+          [ "$ok" = 1 ]
           cp build/app/outputs/flutter-apk/app-release.apk "$RUNNER_TEMP/desperrengue.apk"
 
       - name: Publicar no release rolante "beta-latest"
