@@ -165,7 +165,7 @@ class _ProviderDashboardTabState extends State<ProviderDashboardTab> {
         builder: (context, snap) {
           final d = snap.data;
           final online = _online ?? (d?.row?['accepting_jobs'] != false);
-          final active = d?.jobs.where((j) => j.status == JobStatus.inProgress || j.status == JobStatus.awaitingApproval || j.status == JobStatus.awaitingPayment || j.status == JobStatus.disputed).toList() ?? const <Job>[];
+          final active = d?.jobs.where((j) => j.status == JobStatus.scheduled || j.status == JobStatus.inProgress || j.status == JobStatus.awaitingApproval || j.status == JobStatus.awaitingPayment || j.status == JobStatus.disputed).toList() ?? const <Job>[];
           return ListView(
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),

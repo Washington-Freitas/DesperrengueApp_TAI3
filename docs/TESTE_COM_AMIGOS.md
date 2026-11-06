@@ -20,8 +20,8 @@ flowchart LR
 | Peça | O que faz |
 | :-- | :-- |
 | **APK** | O "instalador" do app Android (como um `.exe` no Windows). |
-| **Link fixo** | <https://github.com/Washington-Freitas/DesperrengueApp_TAI3/releases/download/beta-latest/desperrengue.apk> — **sempre** entrega a versão mais nova. Mande este link uma vez e pronto. |
-| **Página do release** | <https://github.com/Washington-Freitas/DesperrengueApp_TAI3/releases/tag/beta-latest> — mostra a versão, o que mudou e o botão de baixar. |
+| **Link fixo** | <https://github.com/WagnerxOliveira/DesperrengueApp_TAI3/releases/download/beta-latest/desperrengue.apk> — **sempre** entrega a versão mais nova. Mande este link uma vez e pronto. |
+| **Página do release** | <https://github.com/WagnerxOliveira/DesperrengueApp_TAI3/releases/tag/beta-latest> — mostra a versão, o que mudou e o botão de baixar. |
 | **Aviso no app** | Um cartão no topo: *"Nova versão disponível — Atualizar"*. Aparece poucos minutos depois da publicação e quando o app volta ao primeiro plano. |
 | **Tempo real dos dados** | Todos usam o mesmo banco (Supabase): pedidos, orçamentos, chat e notificações aparecem na hora nos dois celulares. |
 
@@ -72,6 +72,14 @@ Você **não perde** conta nem dados. Se tocar em **Depois**, o aviso volta na p
 * O app ainda é **teste**: o dinheiro é **fictício**. Cada cliente começa com **R$ 1.200,00 de crédito de teste** e recarrega por um **Pix de teste** (botão **"Simular pagamento Pix agora"**); os saques também são simulados. **Não pague o QR Code com o seu banco.**
 * **Não use documentos reais** na verificação (KYC): tire foto de qualquer papel/cartão fictício.
 * Os dados vão para o banco de teste do projeto. Evite informações sensíveis reais.
+
+### 2.6 Roteiro: serviço agendado (cliente + profissional)
+
+1. O cliente paga um serviço **com data futura**. Nos dois celulares aparece **"Serviço agendado"**: não há cronômetro nem "Finalizar serviço".
+2. **Cliente:** o app já tenta achar a casa sozinho, mas confirme: toque no cartão do endereço → **Confirmar o local exato no mapa** (toque sobre a casa ou use o GPS) → **Confirmar este local**. Sem o ponto confirmado, o profissional não consegue iniciar sem a simulação de teste.
+3. **Profissional:** veja o **checklist** (⏳ data e horário · 📍 distância até o cliente). O botão **Iniciar serviço** fica cinza. Toque no endereço para abrir o **mapa com a rota**, a distância e o tempo; há atalhos para **Google Maps** e **Waze**.
+4. **Teste sem esperar nem viajar:** toque em **"🧪 Simular dia/hora e GPS no local"** → o serviço vira *em andamento* e o cronômetro começa.
+5. **Chat:** as mensagens aparecem em ordem (a mais antiga em cima), sem duplicar; depois de concluído, a conversa fica **arquivada** (só leitura) no histórico do cliente e no dossiê do profissional.
 
 ### 2.5 Roteiro de 5 minutos: carteira e pagamento (cliente)
 

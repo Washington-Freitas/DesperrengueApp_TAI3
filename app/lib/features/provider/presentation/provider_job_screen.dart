@@ -11,6 +11,7 @@ import '../../../core/ui/media_widgets.dart';
 import '../../../core/ui/widgets.dart';
 import '../../../core/utils/format.dart';
 import 'provider_execution_screens.dart';
+import '../../shared/presentation/scheduled_service_screen.dart';
 import '../../../core/ui/app_tokens.dart';
 
 /// Acompanha UM serviço do ponto de vista do profissional e mostra a tela
@@ -46,6 +47,8 @@ class ProviderJobScreen extends StatelessWidget {
             return _OpenJobRouter(job: job, jobs: jobs);
           case JobStatus.awaitingPayment:
             return mine ? _WaitingPaymentScreen(job: job) : const _UnavailableScreen('Este pedido foi contratado com outro profissional.');
+          case JobStatus.scheduled:
+            return mine ? ScheduledServiceScreen(job: job, asProvider: true) : const _UnavailableScreen('Este pedido foi contratado com outro profissional.');
           case JobStatus.inProgress:
           case JobStatus.awaitingApproval:
             return mine ? ServiceExecutionScreen(job: job) : const _UnavailableScreen('Este pedido foi contratado com outro profissional.');

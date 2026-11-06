@@ -8,6 +8,8 @@ import '../../../core/services/social_service.dart';
 import '../../../core/ui/image_picking.dart';
 import '../../../core/ui/widgets.dart';
 import '../../../core/utils/format.dart';
+import '../../shared/presentation/achievement_widgets.dart';
+import '../../shared/presentation/review_thanks_view.dart';
 import '../../shared/presentation/review_widgets.dart';
 import '../../shared/presentation/support_screens.dart';
 import '../../../core/ui/app_tokens.dart';
@@ -73,9 +75,9 @@ class _CompletionScreenState extends State<CompletionScreen> {
       body: !_loaded
           ? const LoadingView()
           : ListView(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+              padding: EdgeInsets.fromLTRB(20, 8, 20, 24 + MediaQuery.viewPaddingOf(context).bottom),
               children: [
-                const Center(child: CircleAvatar(radius: 46, backgroundColor: Color(0xFF22A559), child: Icon(Icons.check_rounded, color: Colors.white, size: 56))),
+                const Center(child: SuccessHeroHalo(icon: Icons.check_rounded, size: 112)),
                 const SizedBox(height: 16),
                 Text('Serviço Concluído!', textAlign: TextAlign.center, style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: context.tk.brand)),
                 const SizedBox(height: 4),
@@ -417,19 +419,10 @@ class RatingSuccessScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(automaticallyImplyLeading: false, title: const BrandLogo()),
-      body: EmptyView(
-        icon: revealed ? Icons.favorite_rounded : Icons.hourglass_top_rounded,
-        title: 'Avaliação enviada!',
-        subtitle: revealed
-            ? 'As duas avaliações já foram reveladas. Obrigado! Seu feedback ajuda a manter a comunidade da Desperrengue segura e com qualidade.'
-            : 'Obrigado! Por ser uma avaliação cega, ela será revelada quando a outra parte também avaliar, ou em até 48 horas.',
-      ),
-      bottomNavigationBar: BottomBar(
-        child: PrimaryButton(
-          label: 'Voltar para o início',
-          icon: Icons.home_rounded,
-          onPressed: () => Navigator.of(context).popUntil((r) => r.isFirst),
-        ),
+      body: ReviewThanksView(
+        isProvider: false,
+        revealed: revealed,
+        onBack: () => Navigator.of(context).popUntil((r) => r.isFirst),
       ),
     );
   }

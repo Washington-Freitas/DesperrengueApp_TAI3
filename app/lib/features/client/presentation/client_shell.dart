@@ -5,6 +5,7 @@ import '../../../core/models/user_profile.dart';
 import '../../../core/services/job_service.dart';
 import '../../../core/ui/media_widgets.dart';
 import '../../../core/ui/widgets.dart';
+import '../../../core/utils/format.dart';
 import '../../shared/presentation/notifications_screen.dart';
 import 'client_job_screen.dart';
 import 'client_orders_tab.dart';
@@ -248,6 +249,7 @@ class _ActiveJobCard extends StatelessWidget {
         job.quoteCount > 0 ? 'Ver orçamentos →' : 'Acompanhar →',
       ),
       JobStatus.awaitingPayment => ('Orçamento aceito', 'Conclua o pagamento para reservar o profissional.', 'Pagar →'),
+      JobStatus.scheduled => ('Serviço agendado', job.scheduledFor != null ? '"${job.title}" — ${dateShort(job.scheduledFor!)}.' : '"${job.title}" está agendado.', 'Ver detalhes →'),
       JobStatus.inProgress => ('Serviço em andamento', '"${job.title}" está sendo atendido.', 'Acompanhar →'),
       JobStatus.awaitingApproval => ('Aguardando sua aprovação', 'Confirme o serviço "${job.title}".', 'Abrir →'),
       JobStatus.disputed => ('Em mediação', 'Nossa equipe está analisando "${job.title}".', 'Ver caso →'),

@@ -49,7 +49,7 @@ begin
    where id in (p1, p2, p3, p4);
   update public.profiles set is_provider = true where id = x;
   delete from public.provider_profiles;
-  insert into public.provider_profiles (user_id, specialties, visit_fee) select id, array['Elétrica'], 30
+  insert into public.provider_profiles (user_id, specialties, visit_fee) select id, array['Elétrica', 'Pintura'], 30
     from public.profiles where id in (p1, p2, p3, p4);
 
   -- ===== SEGURANÇA DE PERFIL =====
@@ -165,13 +165,15 @@ begin
   exception when others then perform pg_temp.t(true, '25 método de pagamento inválido rejeitado'); end;
   perform public.pay_job_mock(j, 'pix');
   select status, payment_status into r from public.jobs where id = j;
-  perform pg_temp.t(r.status = 'in_progress' and r.payment_status = 'escrow', '26 pagamento -> in_progress + escrow');
+  perform pg_temp.t(r.status = 'scheduled' and r.payment_status = 'escrow', '26 pagamento -> scheduled (agendado) + escrow');
   select pin into v_pin from public.job_secrets where job_id = j;
   perform pg_temp.t(v_pin ~ '^[0-9]{4}$', '27 cliente enxerga o PIN de 4 dígitos');
   begin
     update public.jobs set status = 'completed', payment_status = 'released' where id = j;
     perform pg_temp.t(false, '28 cliente alterou status/pagamento direto PERMITIDO');
   exception when others then perform pg_temp.t(true, '28 status/pagamento só por RPC'); end;
+  -- Mensagem do cliente enviada com o serviço ativo (após a conclusão a conversa é arquivada; ver item 45).
+  insert into public.messages (job_id, provider_id, body) values (j, p1, 'Oi!');
   reset role;
 
   perform pg_temp.login(p1);
@@ -179,6 +181,10 @@ begin
   perform pg_temp.t(n = 0, '29 profissional NÃO consegue ler o PIN');
   select count(*) into n from public.job_addresses where job_id = j;
   perform pg_temp.t(n = 1, '30 profissional contratado enxerga o endereço completo');
+  -- O serviço agendado só vira in_progress via start_job (aqui: modo homologação, sem janela/geofence).
+  perform public.start_job(j, null, null, null, true);
+  select status into st from public.jobs where id = j;
+  perform pg_temp.t(st = 'in_progress', '31 profissional inicia o serviço agendado (start_job simulado) -> in_progress');
   reset role;
 
   perform pg_temp.login(p2);
@@ -229,8 +235,10 @@ begin
 
   -- ===== CHAT =====
   perform pg_temp.login(c);
-  insert into public.messages (job_id, provider_id, body) values (j, p1, 'Oi!');
-  perform pg_temp.t(true, '45 cliente envia mensagem');
+  begin
+    insert into public.messages (job_id, provider_id, body) values (j, p1, 'Tarde demais');
+    perform pg_temp.t(false, '45 mensagem após a conclusão PERMITIDA');
+  exception when others then perform pg_temp.t(sqlerrm like 'CHAT_ARCHIVED%', '45 conversa de serviço concluído é arquivada (CHAT_ARCHIVED)'); end;
   reset role;
   perform pg_temp.login(p3);
   begin

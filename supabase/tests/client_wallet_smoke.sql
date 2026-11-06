@@ -103,6 +103,7 @@ begin
   -- ===== RELEASE (Passo B) =====
   select pin into v_pin from public.job_secrets where job_id = j1;
   perform pg_temp.login(p1);
+  perform public.start_job(j1, null, null, null, true);   -- agendado -> in_progress (homologação) antes de concluir
   r := public.complete_job_with_pin(j1, v_pin);
   reset role;
   perform pg_temp.t(r = 'ok', '12 profissional conclui com o PIN');
@@ -222,11 +223,13 @@ begin
   perform pg_temp.t(public._ledger_post('topup', 'dup:1', 'x', null, '[{"account":"a","cents":10},{"account":"b","cents":-10}]'::jsonb) is null, '43 mesma idempotency_key não lança duas vezes');
 
   -- saque do profissional entra no ledger
+  select coalesce(sum(cents), 0) into bal from public.ledger_lines where account = 'external:pix'
+    and txn_id in (select id from public.ledger_txns where kind = 'withdrawal');   -- linha de base (o banco real pode ter saques)
   perform pg_temp.login(p1);
   perform public.request_withdrawal(50, 'cpf', '12345678901', true);
   reset role;
   perform pg_temp.t((select coalesce(sum(cents), 0) from public.ledger_lines where account = 'external:pix'
-                      and txn_id in (select id from public.ledger_txns where kind = 'withdrawal')) = 5000, '44 saque Pix do profissional vira lançamento no ledger');
+                      and txn_id in (select id from public.ledger_txns where kind = 'withdrawal')) - bal = 5000, '44 saque Pix do profissional vira lançamento no ledger');
 
   -- pagamento antigo/direto 'released' não mexe na carteira
   select available_cents into bal from public.client_wallets where client_id = c;

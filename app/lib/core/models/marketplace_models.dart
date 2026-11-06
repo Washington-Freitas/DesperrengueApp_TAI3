@@ -2,6 +2,8 @@
 /// Puros: só dependem de `dart:core`, portanto testáveis sem Supabase.
 library;
 
+import '../utils/tag_normalizer.dart';
+
 DateTime? _dt(dynamic v) => v == null ? null : DateTime.parse(v as String).toLocal();
 double? _num(dynamic v) => (v as num?)?.toDouble();
 
@@ -28,6 +30,10 @@ const List<ServiceCategory> kCategories = [
 enum JobStatus {
   open('open'),
   awaitingPayment('awaiting_payment'),
+
+  /// Pago e com data marcada: o serviço AINDA NÃO começou (sem cronômetro, sem "Finalizar").
+  /// Só vira [inProgress] pela RPC `start_job` (janela de horário + geofence), nunca no cliente.
+  scheduled('scheduled'),
   inProgress('in_progress'),
   awaitingApproval('awaiting_approval'),
   completed('completed'),
@@ -41,7 +47,7 @@ enum JobStatus {
       JobStatus.values.firstWhere((s) => s.wire == v, orElse: () => open);
 
   bool get isActive =>
-      this == open || this == awaitingPayment || this == inProgress || this == awaitingApproval || this == disputed;
+      this == open || this == awaitingPayment || this == scheduled || this == inProgress || this == awaitingApproval || this == disputed;
 }
 
 class Job {
@@ -67,6 +73,8 @@ class Job {
     this.latitude,
     this.longitude,
     this.paidAt,
+    this.startedAt,
+    this.startSimulated = false,
     this.finishedAt,
     this.approvedAt,
   });
@@ -92,8 +100,16 @@ class Job {
   final double? latitude;
   final double? longitude;
   final DateTime? paidAt;
+
+  /// Início REAL do serviço (gravado pelo servidor em `start_job` ou no aceite da emergência).
+  final DateTime? startedAt;
+
+  /// `true` se o início foi feito pelo modo de homologação (sem janela/geofence).
+  final bool startSimulated;
   final DateTime? finishedAt;
   final DateTime? approvedAt;
+
+  bool get isScheduledPhase => status == JobStatus.scheduled;
 
   bool get isEmergency => urgency == 'emergency';
   bool get isDirect => visibility == 'direct';
@@ -124,6 +140,8 @@ class Job {
     latitude: _num(m['latitude']),
     longitude: _num(m['longitude']),
     paidAt: _dt(m['paid_at']),
+    startedAt: _dt(m['started_at']),
+    startSimulated: (m['start_simulated'] as bool?) ?? false,
     finishedAt: _dt(m['finished_at']),
     approvedAt: _dt(m['approved_at']),
   );
@@ -213,7 +231,8 @@ class ProviderCard {
     this.distanceKm,
     this.badges = const [],
     this.rankScore,
-  });
+    Set<String>? specialtySlugs,
+  }) : _slugs = specialtySlugs;
 
   final String id;
   final String fullName;
@@ -238,6 +257,15 @@ class ProviderCard {
   /// Nota de ranqueamento (Média Bayesiana) calculada no banco. Ordena a busca.
   final double? rankScore;
 
+  final Set<String>? _slugs;
+
+  /// Tags do profissional já normalizadas (slugs canônicos): `contains` é O(1).
+  /// Pré-computado em [ProviderCard.fromMap]; cartões criados à mão calculam sob demanda.
+  Set<String> get slugs => _slugs ?? canonicalTagSet(specialties);
+
+  /// `true` se o profissional atende a [category] (qualquer uma de suas N tags).
+  bool matchesCategory(String? category) => slugSetMatchesCategory(slugs, category);
+
   String get title => (headline != null && headline!.trim().isNotEmpty)
       ? headline!
       : (specialties.isNotEmpty ? specialties.first : 'Profissional');
@@ -253,28 +281,32 @@ class ProviderCard {
     specialties: specialties, hourlyRate: hourlyRate, visitFee: visitFee, ratingAvg: ratingAvg,
     ratingCount: ratingCount, jobsDone: jobsDone, accepting: accepting,
     latitude: latitude, longitude: longitude, distanceKm: km,
-    badges: badges, rankScore: rankScore,
+    badges: badges, rankScore: rankScore, specialtySlugs: slugs,
   );
 
-  factory ProviderCard.fromMap(Map<String, dynamic> m) => ProviderCard(
-    id: m['id'] as String,
-    fullName: (m['full_name'] as String?) ?? 'Profissional',
-    avatarUrl: m['avatar_url'] as String?,
-    bio: m['bio'] as String?,
-    city: m['address_city'] as String?,
-    headline: m['headline'] as String?,
-    specialties: ((m['specialties'] as List?) ?? const []).cast<String>(),
-    hourlyRate: _num(m['hourly_rate']),
-    visitFee: _num(m['visit_fee']) ?? 30,
-    ratingAvg: _num(m['rating_avg']) ?? 0,
-    ratingCount: (m['rating_count'] as num?)?.toInt() ?? 0,
-    jobsDone: (m['jobs_done'] as num?)?.toInt() ?? 0,
-    accepting: m['accepting_jobs'] != false,
-    latitude: _num(m['latitude']),
-    longitude: _num(m['longitude']),
-    badges: ((m['badges'] as List?) ?? const []).cast<String>(),
-    rankScore: _num(m['rank_score']),
-  );
+  factory ProviderCard.fromMap(Map<String, dynamic> m) {
+    final specialties = ((m['specialties'] as List?) ?? const []).cast<String>();
+    return ProviderCard(
+      id: m['id'] as String,
+      fullName: (m['full_name'] as String?) ?? 'Profissional',
+      avatarUrl: m['avatar_url'] as String?,
+      bio: m['bio'] as String?,
+      city: m['address_city'] as String?,
+      headline: m['headline'] as String?,
+      specialties: specialties,
+      hourlyRate: _num(m['hourly_rate']),
+      visitFee: _num(m['visit_fee']) ?? 30,
+      ratingAvg: _num(m['rating_avg']) ?? 0,
+      ratingCount: (m['rating_count'] as num?)?.toInt() ?? 0,
+      jobsDone: (m['jobs_done'] as num?)?.toInt() ?? 0,
+      accepting: m['accepting_jobs'] != false,
+      latitude: _num(m['latitude']),
+      longitude: _num(m['longitude']),
+      badges: ((m['badges'] as List?) ?? const []).cast<String>(),
+      rankScore: _num(m['rank_score']),
+      specialtySlugs: canonicalTagSet(specialties),
+    );
+  }
 }
 
 class ChatMessage {
@@ -287,12 +319,17 @@ class ChatMessage {
     required this.body,
     required this.createdAt,
     this.meta,
+    this.clientMessageId,
   });
 
   final int id;
   final String jobId;
   final String providerId;
   final String senderId;
+
+  /// UUID gerado no app a cada envio (idempotência: o banco tem UNIQUE por
+  /// job+remetente+este id, então reenvio/eco nunca duplica o balão).
+  final String? clientMessageId;
   final String kind;
   final String body;
   final DateTime createdAt;
@@ -307,6 +344,7 @@ class ChatMessage {
     body: (m['body'] as String?) ?? '',
     createdAt: _dt(m['created_at']) ?? DateTime.now(),
     meta: (m['meta'] as Map?)?.cast<String, dynamic>(),
+    clientMessageId: m['client_message_id'] as String?,
   );
 }
 

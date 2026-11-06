@@ -3,14 +3,19 @@ import 'package:flutter/material.dart';
 import '../../../core/models/marketplace_models.dart';
 import '../../../core/models/user_profile.dart';
 import '../../../core/services/provider_service.dart';
+import '../../../core/ui/app_tokens.dart';
+import '../../../core/ui/media_widgets.dart';
 import '../../../core/ui/widgets.dart';
 import '../../../core/utils/format.dart';
+import '../../../core/utils/provider_filters.dart';
 import '../../shared/presentation/review_widgets.dart';
 import 'provider_public_profile_screen.dart';
 import 'request_wizard.dart';
-import '../../../core/ui/app_tokens.dart';
 
 enum _Sort { nearest, rating, fee }
+
+/// Carrega os profissionais (produção: [ProviderService.search]). Injetável nos testes.
+typedef ProviderSearchLoader = Future<List<ProviderCard>> Function({String? category, String? query, required bool includeSelf});
 
 /// Busca e listagem de profissionais (protótipo 2.jpg).
 class ProviderSearchScreen extends StatefulWidget {
@@ -22,6 +27,7 @@ class ProviderSearchScreen extends StatefulWidget {
     this.onPick,
     this.pickTitle,
     this.excludeIds = const {},
+    @visibleForTesting this.loader,
   });
 
   /// Modo "escolher": ao tocar num profissional, devolve a escolha (sem abrir o perfil).
@@ -31,16 +37,19 @@ class ProviderSearchScreen extends StatefulWidget {
   final String? category;
   final String? query;
   final UserProfile profile;
+  final ProviderSearchLoader? loader;
 
   @override
   State<ProviderSearchScreen> createState() => _ProviderSearchScreenState();
 }
 
 class _ProviderSearchScreenState extends State<ProviderSearchScreen> {
-  final _service = ProviderService();
+  // Preguiçoso: só toca o Supabase quando não há `loader` injetado (testes).
+  late final _service = ProviderService();
   late final TextEditingController _controller = TextEditingController(text: widget.query ?? widget.category ?? '');
   late Future<List<ProviderCard>> _future;
   _Sort _sort = _Sort.nearest;
+  SearchRadius _radius = SearchRadius.region;
   String? _category;
 
   @override
@@ -56,27 +65,23 @@ class _ProviderSearchScreenState extends State<ProviderSearchScreen> {
     super.dispose();
   }
 
-  Future<List<ProviderCard>> _load() async {
-    // Busca por categoria quando o termo coincide com uma categoria.
-    final term = _controller.text.trim();
-    final matched = kCategories.where((c) => c.name.toLowerCase() == term.toLowerCase()).toList();
-    final category = matched.isNotEmpty ? matched.first.name : _category;
-    final text = matched.isNotEmpty ? null : term;
-    var list = await _service.search(category: category, query: text, includeSelf: widget.onPick == null);
-    list = list.where((p) => !widget.excludeIds.contains(p.id)).toList();
+  /// Categoria efetiva da busca: a escolhida na tela anterior ou a que o termo digitado
+  /// representa (inclusive por sinônimo: "eletricista" → Elétrica).
+  String? get _effectiveCategory => categoryNameForTerm(_controller.text) ?? _category;
 
-    final lat = widget.profile.latitude;
-    final lng = widget.profile.longitude;
-    if (lat != null && lng != null) {
-      list = [
-        for (final p in list)
-          p.withDistance(p.latitude != null && p.longitude != null ? distanceKm(lat, lng, p.latitude!, p.longitude!) : null),
-      ];
-    }
-    return list;
+  Future<List<ProviderCard>> _load() async {
+    final term = _controller.text.trim();
+    final matched = categoryNameForTerm(term);
+    final category = matched ?? _category;
+    final text = matched != null ? null : term;
+    final search = widget.loader ?? _service.search;
+    final list = await search(category: category, query: text, includeSelf: widget.onPick == null);
+    return list.where((p) => !widget.excludeIds.contains(p.id)).toList();
   }
 
-  void _refresh() => setState(() { _future = _load(); });
+  void _refresh() => setState(() {
+        _future = _load();
+      });
 
   List<ProviderCard> _sorted(List<ProviderCard> list) {
     final l = [...list];
@@ -94,9 +99,16 @@ class _ProviderSearchScreenState extends State<ProviderSearchScreen> {
     return l;
   }
 
+  void _openPublishWizard() {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => RequestWizardScreen(profile: widget.profile, category: _effectiveCategory)),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final title = _controller.text.trim().isEmpty ? 'Profissionais' : _controller.text.trim();
+    final category = _effectiveCategory;
     return Scaffold(
       appBar: AppBar(
         title: TextField(
@@ -129,11 +141,23 @@ class _ProviderSearchScreenState extends State<ProviderSearchScreen> {
         builder: (context, snap) {
           if (snap.connectionState != ConnectionState.done) return const LoadingView();
           if (snap.hasError) return ErrorView(message: 'Não foi possível buscar profissionais.', onRetry: _refresh);
-          final list = _sorted(snap.data ?? const []);
+          final all = snap.data ?? const <ProviderCard>[];
+          final list = _sorted(applyRadius(
+            all,
+            clientLat: widget.profile.latitude,
+            clientLng: widget.profile.longitude,
+            radius: _radius,
+            clientCity: widget.profile.addressCity,
+          ));
           return ListView(
             padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
             children: [
               Text('Resultados para "$title"', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
+              const SizedBox(height: 10),
+              _RadiusSelector(
+                selected: _radius,
+                onChanged: (r) => setState(() => _radius = r),
+              ),
               const SizedBox(height: 10),
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
@@ -155,15 +179,34 @@ class _ProviderSearchScreenState extends State<ProviderSearchScreen> {
               ),
               const SizedBox(height: 14),
               if (list.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 24),
-                  child: EmptyView(
-                    icon: Icons.person_search_rounded,
-                    title: 'Nenhum profissional encontrado',
-                    subtitle: 'Ainda estamos crescendo na sua região. Publique o pedido para receber orçamentos assim que alguém se cadastrar.',
-                  ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 24),
+                  child: _radius.isUnlimited
+                      ? const EmptyView(
+                          icon: Icons.person_search_rounded,
+                          title: 'Nenhum profissional encontrado',
+                          subtitle: 'Ainda estamos crescendo na sua região. Publique o pedido para receber orçamentos assim que alguém se cadastrar.',
+                        )
+                      : EmptyView(
+                          icon: Icons.radar_rounded,
+                          title: 'Ninguém em até ${_radius.label}',
+                          subtitle: all.isEmpty
+                              ? 'Ainda estamos crescendo na sua região. Publique o pedido para receber orçamentos assim que alguém se cadastrar.'
+                              : 'Há ${all.length} ${all.length == 1 ? 'profissional' : 'profissionais'} fora desse raio. Amplie a busca para ver todos.',
+                          action: all.isEmpty
+                              ? null
+                              : PrimaryButton(label: 'Ver toda a região', onPressed: () => setState(() => _radius = SearchRadius.region)),
+                        ),
                 )
-              else
+              else ...[
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: Text(
+                    '${list.length} ${list.length == 1 ? 'profissional' : 'profissionais'}'
+                    '${category != null ? ' de $category' : ''} • ${_radius.label}',
+                    style: TextStyle(color: context.tk.textMuted, fontWeight: FontWeight.w600),
+                  ),
+                ),
                 for (final p in list)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 12),
@@ -186,29 +229,118 @@ class _ProviderSearchScreenState extends State<ProviderSearchScreen> {
                         }
                         Navigator.of(context).push(
                           MaterialPageRoute(
-                            builder: (_) => ProviderPublicProfileScreen(provider: p, category: _category, profile: widget.profile),
+                            builder: (_) => ProviderPublicProfileScreen(provider: p, category: _effectiveCategory, profile: widget.profile),
                           ),
                         );
                       },
                     ),
                   ),
+              ],
               const SizedBox(height: 8),
-              InfoBanner(
-                'Prefere comparar preços? Publique o pedido e receba até 3 orçamentos de profissionais da região.',
-                tone: BannerTone.promo,
-                icon: Icons.groups_rounded,
-                title: 'Não quer escolher agora?',
-              ),
-              const SizedBox(height: 10),
-              SecondaryButton(
-                label: 'Publicar pedido para vários profissionais',
-                onPressed: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => RequestWizardScreen(profile: widget.profile, category: _category)),
-                ),
-              ),
+              if (widget.onPick == null) AreaPublishButton(categoryName: category, onPressed: _openPublishWizard),
             ],
           );
         },
+      ),
+    );
+  }
+}
+
+/// Seletor visual do raio de alcance (geofencing dinâmico).
+class _RadiusSelector extends StatelessWidget {
+  const _RadiusSelector({required this.selected, required this.onChanged});
+
+  final SearchRadius selected;
+  final ValueChanged<SearchRadius> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.radar_rounded, size: 18, color: context.tk.clientAccent),
+            const SizedBox(width: 6),
+            const Text('Raio de alcance', style: TextStyle(fontWeight: FontWeight.w800)),
+          ],
+        ),
+        const SizedBox(height: 6),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              for (final r in SearchRadius.values)
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: ChoiceChip(
+                    key: ValueKey('radius:${r.name}'),
+                    label: Text(r.label),
+                    selected: selected == r,
+                    showCheckmark: false,
+                    onSelected: (_) => onChanged(r),
+                    labelStyle: TextStyle(color: selected == r ? Colors.white : context.tk.text, fontWeight: FontWeight.w700),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Botão de publicação coletiva: o pedido vai SÓ para profissionais da especialidade escolhida.
+class AreaPublishButton extends StatelessWidget {
+  const AreaPublishButton({super.key, required this.categoryName, required this.onPressed});
+
+  final String? categoryName;
+  final VoidCallback onPressed;
+
+  static const title = 'Publicar pedido para profissionais da área';
+
+  String get subtitle => categoryName == null
+      ? 'Não quer escolher da lista? Envie seu pedido apenas para profissionais com a especialidade certa disponíveis.'
+      : 'Não quer escolher da lista? Envie seu pedido apenas para profissionais com a especialidade $categoryName disponíveis.';
+
+  @override
+  Widget build(BuildContext context) {
+    final tk = context.tk;
+    return Material(
+      color: tk.clientSoft,
+      borderRadius: BorderRadius.circular(18),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: onPressed,
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: tk.clientAccent.withValues(alpha: 0.55), width: 1.4),
+          ),
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 24,
+                backgroundColor: tk.clientAccent,
+                child: Icon(categoryName == null ? Icons.campaign_rounded : categoryIcon(categoryName!), color: Colors.white),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(title, style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
+                    const SizedBox(height: 4),
+                    Text(subtitle, style: TextStyle(color: tk.text, fontSize: 13, height: 1.35)),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 6),
+              Icon(Icons.arrow_forward_rounded, color: tk.clientAccent),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -224,6 +356,7 @@ class _ProviderTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = provider;
+    final cold = isNewOnPlatform(p);
     return AppCard(
       onTap: onTap,
       child: Row(
@@ -258,10 +391,11 @@ class _ProviderTile extends StatelessWidget {
                           text: ' ${p.ratingAvg.toStringAsFixed(1).replaceAll('.', ',')} (${p.ratingCount})',
                           style: const TextStyle(fontWeight: FontWeight.w700),
                         ),
-                      ]))
-                    else
-                      StatusChip('Novo na plataforma', color: context.tk.info),
-                    if (p.isSuper)
+                      ])),
+                    // Cold-start: 0 serviços concluídos NÃO esconde o profissional; ele ganha um selo.
+                    if (cold)
+                      StatusChip('Novo na plataforma • Verificado', color: context.tk.info, icon: Icons.verified_rounded)
+                    else if (p.isSuper)
                       StatusChip('Super Profissional', color: context.tk.clientAccent, icon: Icons.local_fire_department_rounded)
                     else
                       StatusChip('Perfil Verificado', color: context.tk.info, icon: Icons.verified_rounded),

@@ -1,19 +1,28 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../../core/models/marketplace_models.dart';
 import '../../../core/models/user_profile.dart';
+import '../../../core/services/geocoding_service.dart';
 import '../../../core/services/job_service.dart';
 import '../../../core/services/media_service.dart';
 import '../../../core/services/provider_service.dart';
+import '../../../core/services/speech_service.dart';
 import '../../../core/ui/image_picking.dart';
 import '../../../core/ui/media_widgets.dart';
 import '../../../core/ui/widgets.dart';
 import '../../../core/utils/format.dart';
+import '../../../core/utils/order_utils.dart';
+import '../../../core/utils/provider_filters.dart';
+import '../../shared/presentation/live_location_map.dart';
 import 'client_job_screen.dart';
 import 'address_form.dart';
 import 'client_setup_screen.dart';
 import '../../../core/models/wallet_models.dart';
 import 'payment_widgets.dart';
+import 'published_overlay.dart';
+import 'voice_dictation.dart';
 import '../../../core/ui/app_tokens.dart';
 
 /// Assistente de pedido (protótipos 6, 7, 8 e emergência b2/c).
@@ -21,18 +30,40 @@ import '../../../core/ui/app_tokens.dart';
 ///  * [provider] != null  -> pedido DIRETO a um profissional (convite 2h/5min).
 ///  * [provider] == null  -> pedido PÚBLICO: até 3 profissionais da região orçam.
 class RequestWizardScreen extends StatefulWidget {
-  const RequestWizardScreen({super.key, required this.profile, this.provider, this.category});
+  const RequestWizardScreen({
+    super.key,
+    required this.profile,
+    this.provider,
+    this.category,
+    @visibleForTesting this.speechEngine,
+    @visibleForTesting this.openRequestsCounter,
+    @visibleForTesting this.mapOpener,
+    @visibleForTesting this.debugStep = 0,
+    @visibleForTesting this.debugImages = const [],
+    @visibleForTesting this.debugDescription,
+  });
 
   final UserProfile profile;
   final ProviderCard? provider;
   final String? category;
+
+  /// Só para testes: abre direto numa etapa, já com fotos e descrição preenchidas.
+  final int debugStep;
+  final List<PickedImage> debugImages;
+  final String? debugDescription;
+
+  /// Injetáveis nos testes (padrão: microfone real / Supabase / mapa real).
+  final SpeechEngine? speechEngine;
+  final Future<int> Function()? openRequestsCounter;
+  final Future<void> Function(BuildContext context, String addressLine, String summary, double? lat, double? lng)? mapOpener;
 
   @override
   State<RequestWizardScreen> createState() => _RequestWizardScreenState();
 }
 
 class _RequestWizardScreenState extends State<RequestWizardScreen> {
-  final _jobs = JobService();
+  // Preguiçoso: só toca o Supabase quando realmente usado (envio do pedido).
+  late final _jobs = JobService();
   final _description = TextEditingController();
   final _images = <PickedImage>[];
 
@@ -45,6 +76,9 @@ class _RequestWizardScreenState extends State<RequestWizardScreen> {
   bool _submitting = false;
   List<DateTime> _busy = const [];
 
+  /// Pedidos que o cliente já tem em aberto (para o contador 1º/2º/3º da revisão).
+  int? _openRequests;
+
   static const _hours = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17];
 
   ProviderCard? get _provider => widget.provider;
@@ -52,12 +86,27 @@ class _RequestWizardScreenState extends State<RequestWizardScreen> {
   @override
   void initState() {
     super.initState();
-    _category = widget.category ?? _provider?.specialties.firstOrNull;
+    _step = widget.debugStep;
+    _images.addAll(widget.debugImages);
+    if (widget.debugDescription != null) _description.text = widget.debugDescription!;
+    final firstSpecialty = _provider?.specialties.firstOrNull;
+    // Normaliza o rótulo livre do profissional ("hidráulica") para a categoria do app ("Encanador").
+    _category = widget.category ?? (firstSpecialty == null ? null : (categoryNameForTerm(firstSpecialty) ?? firstSpecialty));
     final p = _provider;
     if (p != null) {
       ProviderService().busySlots(p.id).then((b) {
         if (mounted) setState(() => _busy = b);
       }).catchError((_) {});
+    }
+    _loadOpenRequests();
+  }
+
+  Future<void> _loadOpenRequests() async {
+    try {
+      final n = await (widget.openRequestsCounter ?? _jobs.countMyOpenRequests)();
+      if (mounted) setState(() => _openRequests = n);
+    } catch (_) {
+      // Sem a contagem a revisão continua funcionando (só omite a posição do pedido).
     }
   }
 
@@ -151,11 +200,18 @@ class _RequestWizardScreenState extends State<RequestWizardScreen> {
         addressLine: _currentAddress,
         reference: _reference.isEmpty ? null : _reference,
         scheduledFor: _emergency ? null : _scheduled,
-        latitude: _override?.latitude ?? widget.profile.latitude,
-        longitude: _override?.longitude ?? widget.profile.longitude,
+        // Se o cliente escolheu OUTRO endereço, nunca herda as coordenadas do perfil (seriam de outra casa):
+        // sem coordenadas, o servidor geocodifica (Nominatim) e o cliente confirma o pino no mapa.
+        latitude: _override != null ? _override!.latitude : widget.profile.latitude,
+        longitude: _override != null ? _override!.longitude : widget.profile.longitude,
         photoPaths: paths,
       );
 
+      // Sem coordenadas no pedido: o app do cliente geocodifica (Nominatim) e registra o ponto em
+      // segundo plano. O serviço agendado pede depois a confirmação do pino no mapa.
+      if ((_override != null ? _override!.latitude : widget.profile.latitude) == null && _currentAddress.isNotEmpty) {
+        unawaited(registerGeocodedLocation(jobId: jobId, addressLine: _currentAddress, summary: _summary));
+      }
       if (_provider != null) {
         final n = await _jobs.invite(jobId, [_provider!.id]);
         if (n == 0) throw 'Não foi possível convidar o profissional. Tente outro.';
@@ -163,11 +219,23 @@ class _RequestWizardScreenState extends State<RequestWizardScreen> {
       if (_emergency) await _jobs.requestEmergency(jobId, 'wallet');
 
       if (!mounted) return;
-      // Volta à home e abre o acompanhamento por cima: o "voltar" do pedido
-      // leva à home (e não de volta ao perfil do profissional ou ao wizard).
       final nav = Navigator.of(context);
       nav.popUntil((r) => r.isFirst);
-      nav.push(MaterialPageRoute(builder: (_) => ClientJobScreen(jobId: jobId!)));
+      if (_emergency) {
+        // Emergência: o radar de 5 minutos precisa ficar na frente (resposta imediata do profissional).
+        nav.push(MaterialPageRoute(builder: (_) => ClientJobScreen(jobId: jobId!)));
+      } else {
+        // Volta IMEDIATAMENTE ao Painel do Cliente e celebra por cima dele (overlay circular).
+        // O contexto do Navigator continua válido depois que o wizard saiu da árvore.
+        final overlayContext = nav.context;
+        final category = _category ?? 'serviço';
+        final direct = _provider != null;
+        final providerName = _provider?.fullName;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!overlayContext.mounted) return;
+          showPublishedOrderOverlay(overlayContext, categoryName: category, direct: direct, providerName: providerName);
+        });
+      }
     } catch (e) {
       // Falhou depois de criar: não deixa um pedido "fantasma" aberto.
       if (jobId != null) {
@@ -186,6 +254,23 @@ class _RequestWizardScreenState extends State<RequestWizardScreen> {
       MaterialPageRoute(builder: (_) => EditAddressScreen(currentLine: widget.profile.addressLine)),
     );
     if (result != null && mounted) setState(() => _override = result);
+  }
+
+  /// Abre o mapa interativo (OSM + GPS ao vivo) no endereço do serviço.
+  Future<void> _openMap() async {
+    final line = _currentAddress;
+    if (line.isEmpty) {
+      showSnack(context, 'Informe o endereço do atendimento para ver no mapa.', error: true);
+      return;
+    }
+    final lat = _override != null ? _override!.latitude : widget.profile.latitude;
+    final lng = _override != null ? _override!.longitude : widget.profile.longitude;
+    final opener = widget.mapOpener;
+    if (opener != null) {
+      await opener(context, line, _summary, lat, lng);
+      return;
+    }
+    await LiveLocationMapSheet.show(context, addressLine: line, summary: _summary, latitude: lat, longitude: lng);
   }
   void _next() {
     if (_step == 0 && !_step0Valid) {
@@ -254,10 +339,13 @@ class _RequestWizardScreenState extends State<RequestWizardScreen> {
   }
 
   Widget _buildDescribe() {
+    // A categoria já foi escolhida na tela anterior ("Do que você precisa hoje?"): não repetimos
+    // a seleção. O seletor só reaparece como último recurso (entrada sem categoria definida).
+    final needsChooser = widget.category == null && (_provider == null || _provider!.specialties.length > 1);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (_provider == null || (_provider!.specialties.length > 1)) ...[
+        if (needsChooser) ...[
           const Text('Categoria', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
           const SizedBox(height: 8),
           Wrap(
@@ -265,7 +353,7 @@ class _RequestWizardScreenState extends State<RequestWizardScreen> {
             runSpacing: 8,
             children: [
               for (final c in (_provider != null && _provider!.specialties.isNotEmpty
-                  ? kCategories.where((c) => _provider!.specialties.contains(c.name))
+                  ? kCategories.where((c) => _provider!.matchesCategory(c.name))
                   : kCategories))
                 ChoiceChip(
                   label: Text(c.name),
@@ -278,22 +366,39 @@ class _RequestWizardScreenState extends State<RequestWizardScreen> {
             ],
           ),
           const SizedBox(height: 18),
+        ] else if (_category != null) ...[
+          _CategoryBanner(name: _category!),
+          const SizedBox(height: 18),
         ],
         Text.rich(TextSpan(children: [
           TextSpan(text: 'O que precisa ser feito? ', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
           TextSpan(text: '(Obrigatório)', style: TextStyle(color: context.tk.textMuted, fontSize: 13)),
         ])),
+        const SizedBox(height: 4),
+        Text('Descreva com detalhes digitando ou fale o que aconteceu — você escolhe.',
+            style: TextStyle(color: context.tk.textMuted, fontSize: 12.5)),
         const SizedBox(height: 8),
         TextField(
+          key: const ValueKey('description-field'),
           controller: _description,
-          maxLines: 5,
+          maxLines: 6,
           maxLength: 500,
+          textCapitalization: TextCapitalization.sentences,
           onChanged: (_) => setState(() {}),
           decoration: const InputDecoration(
             hintText: 'Ex: Meu disjuntor do chuveiro está desarmando toda vez que ligo na temperatura quente...',
           ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 6),
+        VoiceDictationPanel(
+          textController: _description,
+          maxLength: 500,
+          engine: widget.speechEngine,
+          onChanged: () {
+            if (mounted) setState(() {});
+          },
+        ),
+        const SizedBox(height: 16),
         Text.rich(TextSpan(children: [
           const TextSpan(text: 'Anexar fotos (até 4) ', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
           TextSpan(text: '(Obrigatório) ', style: TextStyle(color: context.tk.textMuted, fontSize: 13)),
@@ -417,7 +522,7 @@ class _RequestWizardScreenState extends State<RequestWizardScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Revisão do Pedido', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
+        const Text('Resumo do Pedido (Aguardando Publicação)', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, height: 1.2)),
         const SizedBox(height: 12),
         AppCard(
           child: Column(
@@ -460,10 +565,11 @@ class _RequestWizardScreenState extends State<RequestWizardScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Compromisso agendado', style: TextStyle(fontWeight: FontWeight.w800)),
+                      const Text('Data e horário solicitados', style: TextStyle(fontWeight: FontWeight.w800)),
                       Text(_scheduled == null ? '' : dateLong(_scheduled!)),
                       const SizedBox(height: 6),
-                      StatusChip('SERVIÇO AGENDADO', color: context.tk.info),
+                      // O pedido ainda NÃO foi publicado: nada está "agendado" até um profissional aceitar.
+                      StatusChip('AGUARDANDO PUBLICAÇÃO', color: context.tk.warningInk, icon: Icons.hourglass_top_rounded),
                     ],
                   ),
                 ),
@@ -471,14 +577,19 @@ class _RequestWizardScreenState extends State<RequestWizardScreen> {
             ),
           ),
         const SizedBox(height: 12),
-        InfoBanner(
-          _emergency
-              ? '${p?.fullName ?? 'O profissional'} terá 5 minutos para aceitar. Se recusar ou não responder, a reserva é estornada.'
-              : (p != null
-                    ? '${firstName(p.fullName)} terá até 2 horas para analisar o seu pedido e enviar o orçamento final.'
-                    : 'Até 3 profissionais da região poderão enviar orçamentos. Você compara e escolhe.'),
-          title: _emergency ? 'Resposta em até 5 minutos' : 'Orçamento sem compromisso',
-        ),
+        if (_emergency)
+          InfoBanner(
+            '${p?.fullName ?? 'O profissional'} terá 5 minutos para aceitar. Se recusar ou não responder, a reserva é estornada.',
+            title: 'Resposta em até 5 minutos',
+          )
+        else
+          _QuoteInfoCard(
+            title: 'Orçamento sem compromisso',
+            text: p != null
+                ? '${firstName(p.fullName)} terá até 2 horas para analisar o seu pedido e enviar o orçamento final.'
+                : 'Até 3 profissionais da região poderão enviar orçamentos. Você compara e escolhe.',
+            counter: _openRequests == null ? null : orderPositionMessage(_openRequests!),
+          ),
         const SizedBox(height: 16),
         Row(
           children: [
@@ -487,6 +598,8 @@ class _RequestWizardScreenState extends State<RequestWizardScreen> {
           ],
         ),
         AppCard(
+          key: const ValueKey('location-card'),
+          onTap: hasAddress ? _openMap : null,
           child: Row(
             children: [
               CircleAvatar(
@@ -495,11 +608,27 @@ class _RequestWizardScreenState extends State<RequestWizardScreen> {
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: Text(
-                  hasAddress ? _currentAddress : 'Nenhum endereço cadastrado. Toque em Editar.',
-                  style: TextStyle(height: 1.35, color: hasAddress ? context.tk.text : context.tk.danger),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      hasAddress ? _currentAddress : 'Nenhum endereço cadastrado. Toque em Editar.',
+                      style: TextStyle(height: 1.35, color: hasAddress ? context.tk.text : context.tk.danger),
+                    ),
+                    if (hasAddress) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        'Toque para ver no mapa em tempo real',
+                        style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: context.tk.clientAccent),
+                      ),
+                    ],
+                  ],
                 ),
               ),
+              if (hasAddress) ...[
+                const SizedBox(width: 8),
+                Icon(Icons.map_rounded, color: context.tk.clientAccent),
+              ],
             ],
           ),
         ),
@@ -593,9 +722,81 @@ class _PublicRequestHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => const InfoBanner(
-    'Seu pedido ficará visível para profissionais verificados da região. Você recebe até 3 orçamentos e escolhe o melhor.',
-    title: 'Pedido para vários profissionais',
+    'Seu pedido ficará visível apenas para profissionais verificados da região que atendem esta especialidade. Você recebe até 3 orçamentos e escolhe o melhor.',
+    title: 'Pedido para profissionais da área',
     icon: Icons.groups_rounded,
     tone: BannerTone.promo,
   );
 }
+
+/// Confirmação compacta da categoria já escolhida na tela anterior.
+class _CategoryBanner extends StatelessWidget {
+  const _CategoryBanner({required this.name});
+
+  final String name;
+
+  @override
+  Widget build(BuildContext context) {
+    final tk = context.tk;
+    return Container(
+      key: const ValueKey('category-banner'),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: tk.clientSoft,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: tk.clientAccent.withValues(alpha: 0.45)),
+      ),
+      child: Text.rich(
+        TextSpan(
+          children: [
+            TextSpan(text: 'Categoria selecionada: ', style: TextStyle(color: tk.textMuted, fontWeight: FontWeight.w600)),
+            WidgetSpan(alignment: PlaceholderAlignment.middle, child: Icon(categoryIcon(name), size: 20, color: tk.clientAccent)),
+            TextSpan(text: ' $name', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Card "Orçamento sem compromisso" + posição dinâmica do pedido (1º, 2º, 3º…).
+class _QuoteInfoCard extends StatelessWidget {
+  const _QuoteInfoCard({required this.title, required this.text, this.counter});
+
+  final String title;
+  final String text;
+
+  /// Ex.: "Este é o 1º de até 3 pedidos/orçamentos simultâneos." (null enquanto carrega).
+  final String? counter;
+
+  @override
+  Widget build(BuildContext context) {
+    final tk = context.tk;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        InfoBanner(text, title: title),
+        if (counter != null) ...[
+          const SizedBox(height: 8),
+          Container(
+            key: const ValueKey('order-position'),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              color: tk.clientSoft,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: tk.clientAccent.withValues(alpha: 0.6)),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.format_list_numbered_rounded, color: tk.clientAccent),
+                const SizedBox(width: 10),
+                Expanded(child: Text(counter!, style: const TextStyle(fontWeight: FontWeight.w900, height: 1.3))),
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+

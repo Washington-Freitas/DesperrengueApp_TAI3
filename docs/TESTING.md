@@ -27,7 +27,7 @@ flowchart TB
     E2E["E2E / integração em dispositivo<br/>poucos · lentos · alto valor<br/>(integration_test — planejado)"]
     WID["Widget tests<br/>telas críticas com serviços falsos<br/>(planejado)"]
     DBT["Testes de banco (SQL transacional)<br/>162 asserções · RLS, RPCs, estados, LGPD"]
-    UNIT["Unitários (Dart puro)<br/>143 testes · rápidos · determinísticos"]
+    UNIT["Unitários (Dart puro)<br/>273 testes · rápidos · determinísticos"]
     UNIT --> DBT --> WID --> E2E
 ```
 
@@ -45,21 +45,22 @@ flowchart TB
 
 ## 2. Estado atual (medido)
 
-*Medição de 2026-10-29 (`flutter test --coverage`).*
+*Medição de 2026-11-05 (`flutter test --coverage`).*
 
 | Indicador | Valor |
 | :-- | :-- |
-| Testes unitários e de *widget* | **143**, todos aprovados (inclui o atualizador beta e a **carteira**: `Money`, máscara BRL, trava de saldo, bottom sheet, recarga Pix, extrato e tema escuro) |
-| Asserções SQL | **214** (`security_smoke` 62 + `review_system_smoke` 30 + `achievements_smoke` 22 + `offboarding_showcase_smoke` 48 + `client_wallet_smoke` 52), `FALHAS = 0` |
+| Testes unitários e de *widget* | **273**, todos aprovados (inclui o atualizador beta e a **carteira**: `Money`, máscara BRL, trava de saldo, bottom sheet, recarga Pix, extrato e tema escuro) |
+| Asserções SQL | **398** (`security_smoke` 63 + `review_system_smoke` 30 + `achievements_smoke` 22 + `offboarding_showcase_smoke` 48 + `client_wallet_smoke` 52 + `scheduled_start_smoke` 183), `FALHAS = 0` |
 | Teste do Dossiê PDF (Node) | **7**, aprovados (`node scripts/test-dossie.mjs`) |
 | E2E da Edge Function `excluir-conta` | 401 sem sessão · 400 sem confirmação · 409 com saldo · 200 após o saque (e-mail aceito pelo Resend, dados e conta removidos) — executado manualmente com usuário de teste |
+| Geocodificação (Nominatim) | Verificada em produção: o Nominatim **bloqueia (403) IPs de datacenter**, então roda no app do cliente (testes em `geocode_test.dart` com `MockClient`). O OSM não conhece a rua do teste (só a cidade) → o cliente confirma o pino |
 | E2E da Edge Function `pix-webhook` | 401 sem segredo · 400 payload inválido · 409 valor divergente · *pending* ignorado · 200 pago (saldo creditado **uma vez**) · reenvio idempotente (`already: true`) — executado manualmente |
 | `flutter analyze` | **0** avisos |
-| Cobertura de linhas nos 28 arquivos com teste dedicado (≥ 40 % de linhas cobertas: modelos, tokens/tema, boot, sessão segura, `LocalPrefs`, `PrivacyMode`, seleção de perfil, tela de Pix, carteira do cliente, splash…) | **1475 / 1704 = 86,6 %** |
-| Tamanho do código do app | 86 arquivos Dart, ≈ 21,0 mil linhas |
-| Cobertura **global** (todas as linhas dos 83 arquivos que o `lcov` enxerga) | **19,5 % (1620 / 8291)** — subiu, mas ainda é baixa: a maioria das telas e serviços não tem teste; meta e plano em §8 |
+| Cobertura de linhas nos 48 arquivos com teste dedicado (≥ 40 % de linhas cobertas: modelos, tokens/tema, boot, sessão segura, `LocalPrefs`, `PrivacyMode`, seleção de perfil, tela de Pix, carteira do cliente, splash…) | **3310 / 4078 = 81,2 %** |
+| Tamanho do código do app | 102 arquivos Dart, ≈ 25,7 mil linhas |
+| Cobertura **global** (todas as linhas dos 99 arquivos que o `lcov` enxerga) | **34,3 % (3491 / 10165)** — subiu, mas ainda é baixa: a maioria das telas e serviços não tem teste; meta e plano em §8 |
 
-> Declaramos explicitamente que a cobertura global é **inferior** à da camada testada: o número de 86,6 % **não** representa o projeto inteiro (apenas 28 dos 86 arquivos têm teste dedicado; o global é 19,5 %).
+> Declaramos explicitamente que a cobertura global é **inferior** à da camada testada: o número de 81,2 % **não** representa o projeto inteiro (apenas 48 dos 102 arquivos têm teste dedicado; o global é 34,3 %).
 
 ---
 
@@ -74,6 +75,8 @@ Cobertos hoje (`app/test/user_profile_test.dart`):
 * **`destinationFor`**: usuário novo, dois modos, "trocar de modo", cadastro de cliente, máquina de estados do KYC, cliente que vira profissional, admin.
 * Formatação: `brl`, `parseBrl`, `clock`, `relativeTime`, `distanceKm`.
 * Modelos de domínio: `Job.fromMap`, `JobStatus`, `ProviderCard`.
+* **Agendamento** (`app/test/scheduling_test.dart` e `geocode_test.dart`): Haversine (valor idêntico ao `haversine_m` do SQL), dupla trava (bordas de 15 min e 100 m, rua 250 m, GPS fraco/negado), parse do OSRM e dos erros `START_*`, `ServerClock` (relógio adulterado), `RoutingService` com `MockClient` e a tela do profissional/cliente (botão bloqueado/liberado, homologação, sem cronômetro nem "Finalizar" enquanto agendado).
+* **Chat, histórico, dossiês e telas finais** (`chat_test`, `client_history_test`, `dossier_test`, `completion_redesign_test`): ordem ASC e desduplicação por `client_message_id`, modo somente leitura, privacidade do dossiê, contraste WCAG da conquista e botões sem corte.
 * **Carteira** (`app/test/wallet_test.dart`, 22 testes): `Money` e máscara BRL, `FundsCheck`/`InsufficientFunds`, `WalletPayCard`, *bottom sheet* de saldo insuficiente, recarga Pix (QR, estados, anti toque duplo), extrato e tema escuro — com `FakeWalletService`, sem rede.
 
 **Convenções**
@@ -118,6 +121,7 @@ supabase db query --linked -f supabase/tests/review_system_smoke.sql   # avalia�
 supabase db query --linked -f supabase/tests/achievements_smoke.sql      # conquistas: desbloqueio, escala e privacidade (22 asserções)
 supabase db query --linked -f supabase/tests/offboarding_showcase_smoke.sql  # saque Pix, exclusão LGPD e vitrine LIFO (48 asserções)
 supabase db query --linked -f supabase/tests/client_wallet_smoke.sql         # carteira do cliente: ledger, custódia, trava de saldo, Pix e webhook (52 asserções)
+supabase db query --linked -f supabase/tests/scheduled_start_smoke.sql       # agendamento: start_job (horário + geofence), pino, chat arquivado/idempotente, dossiês e privacidade (183 asserções)
 # A saída é uma "falha" proposital contendo o relatório; o critério é "FALHAS=0".
 ```
 
@@ -290,6 +294,7 @@ supabase db query --linked -f supabase/tests/review_system_smoke.sql   # avalia�
 supabase db query --linked -f supabase/tests/achievements_smoke.sql      # conquistas: desbloqueio, escala e privacidade (22 asserções)
 supabase db query --linked -f supabase/tests/offboarding_showcase_smoke.sql  # saque Pix, exclusão LGPD e vitrine LIFO (48 asserções)
 supabase db query --linked -f supabase/tests/client_wallet_smoke.sql         # carteira do cliente: ledger, custódia, trava de saldo, Pix e webhook (52 asserções)
+supabase db query --linked -f supabase/tests/scheduled_start_smoke.sql       # agendamento: start_job (horário + geofence), pino, chat arquivado/idempotente, dossiês e privacidade (183 asserções)
 
 # Dossiê de Despedida (PDF) — roda em Node, sem Deno
 node scripts/test-dossie.mjs

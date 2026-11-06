@@ -13,10 +13,12 @@ Uma **mesma conta pode ser cliente e profissional** (`profiles.is_client` / `is_
 | `provider_portfolio`, `provider_certificates` | Fotos de trabalhos (públicas) e cofre de certificados (privado). |
 | `kyc_submissions` | Dados sensíveis do KYC. Leitura só do dono/admin; **escrita só por RPC**. |
 | `jobs` | Demanda. `urgency` (`scheduled`/`emergency`), `visibility` (`open`/`direct`), `status`, `payment_status`, `quote_count`. |
+| `job_geo` | Destino geocodificado/pino do cliente (`precision_level`, `source`); **privado** (só cliente dono e profissional contratado leem); escrita só pela RPC `set_job_location` (cliente dono: `client_pin` ou `client_geocode`) ([ADR-0019](../docs/adr/0019-agendamento-geofence-chat-dossies.md)). |
 | `job_addresses` | Endereço completo: **só o dono e o profissional contratado** enxergam. O resumo público (bairro/cidade) fica em `jobs.address_summary`. |
 | `job_invites` | Convite cliente → profissional (até 3 por pedido). Expira em 2 h (agendado) ou 5 min (emergência). |
 | `quotes` | Orçamentos (máx. 3 ativos por demanda, 1 por profissional). Cada profissional só vê o próprio. |
 | `job_secrets` | PIN de 4 dígitos da conclusão. **Só o cliente lê**; o profissional só valida pela RPC. |
+| `messages` (colunas novas) | `client_message_id` (UUID do cliente; `UNIQUE` por job+remetente → envio idempotente). Gatilho `messages_guard` recusa escrita em serviço encerrado (`CHAT_ARCHIVED`). |
 | `job_evidence` | 4 fotos obrigatórias do serviço (`overview`, `detail`, `angle`, `clean`). |
 | `payments` | Pagamento em custódia (`escrow` → `released`/`refunded`), comissão de 12 %; método `wallet` debita a carteira por gatilho ([ADR-0018](../docs/adr/0018-carteira-ledger-e-pix-sandbox.md)). |
 | `client_wallets` · `ledger_txns` · `ledger_lines` | Carteira do cliente (`available_balance`/`escrow_balance`, em **centavos**) e **ledger de partida dobrada** (cada transação soma zero; `idempotency_key` única). Só leitura para o dono; o ledger não é legível pelo app. |
@@ -35,7 +37,7 @@ Uma **mesma conta pode ser cliente e profissional** (`profiles.is_client` / `is_
 ### Ciclo de vida do serviço
 
 ```
-open ──(cliente aceita orçamento)──▶ awaiting_payment ──(checkout mock)──▶ in_progress
+open ──(cliente aceita orçamento)──▶ awaiting_payment ──(pagamento)──▶ scheduled ──(start_job: horário + geofence)──▶ in_progress
   │                                                                          │
   │ emergência: reserva paga ANTES; profissional aceita ───────────────────▶ │
   │                                                         (PIN do cliente) ▼
@@ -66,6 +68,10 @@ open ──(cliente aceita orçamento)──▶ awaiting_payment ──(checkout
 | `my_wallet()` · `request_withdrawal(valor, tipo, chave, titular)` | profissional | Saldo no servidor e saque Pix simulado (trava anti-corrida) |
 | `my_client_wallet()` · `create_topup(centavos, chave)` · `simulate_pix_payment(topup)` | cliente | Saldo e custódia, recarga Pix idempotente e **simulação de 1 toque** (só com `app_settings.pix_sandbox = 'true'`) |
 | `confirm_topup(txid, centavos, ref)` | **só `service_role`** | Núcleo do webhook Pix (idempotente; valida o valor) |
+| `start_job(job, lat, lng, accuracy, simulate)` | profissional contratado | **Dupla trava**: relógio do servidor (≥ agenda − 15 min) e Haversine ≤ raio (100 m / 250 m rua); `simulate` só com `checkin_sandbox='true'`. Grava `started_at`/`start_distance_m` |
+| `job_destination(job)` · `set_job_location(job, lat, lng, source, precision)` · `server_time()` | partes · cliente dono · autenticado | Destino do serviço; o **cliente** grava o pino (`client_pin`) ou a geocodificação do app (`client_geocode` + `house/street/locality`); um pino nunca é sobrescrito; hora do servidor |
+| `chat_counterpart(job, provider)` | participante | Nome/foto/especialidade do interlocutor (nunca e-mail) |
+| `provider_job_dossier(job)` · `client_job_dossier(job)` · `my_received_reviews()` | profissional contratado · cliente dono · profissional | Dossiês privados (financeiro só para o profissional); avaliações recebidas reveladas, com `job_id` |
 | `account_deletion_status()` | autenticado | Trava da exclusão: saldo, custódia, serviços em andamento |
 | `account_dossier(uid)` · `purge_account(uid)` | **só `service_role`** | Dados do Dossiê PDF e limpeza LGPD (chamadas pela Edge Function) |
 | `provider_showcase(p)` · `provider_case_detail(job)` · `provider_case_history()` | autenticado | Vitrine LIFO (4 vagas), Case de Sucesso e histórico |
@@ -92,13 +98,22 @@ O link **não carrega credencial**: o app apenas reconsulta o status no servidor
 
 ## Migrations
 
-Em `migrations/`, aplicadas em ordem (13 até aqui). Sem Docker, aplique com a Management API do CLI:
+Em `migrations/`, aplicadas em ordem (16 até aqui). Sem Docker, aplique com a Management API do CLI:
 
 ```bash
 supabase db query --linked -f supabase/migrations/<arquivo>.sql
 ```
 
 e registre a versão em `supabase_migrations.schema_migrations`. Antes de aplicar, valide em transação com `rollback`. Com Docker, o fluxo padrão (`supabase db push`) também funciona.
+
+## Match de categoria, isolamento do pedido e dossiê (migration `20261106120000`)
+
+- `norm_tag` / `norm_tags`: normalização canônica das especialidades (sem acento/caixa, sinônimos: `Hidráulica` → `encanador`, `Eletricista` → `eletrica`…). **Espelho de `app/lib/core/utils/tag_normalizer.dart`** — ao mudar os sinônimos, altere os dois.
+- `provider_public_profiles.specialty_slugs` + índice GIN: a busca filtra por categoria na própria query (`@>`), inclusive com N tags por perfil e profissionais com 0 serviços.
+- **Pedido público só para quem atende a categoria**: `provider_matches_category()` na RLS de `jobs`, em `job_client_cards`, nas fotos do storage e no trigger `quotes_before_insert` (convidados continuam podendo orçar). O trigger `jobs_notify_area_providers` avisa os profissionais da área (`new_area_job`).
+- `jobs.canceled_at / cancel_reason / canceled_by`, preenchidos pelo trigger `jobs_stamp_cancellation`.
+- `client_job_dossier` devolve endereço completo, coordenadas, cancelamento e a contestação (`dispute`: quem abriu, motivo, andamento) para o detalhe do pedido em qualquer estado.
+- Teste: `supabase db query --linked -f supabase/tests/category_match_smoke.sql` (25 verificações).
 
 ## Teste de segurança e de fluxo
 

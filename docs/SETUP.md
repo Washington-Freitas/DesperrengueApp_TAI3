@@ -31,7 +31,7 @@ java -version         # deve exibir 17.x
 ## 2. Obter o código
 
 ```bash
-git clone https://github.com/Washington-Freitas/DesperrengueApp_TAI3.git
+git clone https://github.com/WagnerxOliveira/DesperrengueApp_TAI3.git
 cd DesperrengueApp_TAI3
 git checkout main && git pull
 git checkout -b feat/<seu-topico>      # ver CONTRIBUTING.md
@@ -80,6 +80,8 @@ O app **não lê arquivos `.env`**. A configuração é feita por **`--dart-defi
 | `SUPABASE_URL` | `https://eisfkemgooqbgqljvwvs.supabase.co` | Endpoint do projeto |
 | `SUPABASE_PUBLISHABLE_KEY` | chave *publishable* do MVP (**pública por design**) | Acesso anônimo/autenticado limitado pela RLS |
 | `ABSTRACT_API_KEY` | vazio (validação extra de e-mail desativada) | Opcional |
+| `CHECKIN_SANDBOX` | `true` | Mostra "🧪 Simular dia/hora e GPS no local" no serviço agendado. Em produção use `false` (e desligue `app_settings.checkin_sandbox` no banco) |
+| `UPDATE_REPO` | repositório do fork | Repositório cujo release `beta-latest` o app consulta para avisar de versão nova (a CI define `${{ github.repository }}`) |
 | `PIX_SANDBOX` | `true` | Mostra o cartão "Simular pagamento Pix agora" na recarga da carteira. Em produção use `false` (o servidor também bloqueia, via `app_settings.pix_sandbox`) |
 | `BETA_UPDATES` | `false` | Liga o aviso de atualização dentro do app; a CI do beta define `true` ([ADR-0017](adr/0017-distribuicao-beta-e-atualizacao-no-app.md)) |
 

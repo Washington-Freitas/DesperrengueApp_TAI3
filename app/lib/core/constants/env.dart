@@ -26,7 +26,7 @@ class Env {
   /// Repositório GitHub onde a CI publica o release rolante `beta-latest`.
   static const String updateRepo = String.fromEnvironment(
     'UPDATE_REPO',
-    defaultValue: 'Washington-Freitas/DesperrengueApp_TAI3',
+    defaultValue: 'WagnerxOliveira/DesperrengueApp_TAI3',
   );
 
   /// Opcional. Vazia = a validação extra de e-mail (Abstract API) é desativada

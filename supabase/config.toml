@@ -437,4 +437,3 @@ entrypoint = "./functions/excluir-conta/index.ts"
 verify_jwt = false
 import_map = "./functions/pix-webhook/deno.json"
 entrypoint = "./functions/pix-webhook/index.ts"
-

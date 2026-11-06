@@ -1,11 +1,11 @@
 # Desperrengue: Marketplace de Serviços Residenciais
 
-[![CI](https://github.com/Washington-Freitas/DesperrengueApp_TAI3/actions/workflows/ci.yml/badge.svg)](https://github.com/Washington-Freitas/DesperrengueApp_TAI3/actions/workflows/ci.yml)
+[![CI](https://github.com/WagnerxOliveira/DesperrengueApp_TAI3/actions/workflows/ci.yml/badge.svg)](https://github.com/WagnerxOliveira/DesperrengueApp_TAI3/actions/workflows/ci.yml)
 ![Versão](https://img.shields.io/badge/vers%C3%A3o-0.2.0--dev-blue)
 ![Estágio](https://img.shields.io/badge/est%C3%A1gio-MVP%20acad%C3%AAmico-orange)
 ![Flutter](https://img.shields.io/badge/Flutter-3.47-02569B?logo=flutter&logoColor=white)
 ![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL%2017-3ECF8E?logo=supabase&logoColor=white)
-![Testes](https://img.shields.io/badge/testes-143%20unit%20%C2%B7%20214%20SQL%20%C2%B7%207%20PDF-brightgreen)
+![Testes](https://img.shields.io/badge/testes-273%20unit%20%C2%B7%20398%20SQL%20%C2%B7%207%20PDF-brightgreen)
 ![Licença](https://img.shields.io/badge/licen%C3%A7a-todos%20os%20direitos%20reservados-lightgrey)
 
 > **Cobertura de testes:** a cobertura global ainda é baixa (somente camadas puras e banco estão cobertas); números medidos, metas e plano em [TESTING.md](./docs/TESTING.md#2-estado-atual-medido). O selo de CI refere-se ao *workflow* [`ci.yml`](./.github/workflows/ci.yml).
@@ -68,7 +68,7 @@ Uma **mesma conta** pode atuar como **cliente** ("Preciso de um serviço") e com
   - **Edge Functions:** Deno (e-mail de aprovação via Resend)
 - **Integrações:** Resend (e-mail), ViaCEP (CEP), Google OAuth; Abstract API opcional.
 
-> **Estado atual da implementação:** autenticação, **KYC**, **multi-modo (cliente/profissional)** e o **ciclo completo do serviço** (pedido → convites → orçamentos → aceite → custódia com saldo de carteira → execução → PIN → avaliação, com emergência, chat, notificações, carteira e suporte) estão implementados, junto com **avaliações cegas guiadas por pílulas, ranqueamento Bayesiano, selos e conquistas do profissional** ([GAMIFICACAO.md](./docs/GAMIFICACAO.md)). Também estão prontos: **splash coreografada**, **tema Automático/Claro/Escuro** com *design tokens*, **sessão no armazenamento seguro**, **seleção de perfil** em vidro, **modo privacidade** (👁️), **vitrine de cases LIFO** com Case de Sucesso, **carteira do cliente** (ledger de partida dobrada, trava de saldo, recarga por **Pix sandbox** com webhook e simulação de 1 toque — [ADR-0018](./docs/adr/0018-carteira-ledger-e-pix-sandbox.md)), **saque Pix (simulado)** e **exclusão de conta LGPD** com Dossiê de Despedida em PDF ([ADR-0013](./docs/adr/0013-exclusao-de-conta-lgpd-e-dossie.md) a [ADR-0016](./docs/adr/0016-vitrine-de-cases-lifo.md)). A navegação ainda usa `Navigator` + `AuthGate` ([ADR-0009](./docs/adr/0009-roteamento-por-funcao-pura-e-authgate.md)); `go_router`/Riverpod amplo, gateway real, mapa e push estão no [ROADMAP](./docs/ROADMAP.md).
+> **Estado atual da implementação:** autenticação, **KYC**, **multi-modo (cliente/profissional)** e o **ciclo completo do serviço** (pedido → convites → orçamentos → aceite → custódia com saldo de carteira → **serviço agendado** → início no local e no horário (geofence) → execução → PIN → avaliação, com emergência, chat, notificações, carteira e suporte) estão implementados, junto com **avaliações cegas guiadas por pílulas, ranqueamento Bayesiano, selos e conquistas do profissional** ([GAMIFICACAO.md](./docs/GAMIFICACAO.md)). Também estão prontos: **splash coreografada**, **tema Automático/Claro/Escuro** com *design tokens*, **sessão no armazenamento seguro**, **seleção de perfil** em vidro, **modo privacidade** (👁️), **vitrine de cases LIFO** com Case de Sucesso, **carteira do cliente** (ledger de partida dobrada, trava de saldo, recarga por **Pix sandbox** com webhook e simulação de 1 toque — [ADR-0018](./docs/adr/0018-carteira-ledger-e-pix-sandbox.md)), **saque Pix (simulado)** e **exclusão de conta LGPD** com Dossiê de Despedida em PDF ([ADR-0013](./docs/adr/0013-exclusao-de-conta-lgpd-e-dossie.md) a [ADR-0016](./docs/adr/0016-vitrine-de-cases-lifo.md)). A navegação ainda usa `Navigator` + `AuthGate` ([ADR-0009](./docs/adr/0009-roteamento-por-funcao-pura-e-authgate.md)); `go_router`/Riverpod amplo, gateway real, mapa e push estão no [ROADMAP](./docs/ROADMAP.md).
 
 ## ✅ Pré-requisitos (resumo)
 
@@ -128,6 +128,8 @@ Verificação de qualidade: `flutter analyze` e `flutter test` devem passar sem 
 ## 🤝 Contribuindo
 
 Leia o [CONTRIBUTING.md](.github/CONTRIBUTING.md) (fluxo Git, Conventional Commits, revisão, DoD) e o [Código de Conduta](.github/CODE_OF_CONDUCT.md). Use os *templates* de [bug](./.github/ISSUE_TEMPLATE/bug_report.md), [funcionalidade](./.github/ISSUE_TEMPLATE/feature_request.md) e [pull request](./.github/PULL_REQUEST_TEMPLATE.md).
+
+> **Repositórios.** O desenvolvimento continua neste *fork* — [`WagnerxOliveira/DesperrengueApp_TAI3`](https://github.com/WagnerxOliveira/DesperrengueApp_TAI3) (CI, releases beta e GitHub Pages) — e o repositório original da disciplina, [`Washington-Freitas/DesperrengueApp_TAI3`](https://github.com/Washington-Freitas/DesperrengueApp_TAI3), é mantido como remoto `upstream` (histórico preservado; PRs entre os dois seguem possíveis).
 
 ###⚖️ Licença
 

@@ -66,6 +66,10 @@
 			<string>UIInterfaceOrientationLandscapeLeft</string>
 			<string>UIInterfaceOrientationLandscapeRight</string>
 		</array>
+		<key>NSMicrophoneUsageDescription</key>
+		<string>O Desperrengue usa o microfone para você descrever o serviço por voz.</string>
+		<key>NSSpeechRecognitionUsageDescription</key>
+		<string>O Desperrengue transforma a sua fala em texto para montar o pedido de serviço.</string>
 		<key>NSCameraUsageDescription</key>
 		<string>O Desperrengue usa a câmera para fotografar seus documentos e selfie na verificação de identidade.</string>
 		<key>NSLocationWhenInUseUsageDescription</key>

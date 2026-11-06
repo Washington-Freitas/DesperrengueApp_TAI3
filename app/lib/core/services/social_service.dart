@@ -1,6 +1,19 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../models/chat_models.dart';
 import '../models/marketplace_models.dart';
+import '../utils/ids.dart';
+
+/// O banco recusou a mensagem porque o serviço foi concluído/cancelado
+/// (trigger `CHAT_ARCHIVED`): a conversa virou somente leitura.
+class ChatArchivedException implements Exception {
+  const ChatArchivedException();
+
+  static const userMessage = 'Este serviço foi encerrado. A conversa está arquivada e não aceita novas mensagens.';
+
+  @override
+  String toString() => userMessage;
+}
 
 /// Chat por demanda, notificações, avaliações e suporte.
 class SocialService {
@@ -16,27 +29,63 @@ class SocialService {
 
   // ----------------------------------------------------------------- chat
 
+  /// Mensagens da conversa em ordem CRONOLÓGICA (antiga → nova).
+  ///
+  /// O default do `supabase_flutter` é `ascending: false`; por isso a ordem é
+  /// explícita aqui E reforçada no Dart (created_at, desempate por id): o stream
+  /// só aceita uma coluna de ordenação. Nunca misturar DESC com lista não reversa.
   Stream<List<ChatMessage>> streamMessages(String jobId, String providerId) => _client
       .from('messages')
       .stream(primaryKey: ['id'])
       .eq('job_id', jobId)
-      .order('created_at')
-      .map((rows) => rows.map(ChatMessage.fromMap).where((m) => m.providerId == providerId).toList());
+      .order('created_at', ascending: true)
+      .map((rows) {
+        final list = rows.map(ChatMessage.fromMap).where((m) => m.providerId == providerId).toList();
+        list.sort((a, b) {
+          final c = a.createdAt.compareTo(b.createdAt);
+          return c != 0 ? c : a.id.compareTo(b.id);
+        });
+        return list;
+      });
 
+  /// Envia uma mensagem de forma idempotente.
+  ///
+  /// [clientMessageId] (UUID v4) é SEMPRE enviado; o banco tem
+  /// `UNIQUE (job_id, sender_id, client_message_id)`, então um retry/duplo envio
+  /// falha com `23505`, que aqui é tratado como SUCESSO (a mensagem já está lá).
+  /// Serviço encerrado (`CHAT_ARCHIVED`) vira [ChatArchivedException].
   Future<void> sendMessage({
     required String jobId,
     required String providerId,
     required String body,
     String kind = 'text',
     Map<String, dynamic>? meta,
-  }) =>
-      _client.from('messages').insert({
+    String? clientMessageId,
+  }) async {
+    try {
+      await _client.from('messages').insert({
         'job_id': jobId,
         'provider_id': providerId,
         'body': body,
         'kind': kind,
         'meta': meta,
+        'client_message_id': clientMessageId ?? uuidV4(),
       });
+    } on PostgrestException catch (e) {
+      if (e.code == '23505') return;
+      if (e.message.contains('CHAT_ARCHIVED')) throw const ChatArchivedException();
+      rethrow;
+    }
+  }
+
+  /// Interlocutor da conversa (nome já sanitizado, foto e especialidade) via RPC
+  /// `chat_counterpart`. Null se o banco não devolver nada.
+  Future<ChatCounterpart?> chatCounterpart(String jobId, String providerId) async {
+    final r = await _client.rpc('chat_counterpart', params: {'p_job': jobId, 'p_provider': providerId});
+    if (r is Map) return ChatCounterpart.fromMap(Map<String, dynamic>.from(r));
+    return null;
+  }
+
 
   // -------------------------------------------------------- notificações
 

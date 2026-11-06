@@ -43,8 +43,28 @@ class DesperrengueApp extends ConsumerWidget {
         theme: AppTheme.resolve(mode, Brightness.light),
         darkTheme: AppTheme.resolve(mode, Brightness.dark),
         themeMode: themeMode.material,
-        // Aviso de versão beta nova, sobre qualquer tela (só em builds BETA_UPDATES).
-        builder: (context, child) => UpdateGate(child: child ?? const SizedBox.shrink()),
+        // Mantém o UpdateGate ativo e trava a largura em 480px apenas em telas largas (PC).
+        builder: (context, child) {
+          final effectiveChild = UpdateGate(
+            child: child ?? const SizedBox.shrink(),
+          );
+          final mq = MediaQuery.of(context);
+          if (mq.size.width <= 480) {
+            return effectiveChild;
+          }
+          return ColoredBox(
+            color: const Color(0xFF0F172A),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 480),
+                child: MediaQuery(
+                  data: mq.copyWith(size: Size(480, mq.size.height)),
+                  child: ClipRect(child: effectiveChild),
+                ),
+              ),
+            ),
+          );
+        },
         // A BootGate (splash + init paralela) decide, via AuthGate, entre Login,
         // Seleção de perfil e o painel do último perfil usado.
         home: const BootGate(),

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../../core/models/marketplace_models.dart';
+import '../../../core/models/provider_dossier_models.dart';
 import '../../../core/models/user_profile.dart';
 import '../../../core/services/app_session.dart';
 import '../../../core/services/draft_store.dart';
@@ -14,6 +15,7 @@ import '../../../core/ui/media_widgets.dart';
 import '../../../core/ui/widgets.dart';
 import '../../../core/utils/format.dart';
 import '../../shared/presentation/review_widgets.dart';
+import 'dossie_servico_profissional_screen.dart';
 import '../../../core/ui/app_tokens.dart';
 
 /// Editar Perfil (protótipo P02): foto, título, bio, especialidades, preços.
@@ -575,11 +577,12 @@ class MyReviewsScreen extends StatefulWidget {
 
 class _MyReviewsScreenState extends State<MyReviewsScreen> {
   final _providers = ProviderService();
-  late Future<({ProviderCard? card, List<PublicReview> reviews})> _future = _load();
+  late Future<({ProviderCard? card, List<OwnReview> reviews})> _future = _load();
 
-  Future<({ProviderCard? card, List<PublicReview> reviews})> _load() async {
+  Future<({ProviderCard? card, List<OwnReview> reviews})> _load() async {
     final card = await _providers.byId(widget.profile.id);
-    final reviews = await _providers.reviews(widget.profile.id, limit: 100);
+    // Tela do próprio dono: usa my_received_reviews (com job_id), não a view pública.
+    final reviews = await _providers.myReceivedReviews();
     return (card: card, reviews: reviews);
   }
 
@@ -587,7 +590,14 @@ class _MyReviewsScreenState extends State<MyReviewsScreen> {
         _future = _load();
       });
 
-  Future<void> _reply(PublicReview r) async {
+  /// Abre o dossiê interno do serviço avaliado (só o dono chega aqui).
+  void _openDetails(OwnReview r) {
+    final jobId = r.jobId;
+    if (jobId == null) return;
+    Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => DossieServicoProfissionalScreen(jobId: jobId)));
+  }
+
+  Future<void> _reply(OwnReview r) async {
     final ctl = TextEditingController();
     final text = await showModalBottomSheet<String>(
       context: context,
@@ -626,7 +636,7 @@ class _MyReviewsScreenState extends State<MyReviewsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Minhas avaliações')),
-      body: FutureBuilder<({ProviderCard? card, List<PublicReview> reviews})>(
+      body: FutureBuilder<({ProviderCard? card, List<OwnReview> reviews})>(
         future: _future,
         builder: (context, snap) {
           if (snap.connectionState != ConnectionState.done) return const LoadingView();
@@ -691,7 +701,13 @@ class _MyReviewsScreenState extends State<MyReviewsScreen> {
                   child: Text('Você ainda não recebeu avaliações reveladas.', style: TextStyle(color: context.tk.textMuted)),
                 )
               else
-                for (final r in reviews) ReviewCard(review: r, onReply: r.hasReply ? null : () => _reply(r)),
+                for (final r in reviews)
+                  ReviewCard(
+                    // O card só recebe a projeção pública; o job_id fica aqui no closure do dono.
+                    review: r.toPublic(),
+                    onReply: r.hasReply ? null : () => _reply(r),
+                    onOpenDetails: r.jobId == null ? null : () => _openDetails(r),
+                  ),
             ],
           );
         },

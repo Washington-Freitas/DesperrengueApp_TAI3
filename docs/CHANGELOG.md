@@ -14,6 +14,16 @@ Categorias: **Adicionado** · **Alterado** · **Descontinuado** · **Removido** 
 
 ### Adicionado
 
+**Serviço agendado, geofence, chat e dossiês (ADR-0019)**
+- **Novo estado `scheduled`**: o pagamento deixa o serviço *agendado* (sem cronômetro nem "Finalizar"). Só `start_job` leva a `in_progress`, com **dupla trava no servidor**: relógio do servidor (≥ 15 min antes do horário) e **Haversine ≤ 100 m** do endereço (250 m se o ponto veio só da rua). Evidência/PIN/conclusão seguem exigindo `in_progress`, então não é possível finalizar um serviço que não começou.
+- **Pré-serviço agendado** (cliente e profissional): código, data/hora, custódia, descrição, fotos, endereço interativo e **checklist de liberação** (✓/⏳ data e horário · ✓/📍 no local, com a distância atual) e botão *Iniciar serviço (ativar cronômetro)*; botão de homologação **"🧪 Simular dia/hora e GPS no local"** (`checkin_sandbox`).
+- **Mapa 100 % gratuito**: `flutter_map` (OpenStreetMap / CARTO escuro), **rota real e ETA pelo OSRM**, atalhos para Google Maps e Waze; o **cliente confirma o pino exato** no mapa e o app do cliente **geocodifica (Nominatim)** e registra o ponto com a qualidade do resultado (a geocodificação no servidor foi descartada: o Nominatim público devolve 403 a IPs de datacenter); ao pagar, o cliente recebe a notificação *"Confirme o local do serviço"*.
+- **Chat**: ordem cronológica correta, envio **idempotente** (`client_message_id`) com UI otimista (🕒 → ✓✓) sem duplicar, cabeçalho com nome/foto/especialidade do interlocutor, **conversa arquivada somente leitura** após o serviço e **histórico de serviços do cliente** com detalhe e conversa.
+- **Dossiê do serviço para o profissional** (carteira e *Minhas avaliações*): bruto, taxa, líquido, escopo, relatório, evidências com zoom/vídeo, avaliação (respeitando a regra cega) e conversa arquivada; a visão pública **não** recebe dado financeiro.
+- **Telas finais**: *Serviço finalizado e pago* sem corte pela barra do Android, card de conquista com contraste WCAG e animação única; *Obrigado pela sua avaliação* com a linha do tempo da avaliação cega (cliente e profissional).
+- **Nomes seguros**: e-mail nunca aparece como nome (`safe_name` no banco, `friendlyName` no app; a saudação vira "Olá, você!").
+- **Mudou o repositório de trabalho** para o fork `WagnerxOliveira/DesperrengueApp_TAI3` (o original, `Washington-Freitas`, segue como `upstream`); o app de teste agora procura atualizações no release do fork (`UPDATE_REPO` definido pela CI).
+
 **Carteira do cliente, ledger e Pix sandbox (ADR-0018)**
 - **Ledger de partida dobrada** (`ledger_txns`/`ledger_lines`, valores em **centavos**, cada transação soma zero, `idempotency_key` única) e **extrato** do cliente em tempo real (`wallet_statement`, Realtime).
 - **Carteira** com `available_balance` e `escrow_balance`; **crédito inicial de testes** de R$ 1.200,00 (fictício, lançado no ledger) para todo cliente.
@@ -154,4 +164,4 @@ Linha de base consolidada na *merge* do PR #13 (`feat/auth-and-infra-setup`).
 - Integração com Supabase (Auth, PostgreSQL, Storage) e **Edge Function** de e-mail de aprovação via Resend, com domínio `desperrengue.tech` verificado (DKIM/SPF).
 - Documentação acadêmica: contexto, especificação (RF/RNF, personas, histórias), plano de negócio e tributação, guias de ambiente (Windows/macOS/Linux), protótipos hi-fi.
 
-[Não lançado]: https://github.com/Washington-Freitas/DesperrengueApp_TAI3/compare/main...fix/foundation-hardening
+[Não lançado]: https://github.com/WagnerxOliveira/DesperrengueApp_TAI3/compare/main...feat/agendamento-chat-dossie

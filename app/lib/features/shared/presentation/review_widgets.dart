@@ -228,7 +228,17 @@ class ReviewPhotoStrip extends StatelessWidget {
 
 /// Cartão de avaliação pública: estrelas, pílulas, comentário, fotos e resposta.
 class ReviewCard extends StatelessWidget {
-  const ReviewCard({super.key, required this.review, this.onReply});
+  const ReviewCard({super.key, required this.review, this.onReply, this.onOpenDetails, this.ownerHint});
+
+  /// Texto padrão da dica mostrada ao dono (quando [onOpenDetails] é informado).
+  static const String defaultOwnerHint = 'Toque para ver detalhes financeiros e do serviço ➔';
+
+  /// Só o profissional DONO passa isto (abre o dossiê interno). Na visão pública fica
+  /// null: o card não é tocável e não revela que existem detalhes financeiros.
+  final VoidCallback? onOpenDetails;
+
+  /// Texto da dica ao dono; ignorado quando [onOpenDetails] é null (nunca aparece no público).
+  final String? ownerHint;
 
   final PublicReview review;
 
@@ -240,6 +250,7 @@ class ReviewCard extends StatelessWidget {
     final r = review;
     return AppCard(
       margin: const EdgeInsets.only(bottom: 10),
+      onTap: onOpenDetails,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -289,7 +300,7 @@ class ReviewCard extends StatelessWidget {
                     children: [
                       Icon(Icons.reply_rounded, size: 16, color: context.tk.providerAccent),
                       SizedBox(width: 6),
-                      Text('Resposta do profissional', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12.5)),
+                      Flexible(child: Text('Resposta do profissional', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12.5))),
                     ],
                   ),
                   const SizedBox(height: 4),
@@ -302,6 +313,21 @@ class ReviewCard extends StatelessWidget {
             Align(
               alignment: Alignment.centerLeft,
               child: TextButton.icon(onPressed: onReply, icon: const Icon(Icons.reply_rounded, size: 18), label: const Text('Responder')),
+            ),
+          ],
+          if (onOpenDetails != null) ...[
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Icon(Icons.receipt_long_rounded, size: 16, color: context.tk.providerAccent),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    ownerHint ?? defaultOwnerHint,
+                    style: TextStyle(color: context.tk.providerAccent, fontSize: 12.5, fontWeight: FontWeight.w800),
+                  ),
+                ),
+              ],
             ),
           ],
         ],

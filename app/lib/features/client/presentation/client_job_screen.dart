@@ -15,6 +15,7 @@ import 'insufficient_funds_sheet.dart';
 import 'payment_widgets.dart';
 import 'provider_public_profile_screen.dart';
 import 'provider_search_screen.dart';
+import '../../shared/presentation/scheduled_service_screen.dart';
 import '../../../core/ui/app_tokens.dart';
 
 /// Acompanha UM pedido do cliente em tempo real e mostra a tela certa para
@@ -69,6 +70,8 @@ class _ClientJobScreenState extends State<ClientJobScreen> {
             return job.isEmergency ? EmergencyRadarScreen(job: job) : WaitingQuotesScreen(job: job);
           case JobStatus.awaitingPayment:
             return PaymentScreen(job: job);
+          case JobStatus.scheduled:
+            return ScheduledServiceScreen(job: job, asProvider: false);
           case JobStatus.inProgress:
           case JobStatus.awaitingApproval:
           case JobStatus.disputed:

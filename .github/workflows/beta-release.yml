@@ -79,7 +79,7 @@ jobs:
           SDK="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
           ok=0
           for i in 1 2 3; do
-            if flutter build apk --release --build-name "$NAME" --build-number "$BUILD" --dart-define=BETA_UPDATES=true; then ok=1; break; fi
+            if flutter build apk --release --build-name "$NAME" --build-number "$BUILD" --dart-define=BETA_UPDATES=true --dart-define=UPDATE_REPO=${{ github.repository }}; then ok=1; break; fi
             echo "::warning::Tentativa $i falhou. Limpando downloads parciais do NDK e tentando de novo."
             for d in "$SDK"/ndk/*; do [ -f "$d/source.properties" ] || rm -rf "$d"; done
             sleep 15

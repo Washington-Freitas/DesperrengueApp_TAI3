@@ -7,22 +7,32 @@ import '../../../core/ui/widgets.dart';
 import '../../../core/utils/format.dart';
 import '../../../core/state/privacy_mode.dart';
 import '../../shared/presentation/support_screens.dart';
+import 'dossie_servico_profissional_screen.dart';
 import 'pix_withdraw_screen.dart';
 import '../../../core/ui/app_tokens.dart';
+
+/// Dados da carteira: pagamentos, serviços (por id) e total já sacado.
+typedef WalletData = (List<Payment>, Map<String, Job>, double);
 
 /// Carteira do profissional (protótipos 13 e 14): saldo, lançamentos
 /// futuros (custódia/mediação), desempenho semanal e últimos serviços.
 class WalletTab extends StatefulWidget {
-  const WalletTab({super.key});
+  /// [loader] só é usado em testes (fake sem rede); em produção fica null.
+  const WalletTab({super.key, this.loader});
+
+  final Future<WalletData> Function()? loader;
 
   @override
   State<WalletTab> createState() => _WalletTabState();
 }
 
 class _WalletTabState extends State<WalletTab> {
-  final _providers = ProviderService();
-  final _jobs = JobService();
-  late Future<(List<Payment>, Map<String, Job>, double)> _future = _load();
+  // Os serviços do repositório só são criados quando não há [WalletTab.loader] (testes).
+  ProviderService? _providersOrNull;
+  ProviderService get _providers => _providersOrNull ??= ProviderService();
+  JobService? _jobsOrNull;
+  JobService get _jobs => _jobsOrNull ??= JobService();
+  late Future<WalletData> _future = _load();
 
   bool get _hidden => PrivacyMode.instance.hidden.value;
 
@@ -43,7 +53,9 @@ class _WalletTabState extends State<WalletTab> {
     super.dispose();
   }
 
-  Future<(List<Payment>, Map<String, Job>, double)> _load() async {
+  Future<WalletData> _load() async {
+    final custom = widget.loader;
+    if (custom != null) return custom();
     final payments = await _providers.myPayments();
     final jobs = await _jobs.providerJobs();
     final withdrawn = await _providers.myWithdrawnTotal();
@@ -66,11 +78,21 @@ class _WalletTabState extends State<WalletTab> {
 
   void _soon(String what) => showSnack(context, '$what chega em breve. No MVP os repasses são simulados.');
 
+  void _openDossier(String jobId) {
+    Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => DossieServicoProfissionalScreen(jobId: jobId)));
+  }
+
   @override
   Widget build(BuildContext context) {
+    // SafeArea próprio: o card azul do topo não pode ficar sob a barra de status/recorte,
+    // mesmo que a aba seja hospedada fora de um SafeArea (dentro de um, não soma nada).
+    return SafeArea(bottom: false, child: _buildBody(context));
+  }
+
+  Widget _buildBody(BuildContext context) {
     return RefreshIndicator(
       onRefresh: _refresh,
-      child: FutureBuilder<(List<Payment>, Map<String, Job>, double)>(
+      child: FutureBuilder<WalletData>(
         future: _future,
         builder: (context, snap) {
           if (snap.hasError) return ListView(children: [ErrorView(message: 'Não foi possível carregar a carteira.', onRetry: _refresh)]);
@@ -81,7 +103,7 @@ class _WalletTabState extends State<WalletTab> {
           final done = payments.where((p) => p.status == 'released').toList();
           return ListView(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
             children: [
               const Text('Carteira', style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900)),
               const SizedBox(height: 14),
@@ -175,10 +197,18 @@ class _WalletTabState extends State<WalletTab> {
                 for (final p in done.take(10))
                   ListTile(
                     contentPadding: EdgeInsets.zero,
+                    // Toque abre o dossiê completo do serviço (financeiro, evidências, avaliação).
+                    onTap: () => _openDossier(p.jobId),
                     leading: CircleAvatar(backgroundColor: context.tk.successSoft, child: Icon(Icons.check_rounded, color: context.tk.success)),
                     title: Text(jobs[p.jobId]?.title ?? 'Serviço', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w800)),
                     subtitle: Text(dateShort(p.releasedAt ?? p.createdAt)),
-                    trailing: Text('+ ${brl(p.netAmount)}', style: TextStyle(fontWeight: FontWeight.w900, color: context.tk.successInk)),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(_hidden ? PrivacyMode.mask : '+ ${brl(p.netAmount)}', style: TextStyle(fontWeight: FontWeight.w900, color: context.tk.successInk)),
+                        Icon(Icons.chevron_right_rounded, color: context.tk.textMuted),
+                      ],
+                    ),
                   ),
               const SizedBox(height: 10),
               Center(

@@ -12,12 +12,14 @@ import './app_tokens.dart';
   switch (job.status) {
     case JobStatus.open:
       return (
-        label: provider ? 'Aguardando cliente' : (job.quoteCount > 0 ? '${job.quoteCount} orçamento(s)' : 'Aguardando orçamento'),
+        label: provider ? 'Aguardando cliente' : (job.quoteCount > 0 ? '${job.quoteCount} orçamento(s)' : 'Aguardando Orçamento'),
         color: context.tk.info,
         icon: Icons.hourglass_top_rounded,
       );
     case JobStatus.awaitingPayment:
       return (label: provider ? 'Aguardando pagamento' : 'Pagar para reservar', color: context.tk.warningInk, icon: Icons.payments_outlined);
+    case JobStatus.scheduled:
+      return (label: 'Agendado', color: context.tk.info, icon: Icons.event_available_rounded);
     case JobStatus.inProgress:
       return (label: 'Em andamento', color: context.tk.success, icon: Icons.play_circle_outline_rounded);
     case JobStatus.awaitingApproval:

@@ -17,6 +17,7 @@ import '../../../core/ui/widgets.dart';
 import '../../../core/utils/format.dart';
 import '../../shared/presentation/achievement_widgets.dart';
 import '../../shared/presentation/chat_screen.dart';
+import '../../shared/presentation/review_thanks_view.dart';
 import '../../shared/presentation/review_widgets.dart';
 import '../../shared/presentation/support_screens.dart';
 import '../../../core/ui/app_tokens.dart';
@@ -39,7 +40,6 @@ class ServiceExecutionScreen extends StatefulWidget {
 
 class _ServiceExecutionScreenState extends State<ServiceExecutionScreen> {
   final _jobs = JobService();
-  final _watch = Stopwatch();
   Timer? _tick;
   String? _address;
   String? _reference;
@@ -48,8 +48,10 @@ class _ServiceExecutionScreenState extends State<ServiceExecutionScreen> {
   @override
   void initState() {
     super.initState();
+    // O cronômetro é DERIVADO do `started_at` gravado pelo servidor (não de um Stopwatch local):
+    // sobrevive a fechar o app e só existe para serviços realmente iniciados (`in_progress`).
     _tick = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (mounted && _watch.isRunning) setState(() {});
+      if (mounted) setState(() {});
     });
     _load();
   }
@@ -71,6 +73,13 @@ class _ServiceExecutionScreenState extends State<ServiceExecutionScreen> {
         _client = c;
       });
     } catch (_) {}
+  }
+
+  Duration get _elapsed {
+    final since = widget.job.startedAt ?? widget.job.paidAt;
+    if (since == null) return Duration.zero;
+    final d = DateTime.now().difference(since);
+    return d.isNegative ? Duration.zero : d;
   }
 
   @override
@@ -110,18 +119,12 @@ class _ServiceExecutionScreenState extends State<ServiceExecutionScreen> {
           const SizedBox(height: 24),
           Center(
             child: Text(
-              clockHms(_watch.elapsed),
+              clockHms(_elapsed),
               style: TextStyle(fontSize: 56, fontWeight: FontWeight.w900, color: context.tk.providerAccent, fontFeatures: [FontFeature.tabularFigures()]),
             ),
           ),
           Center(
-            child: _watch.isRunning
-                ? const StatusChip('● Serviço em execução...', color: AppColors.providerBright)
-                : TextButton.icon(
-                    onPressed: () => setState(_watch.start),
-                    icon: const Icon(Icons.play_arrow_rounded),
-                    label: const Text('Iniciar cronômetro do serviço'),
-                  ),
+            child: const StatusChip('● Serviço em execução...', color: AppColors.providerBright),
           ),
           const SizedBox(height: 20),
           AppCard(
@@ -787,60 +790,91 @@ class _PaidSuccessScreenState extends State<PaidSuccessScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Blindagem de layout: SafeArea + rolagem + SliverFillRemaining(hasScrollBody: false)
+    // mantêm os botões 100% visíveis em telas baixas e com barra de botões/gestos.
+    final bottomInset = MediaQuery.viewPaddingOf(context).bottom;
     return Scaffold(
       appBar: AppBar(automaticallyImplyLeading: false, title: const BrandLogo()),
-      body: ListView(
-        padding: const EdgeInsets.all(24),
-        children: [
-          const SizedBox(height: 8),
-          Center(child: CircleAvatar(radius: 56, backgroundColor: context.tk.providerSoft, child: Icon(Icons.verified_rounded, size: 64, color: context.tk.providerAccent))),
-          const SizedBox(height: 18),
-          Text('Serviço finalizado e pago!', textAlign: TextAlign.center, style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: context.tk.providerAccent)),
-          const SizedBox(height: 10),
-          Text('O código foi validado e suas fotos ficaram registradas. ${brl(_credited)} foram adicionados com segurança à sua carteira!',
-              textAlign: TextAlign.center, style: TextStyle(height: 1.45, color: context.tk.textMuted)),
-          const SizedBox(height: 18),
-          AppCard(
-            color: context.tk.successSoft,
-            borderColor: context.tk.success,
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Seu novo saldo é de', style: TextStyle(color: context.tk.successInk)),
-                      Text(_hide ? 'R\$ •••••' : brl(_balance), style: TextStyle(fontSize: 34, fontWeight: FontWeight.w900, color: context.tk.successInk)),
-                    ],
+      body: SafeArea(
+        top: true,
+        bottom: true,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final compact = constraints.maxHeight < 620;
+            final gap = compact ? 10.0 : 18.0;
+            return CustomScrollView(
+              slivers: [
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(24, compact ? 8 : 16, 24, 0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Center(child: SuccessHeroHalo(size: compact ? 96 : 128)),
+                        SizedBox(height: gap),
+                        Text('Serviço finalizado e pago!', textAlign: TextAlign.center, style: TextStyle(fontSize: compact ? 24 : 28, fontWeight: FontWeight.w900, color: context.tk.providerAccent)),
+                        const SizedBox(height: 10),
+                        Text('O código foi validado e suas fotos ficaram registradas. ${brl(_credited)} foram adicionados com segurança à sua carteira!',
+                            textAlign: TextAlign.center, style: TextStyle(height: 1.45, color: context.tk.textMuted)),
+                        SizedBox(height: gap),
+                        AppCard(
+                          color: context.tk.successSoft,
+                          borderColor: context.tk.success,
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text('Seu novo saldo é de', style: TextStyle(color: context.tk.successInk)),
+                                    Text(_hide ? 'R\$ •••••' : brl(_balance), style: TextStyle(fontSize: compact ? 28 : 34, fontWeight: FontWeight.w900, color: context.tk.successInk)),
+                                  ],
+                                ),
+                              ),
+                              IconButton(onPressed: () => setState(() => _hide = !_hide), icon: Icon(_hide ? Icons.visibility_off_rounded : Icons.visibility_rounded, color: context.tk.successInk)),
+                            ],
+                          ),
+                        ),
+                        SizedBox(height: gap),
+                        NewAchievementsBanner(achievements: _newAchievements),
+                        const Expanded(child: SizedBox(height: 12)),
+                        Padding(
+                          padding: EdgeInsets.only(bottom: bottomInset + 16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              if (_reviewStatus == 'none')
+                                PrimaryButton(
+                                  label: 'Avaliar atendimento do cliente',
+                                  trailingArrow: true,
+                                  onPressed: () async {
+                                    await Navigator.of(context).push(MaterialPageRoute(builder: (_) => RateClientScreen(job: widget.job)));
+                                    _load();
+                                  },
+                                )
+                              else if (_reviewStatus == 'waiting')
+                                const InfoBanner(
+                                  'Ela será revelada quando o cliente também avaliar, ou em até 48 horas.',
+                                  tone: BannerTone.security,
+                                  icon: Icons.hourglass_top_rounded,
+                                  title: 'Avaliação enviada (cega)',
+                                )
+                              else
+                                const InfoBanner('Avaliação enviada. Obrigado!', tone: BannerTone.success),
+                              const SizedBox(height: 10),
+                              SecondaryButton(label: 'Ir para o painel', onPressed: () => Navigator.of(context).popUntil((r) => r.isFirst)),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-                IconButton(onPressed: () => setState(() => _hide = !_hide), icon: Icon(_hide ? Icons.visibility_off_rounded : Icons.visibility_rounded, color: context.tk.successInk)),
               ],
-            ),
-          ),
-          const SizedBox(height: 24),
-          NewAchievementsBanner(achievements: _newAchievements),
-          if (_reviewStatus == 'none')
-            PrimaryButton(
-              label: 'Avaliar atendimento do cliente',
-              trailingArrow: true,
-              onPressed: () async {
-                await Navigator.of(context).push(MaterialPageRoute(builder: (_) => RateClientScreen(job: widget.job)));
-                _load();
-              },
-            )
-          else if (_reviewStatus == 'waiting')
-            const InfoBanner(
-              'Ela será revelada quando o cliente também avaliar, ou em até 48 horas.',
-              tone: BannerTone.security,
-              icon: Icons.hourglass_top_rounded,
-              title: 'Avaliação enviada (cega)',
-            )
-          else
-            const InfoBanner('Avaliação enviada. Obrigado!', tone: BannerTone.success),
-          const SizedBox(height: 8),
-          Center(child: TextButton(onPressed: () => Navigator.of(context).popUntil((r) => r.isFirst), child: const Text('Ir para o painel'))),
-        ],
+            );
+          },
+        ),
       ),
     );
   }
@@ -986,15 +1020,10 @@ class ThanksScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(automaticallyImplyLeading: false, title: const BrandLogo()),
-      body: EmptyView(
-        icon: revealed ? Icons.handshake_rounded : Icons.hourglass_top_rounded,
-        title: 'Obrigado pela sua avaliação!',
-        subtitle: revealed
-            ? 'As duas avaliações já foram reveladas. Seu feedback ajuda a manter a comunidade da Desperrengue segura, transparente e justa.'
-            : 'Por ser uma avaliação cega, ela será revelada quando o cliente também avaliar, ou em até 48 horas.',
-      ),
-      bottomNavigationBar: BottomBar(
-        child: PrimaryButton(label: 'Voltar ao painel', trailingArrow: true, onPressed: () => Navigator.of(context).popUntil((r) => r.isFirst)),
+      body: ReviewThanksView(
+        isProvider: true,
+        revealed: revealed,
+        onBack: () => Navigator.of(context).popUntil((r) => r.isFirst),
       ),
     );
   }

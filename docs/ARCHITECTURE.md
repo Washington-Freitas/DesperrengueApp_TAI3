@@ -210,6 +210,7 @@ erDiagram
     JOBS ||--o{ REVIEWS : "2 avaliações"
     JOBS ||--o{ MESSAGES : "chat por demanda"
     JOBS ||--o{ SUPPORT_TICKETS : "disputa"
+    JOBS ||--o| JOB_GEO : "destino (privado)"
     PROFILES ||--o{ NOTIFICATIONS : recebe
 
     PROFILES {
@@ -274,6 +275,13 @@ erDiagram
         text account "client:id:available|escrow, provider:id:available, platform:revenue, external:pix"
         bigint cents "diferente de 0; soma por transação = 0"
     }
+    JOB_GEO {
+        uuid job_id PK
+        double lat
+        double lng
+        text precision_level "house|street|locality"
+        text source "client_pin|client_geocode"
+    }
 ```
 
 ### 5.2 Decisões de modelagem relevantes
@@ -299,9 +307,11 @@ erDiagram
 stateDiagram-v2
     [*] --> open : cliente cria pedido
     open --> awaiting_payment : accept_quote
-    open --> in_progress : accept_emergency (reserva paga)
+    open --> in_progress : accept_emergency (reserva paga; started_at no aceite)
     open --> canceled : cancel_job / convites expirados
-    awaiting_payment --> in_progress : pay_job_mock
+    awaiting_payment --> scheduled : pay_job_mock (pago, ainda NÃO iniciado)
+    scheduled --> in_progress : start_job (relógio do servidor + geofence)
+    scheduled --> disputed : create_support_ticket
     awaiting_payment --> canceled : cancel_job
     in_progress --> completed : complete_job_with_pin
     in_progress --> disputed : create_support_ticket
@@ -311,6 +321,8 @@ stateDiagram-v2
     completed --> [*]
     canceled --> [*]
 ```
+
+`scheduled` (ADR-0019) separa **pago** de **em execução**: nele não há cronômetro nem "Finalizar", e evidências/PIN/conclusão são recusados pelo servidor (exigem `in_progress`). O cronômetro do app é derivado de `jobs.started_at`.
 
 `awaiting_approval` é um estado reservado (RPCs `provider_finish_job` e `client_approve_job` existem), **não utilizado** pelo fluxo atual, que conclui diretamente por PIN.
 
@@ -368,7 +380,10 @@ sequenceDiagram
     C->>A: compara e aceita
     A->>DB: RPC accept_quote (FOR UPDATE; rejeita os demais)
     C->>A: confirma pagamento simulado
-    A->>DB: RPC pay_job_mock (payments=escrow; gera PIN)
+    A->>DB: RPC pay_job_mock (payments=escrow; status=scheduled; gera PIN)
+    P->>A: no local e no horário, toca em "Iniciar serviço"
+    A->>DB: RPC start_job(posição GPS): relógio do servidor + Haversine <= raio
+    DB--)A: status=in_progress, started_at (cronômetro derivado)
     P->>A: executa; captura 4 fotos
     A->>DB: INSERT job_evidence (RLS: só o contratado)
     P->>A: digita o PIN informado pelo cliente
@@ -402,6 +417,23 @@ sequenceDiagram
 ### 7.3 Emergência
 
 O cliente **paga a reserva da visita antes** do aceite; o profissional tem 5 minutos. Aceite → `in_progress` com PIN gerado. Recusa ou expiração (`pg_cron expire-invites`, 1/min) → `canceled` e `payments.status = refunded`. O cancelamento pelo cliente também estorna. Essas invariantes são verificadas pelos itens 52–57 do teste de fumaça.
+
+### 7.5 Início do serviço agendado (dupla trava)
+
+```mermaid
+flowchart TD
+    S["Serviço scheduled (pago)"] --> D{"Destino conhecido?"}
+    D -- "não" --> G["App do CLIENTE geocodifica (Nominatim)<br/>set_job_location(client_geocode + qualidade)"]
+    G --> D
+    D -- "sim" --> T{"Horário<br/>now() servidor >= agenda - 15 min?"}
+    T -- "não" --> X1["START_TOO_EARLY"]
+    T -- "sim" --> L{"GPS: precisão <= 100 m<br/>Haversine <= raio?"}
+    L -- "não" --> X2["START_TOO_FAR / LOW_ACCURACY"]
+    L -- "sim" --> OK["in_progress + started_at + start_distance_m"]
+    SIM["p_simulate (só checkin_sandbox='true')"] -.-> OK
+```
+
+Prioridade do destino: **pino do cliente** (`set_job_location`, `client_pin`) > coordenadas do pedido > geocodificação do app do cliente (`client_geocode`, que nunca sobrescreve um pino). Raio: 100 m (pino/casa), 250 m (só a rua), 0 (só bairro/cidade: não valida presença). A UI do profissional espelha as duas travas num checklist e o servidor revalida tudo; o cliente vê as regras, mas nenhum controle de início.
 
 ### 7.4 Recarga Pix e pagamento com saldo
 
@@ -480,6 +512,12 @@ flowchart LR
 | **S**poofing do webhook Pix | `x-webhook-secret` (`PIX_WEBHOOK_SECRET`) em tempo constante; `txid` único; **valor conferido** contra a cobrança (409 se divergir) |
 | Gasto duplo / corrida no saldo | `SELECT … FOR UPDATE` na carteira dentro da mesma transação do pedido; pedido e débito são atômicos |
 | Replay e cobrança duplicada | `idempotency_key` única no ledger e por cliente nas recargas; reenvio do webhook devolve `already: true` sem novo crédito |
+| Finalizar serviço que nunca começou / início antecipado ou longe do cliente | Status `scheduled` + `start_job` no servidor (relógio do servidor e Haversine); evidência/PIN/conclusão exigem `in_progress` |
+| Fraude de relógio do celular | O horário é decidido por `now()` do Postgres; o app usa `ServerClock` só para a UI |
+| Mensagem duplicada / eco do Realtime | `client_message_id` + `UNIQUE (job_id, sender_id, client_message_id)`; `23505` tratado como sucesso |
+| Escrita em conversa de serviço encerrado | Gatilho `messages_guard` (`CHAT_ARCHIVED`); leitura preservada para as partes |
+| Vazamento de dado financeiro nas avaliações públicas | `public_reviews` sem `job_id`/valores; dossiê só por RPC do dono; avaliação cega respeitada (`hidden`) |
+| Nome/e-mail vazando na UI | `safe_name()` no banco e `friendlyName()` no app |
 | Simulação de pagamento em produção | `simulate_pix_payment` exige `app_settings.pix_sandbox = 'true'` (no servidor) e só vale para o próprio Pix |
 
 Política de divulgação de vulnerabilidades: [SECURITY.md](../.github/SECURITY.md).
@@ -497,6 +535,9 @@ Política de divulgação de vulnerabilidades: [SECURITY.md](../.github/SECURITY
 | Resend | SMTP do Auth (`smtp.resend.com:465`, remetente `suporte@desperrengue.tech`) e API da Edge Function |
 | ViaCEP | Preenchimento de endereço por CEP (cliente HTTP direto do app) |
 | Abstract API | Validação opcional de e-mail no cadastro (`--dart-define`) |
+| Nominatim (OSM) | Geocodificação no **app do cliente** (≤ 1 req/s, User-Agent identificável); o resultado vai para `job_geo` por `set_job_location`. Não é feita no servidor: o Nominatim público devolve 403 a IPs de datacenter (verificado numa Edge Function) |
+| OSRM público | Rota real nas ruas, distância e ETA no mapa do profissional (fallback: linha reta) |
+| OpenStreetMap / CARTO | Blocos do mapa (claro/escuro) via `flutter_map`, com atribuição |
 | Pix (sandbox) | BR Code EMV com chave **fictícia** gerado no banco + Edge Function `pix-webhook`; sem PSP real ([ADR-0018](adr/0018-carteira-ledger-e-pix-sandbox.md)) |
 
 ---
@@ -545,5 +586,7 @@ Mapeamento aos atributos da ISO/IEC 25010:
 | DT-06 | Bucket legado `kyc_documentos` (privado, 19 objetos de teste) | Resíduo | Remoção após confirmação |
 | DT-07 | Sem *push notifications* | Avisos só dentro do app | FCM/APNs |
 | DT-08 | Aprovação por PIN sem biometria/QR | Atrito em campo | Leitura de QR do PIN |
+| DT-11 | GPS do aparelho não é atestado (GPS falso engana o geofence) | Início indevido por fraude deliberada | Play Integrity e leitura de QR do PIN (ROADMAP) |
+| DT-12 | OSM incompleto no Brasil: o ponto automático pode ser só a rua/cidade | Geofence inalcançável sem o pino | Cliente confirma o pino (já implementado); pedir o pino já no *wizard* |
 | DT-09 | Saldo do cliente não entra na trava de exclusão de conta | Com dinheiro real, haveria fundos sem destino | Reembolso à origem antes de excluir (junto com o PSP, E-19) |
 | DT-10 | Ledger sem *backfill* do profissional anterior à migration da carteira | Extrato do profissional só cobre fluxos novos | Migração contábil dos `payments` liberados antes de 2026-10-29 |

@@ -20,7 +20,7 @@ O **backend** (Supabase) é implantado de forma contínua: correções de banco/
 
 Use **um** dos canais confidenciais:
 
-1. **GitHub Private Vulnerability Reporting** — na aba *Security → Report a vulnerability* do repositório `Washington-Freitas/DesperrengueApp_TAI3` (preferencial: cria um aviso privado com os mantenedores).
+1. **GitHub Private Vulnerability Reporting** — na aba *Security → Report a vulnerability* do repositório `WagnerxOliveira/DesperrengueApp_TAI3` (preferencial: cria um aviso privado com os mantenedores).
 2. **E-mail:** `suporte@desperrengue.tech` com o assunto **`[SECURITY] <resumo curto>`**.
 
 **Inclua, se possível:**
@@ -53,6 +53,7 @@ Manteremos você informado(a) do andamento e, com sua autorização, creditaremo
 * Aplicativo Flutter (Android/iOS) deste repositório.
 * Esquema do banco, **políticas RLS**, *grants*, funções RPC e *triggers* em `supabase/migrations/`.
 * Edge Functions `enviar-email-aprovacao`, `excluir-conta` e `pix-webhook`.
+* **Início do serviço agendado** (`start_job`: relógio do servidor, geofence/Haversine, modo de homologação), `set_job_location`, chat (idempotência e arquivo) e dossiês (`provider_job_dossier`, `client_job_dossier`, `my_received_reviews`).
 * **Carteira, ledger e custódia** (`client_wallets`, `ledger_*`, `wallet_statement`, `pix_topups`, gatilhos de `payments`): integridade contábil, idempotência e autenticação do webhook.
 * Configuração de Storage (*buckets* e políticas) e de Auth documentada.
 
@@ -108,6 +109,7 @@ Detalhes em [ARCHITECTURE §8](../docs/ARCHITECTURE.md#8-modelo-de-segurança) e
 | Item | Situação |
 | :-- | :-- |
 | Pagamento, carteira e repasses | **Dinheiro simulado** (sem gateway): carteira com ledger de partida dobrada e Pix **sandbox** com webhook; crédito inicial fictício — ver [ADR-0006](../docs/adr/0006-pagamento-mock-com-custodia-e-pin.md) e [ADR-0018](../docs/adr/0018-carteira-ledger-e-pix-sandbox.md). Antes de usar dinheiro real: remover o crédito inicial, desligar `app_settings.pix_sandbox`, integrar PSP com *webhooks* assinados e incluir o saldo na trava de exclusão |
+| Localização do profissional no início do serviço | O servidor calcula a distância (Haversine) e o horário, mas o **GPS vem do aparelho**: um GPS falso (*mock location*) ainda engana a trava. Mitigações: precisão ≤ 100 m, raio de 100 m, relógio do servidor, pino do cliente; futuro: Play Integrity e QR do PIN. Em produção, desligar `app_settings.checkin_sandbox` |
 | Aprovação de KYC | **Automática (mock)** habilitada por `app_settings.kyc_auto_approve`; desativar em produção e adotar revisão administrativa |
 | Ambientes | Único projeto (sem *staging*) |
 | Testes de intrusão | Ainda **não realizados** por terceiros; revisão interna + teste automatizado de RLS |

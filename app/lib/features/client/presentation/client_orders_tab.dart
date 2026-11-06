@@ -14,47 +14,104 @@ import '../../shared/presentation/support_screens.dart';
 import '../../shared/presentation/theme_picker.dart';
 import 'carteira_cliente_screen.dart';
 import 'client_setup_screen.dart';
-import 'client_shell.dart';
+import '../../../core/utils/order_utils.dart';
+import '../../shared/presentation/achievement_widgets.dart';
+import 'detalhe_servico_cliente_screen.dart';
+import 'historico_servicos_cliente_screen.dart';
 import '../../../core/ui/app_theme.dart';
 import '../../../core/ui/app_tokens.dart';
 
-/// Aba "Meus Pedidos": em andamento / concluídos / cancelados.
-class ClientOrdersTab extends StatelessWidget {
-  const ClientOrdersTab({super.key});
+/// Aba "Meus Pedidos": Em Andamento / Concluídos / Cancelados / Em Mediação.
+class ClientOrdersTab extends StatefulWidget {
+  const ClientOrdersTab({super.key, @visibleForTesting this.jobsStream, @visibleForTesting this.onOpen});
+
+  /// Injetáveis nos testes (padrão: stream realtime do Supabase e o detalhe do pedido).
+  final Stream<List<Job>>? jobsStream;
+  final void Function(BuildContext context, Job job)? onOpen;
+
+  @override
+  State<ClientOrdersTab> createState() => _ClientOrdersTabState();
+}
+
+class _ClientOrdersTabState extends State<ClientOrdersTab> {
+  // Um único stream por aba (antes era recriado a cada rebuild).
+  late final Stream<List<Job>> _stream = widget.jobsStream ?? JobService().streamMyJobs();
 
   @override
   Widget build(BuildContext context) {
+    return Column(
+      children: [
+        const Padding(
+          padding: EdgeInsets.fromLTRB(20, 12, 20, 4),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Text('Meus Pedidos', style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900)),
+          ),
+        ),
+        Expanded(
+          child: StreamBuilder<List<Job>>(
+            stream: _stream,
+            builder: (context, snap) {
+              if (snap.hasError) return const ErrorView(message: 'Não foi possível carregar seus pedidos.');
+              if (!snap.hasData) return const LoadingView();
+              // Uma única passagem O(N) separa os pedidos nas 4 abas.
+              final b = OrderBuckets.from(snap.data!);
+              return OrdersTabs(buckets: b, onOpen: widget.onOpen ?? (c, j) => openClientServiceDetail(c, j.id));
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// As 4 abas de status (com contagem) sobre pedidos já separados.
+class OrdersTabs extends StatelessWidget {
+  const OrdersTabs({super.key, required this.buckets, required this.onOpen});
+
+  final OrderBuckets buckets;
+  final void Function(BuildContext context, Job job) onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    final tabs = [
+      (OrderTab.inProgress, 'Em Andamento', 'Você não tem pedidos em andamento.', 'Peça um orçamento na aba Início.'),
+      (OrderTab.completed, 'Concluídos', 'Nenhum serviço concluído ainda.', 'Os serviços finalizados ficam guardados aqui.'),
+      (OrderTab.canceled, 'Cancelados', 'Nenhum pedido cancelado.', 'Pedidos cancelados aparecem aqui com data e motivo.'),
+      (OrderTab.mediation, 'Em Mediação', 'Nenhum pedido em mediação.', 'Se algo der errado em um serviço, ele aparece aqui até a equipe resolver.'),
+    ];
     return DefaultTabController(
-      length: 3,
+      length: tabs.length,
       child: Column(
         children: [
-          const Padding(
-            padding: EdgeInsets.fromLTRB(20, 12, 20, 4),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Text('Meus Pedidos', style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900)),
-            ),
-          ),
           TabBar(
+            // 4 abas cabem na largura do celular (sem rolagem): rótulos compactos e a contagem
+            // vira um selo sobreposto (não ocupa largura).
+            labelPadding: const EdgeInsets.symmetric(horizontal: 2),
             labelColor: context.tk.clientAccent,
             indicatorColor: context.tk.clientAccent,
-            tabs: [Tab(text: 'Em andamento'), Tab(text: 'Concluídos'), Tab(text: 'Cancelados')],
+            tabs: [
+              for (final (tab, label, _, _) in tabs)
+                Tab(
+                  child: Badge(
+                    isLabelVisible: buckets.of(tab).isNotEmpty,
+                    label: Text('${buckets.of(tab).length}', style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800)),
+                    backgroundColor: tab == OrderTab.mediation ? context.tk.danger : context.tk.clientAccent,
+                    textColor: Colors.white,
+                    offset: const Offset(10, -8),
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(label, style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700)),
+                    ),
+                  ),
+                ),
+            ],
           ),
           Expanded(
-            child: StreamBuilder<List<Job>>(
-              stream: JobService().streamMyJobs(),
-              builder: (context, snap) {
-                if (snap.hasError) return const ErrorView(message: 'Não foi possível carregar seus pedidos.');
-                if (!snap.hasData) return const LoadingView();
-                final all = snap.data!;
-                return TabBarView(
-                  children: [
-                    _List(jobs: all.where((j) => j.status.isActive).toList(), empty: 'Você não tem pedidos em andamento.'),
-                    _List(jobs: all.where((j) => j.status == JobStatus.completed).toList(), empty: 'Nenhum serviço concluído ainda.'),
-                    _List(jobs: all.where((j) => j.status == JobStatus.canceled).toList(), empty: 'Nenhum pedido cancelado.'),
-                  ],
-                );
-              },
+            child: TabBarView(
+              children: [
+                for (final (tab, _, empty, hint) in tabs) _List(jobs: buckets.of(tab), empty: empty, hint: hint, onOpen: onOpen),
+              ],
             ),
           ),
         ],
@@ -64,15 +121,17 @@ class ClientOrdersTab extends StatelessWidget {
 }
 
 class _List extends StatelessWidget {
-  const _List({required this.jobs, required this.empty});
+  const _List({required this.jobs, required this.empty, required this.hint, required this.onOpen});
 
   final List<Job> jobs;
   final String empty;
+  final String hint;
+  final void Function(BuildContext context, Job job) onOpen;
 
   @override
   Widget build(BuildContext context) {
     if (jobs.isEmpty) {
-      return EmptyView(icon: Icons.receipt_long_outlined, title: empty, subtitle: 'Peça um orçamento na aba Início.');
+      return EmptyView(icon: Icons.receipt_long_outlined, title: empty, subtitle: hint);
     }
     return ListView.separated(
       padding: const EdgeInsets.all(20),
@@ -81,7 +140,8 @@ class _List extends StatelessWidget {
       itemBuilder: (context, i) {
         final j = jobs[i];
         return AppCard(
-          onTap: () => openClientJob(context, j.id),
+          // Qualquer pedido abre o detalhe completo, adaptado ao estado dele.
+          onTap: () => onOpen(context, j),
           child: Row(
             children: [
               CircleAvatar(
@@ -102,8 +162,7 @@ class _List extends StatelessWidget {
                   ],
                 ),
               ),
-              if (j.agreedPrice != null)
-                Text(brl(j.agreedPrice), style: const TextStyle(fontWeight: FontWeight.w900)),
+              if (j.agreedPrice != null) Text(brl(j.agreedPrice), style: const TextStyle(fontWeight: FontWeight.w900)),
               Icon(Icons.chevron_right_rounded, color: context.tk.textMuted),
             ],
           ),
@@ -143,6 +202,8 @@ class ClientProfileTab extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 22),
+        ClientAchievementsSection(profile: profile),
+        const SizedBox(height: 22),
         _Tile(
           icon: Icons.place_outlined,
           title: 'Meu endereço',
@@ -156,6 +217,12 @@ class ClientProfileTab extends StatelessWidget {
           title: 'Minha carteira',
           subtitle: 'Saldo, valor em garantia e extrato',
           onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CarteiraClienteScreen())),
+        ),
+        _Tile(
+          icon: Icons.history_rounded,
+          title: 'Histórico de serviços',
+          subtitle: 'Reveja serviços concluídos, fotos e conversas',
+          onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const HistoricoServicosClienteScreen())),
         ),
         _Tile(
           icon: Icons.support_agent_rounded,

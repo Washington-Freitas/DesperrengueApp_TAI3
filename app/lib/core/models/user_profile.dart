@@ -93,7 +93,13 @@ class UserProfile {
     longitude: (map['longitude'] as num?)?.toDouble(),
   );
 
-  String get firstName => fullName.split(' ').first;
+  /// Primeiro nome para saudações. Se `full_name` for um e-mail (cadastro rápido), nunca o exibe:
+  /// cai em "você" ("Olá, você!").
+  String get firstName {
+    final n = fullName.trim();
+    if (n.isEmpty || n.contains('@')) return 'você';
+    return n.split(' ').first;
+  }
 
   bool get hasBothModes => isClient && isProvider;
 
